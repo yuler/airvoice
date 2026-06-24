@@ -44,7 +44,9 @@ import Foundation
         let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
         guard !inFlight else { return }
-        guard raw != lastAcked else { return }
+        
+        let lastAckedTrimmed = lastAcked?.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed != lastAckedTrimmed else { return }
         
         inFlight = true
         onSend?(raw)

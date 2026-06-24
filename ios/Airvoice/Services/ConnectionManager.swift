@@ -83,7 +83,7 @@ class ConnectionManager: ObservableObject {
             }
             task.send(.string(jsonString)) { [weak self] error in
                 if let error = error {
-                    Task { @MainActor in
+                    Task { [weak self] @MainActor in
                         self?.state = .error("Send failed: \(error.localizedDescription)")
                     }
                 }
@@ -104,7 +104,7 @@ class ConnectionManager: ObservableObject {
             }
             task.send(.string(jsonString)) { [weak self] error in
                 if let error = error {
-                    Task { @MainActor in
+                    Task { [weak self] @MainActor in
                         if !(self?.isDisconnecting ?? false) {
                             self?.state = .error("Hello failed: \(error.localizedDescription)")
                         }
@@ -134,14 +134,16 @@ class ConnectionManager: ObservableObject {
                 }
                 
                 // Continue receiving
-                Task { @MainActor in
+                Task { [weak self] @MainActor in
+                    guard let self = self else { return }
                     if self.webSocketTask === task {
                         self.receiveMessage(task: task)
                     }
                 }
                 
             case .failure(let error):
-                Task { @MainActor in
+                Task { [weak self] @MainActor in
+                    guard let self = self else { return }
                     if !self.isDisconnecting && self.webSocketTask === task {
                         self.state = .error("Connection lost: \(error.localizedDescription)")
                         self.hostName = nil

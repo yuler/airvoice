@@ -212,17 +212,22 @@ struct HomeView: View {
             sendTimeoutTask?.cancel()
             sendTimeoutTask = Task {
                 try? await Task.sleep(nanoseconds: 5_000_000_000)
-                guard !Task.isCancelled else { return }
+                guard !Task.isCancelled else {
+                    sendTimeoutTask = nil
+                    return
+                }
                 if await autoSend.inFlight {
                     await autoSend.clearInFlight()
                     await triggerToast("发送超时，请重试", isError: true)
                 }
+                sendTimeoutTask = nil
             }
         }
         
         connection.onAck = { [weak self] id, ok, errMsg in
             guard let self = self else { return }
             sendTimeoutTask?.cancel()
+            sendTimeoutTask = nil
             if ok {
                 UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                 triggerToast("已发送到电脑", isError: false)
