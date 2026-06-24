@@ -1,0 +1,11 @@
+# Build artifacts
+bin/airvoice
+.build/
+
+# mise
+.mise/
+
+# macOS / Xcode
+*.xcuserstate
+xcuserdata/
+DerivedData/

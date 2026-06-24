@@ -1,0 +1,34 @@
+min_version = "2024.11.0"
+
+[tools]
+go = "1.22"
+gum = "0.17"
+swift = { version = "6.3", os = ["macos"] }
+
+[env]
+_.path = ["./bin"]
+
+[tasks.setup]
+description = "Install mise tools and platform dependencies"
+run = "./scripts/setup.sh"
+
+[tasks.dev]
+description = "Interactive development menu"
+run = "./scripts/dev.sh"
+
+[tasks."ios:device"]
+description = "Build and install on a physical iOS device (macOS + Xcode)"
+run = "./scripts/ios-device.sh"
+
+[tasks.build]
+description = "Build Go CLI to bin/airvoice"
+run = "go build -o bin/airvoice ./cli"
+
+[tasks.test]
+description = "Run Go unit tests"
+run = "go test ./cli/..."
+
+[tasks.serve]
+description = "Build and run airvoice server"
+depends = ["build"]
+run = "./bin/airvoice serve"

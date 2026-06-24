@@ -18,23 +18,57 @@ Explore the detailed documentation to understand the project better:
 
 ## Quick Start
 
-### 1. Build the Go CLI
-Compile the desktop server application:
+This project uses [mise](https://mise.jdx.dev/) to pin **Go**, **Swift**, and **gum**, and to run common dev tasks.
+
+### 1. Setup
+
 ```bash
-go build -o bin/airvoice ./cli
+mise trust            # first time in this repo
+mise install          # install pinned tools
+mise run setup        # build CLI + check platform deps
+```
+
+Or use the interactive menu:
+
+```bash
+mise run dev
 ```
 
 ### 2. Run the Server
-Start the server process:
+
 ```bash
-./bin/airvoice serve
+mise run serve
 ```
-This will start the local server and print a QR code in your terminal.
+
+This builds `bin/airvoice` and starts the server, printing a QR code in your terminal.
 
 ### 3. Connect the iOS Client
-1. Open the iOS application (`ios/Airvoice.xcodeproj`).
-2. Run the application on an iOS device connected to the same local network (Wi-Fi) as your computer.
-3. Scan the terminal QR code using the iOS application to establish the connection.
+
+**Simulator or Xcode:** open `ios/Airvoice.xcodeproj` and run on a device/simulator.
+
+**Physical device (macOS):**
+
+```bash
+mise run ios:device   # gum picker → build → install on USB-connected iPhone
+```
+
+Then on the same Wi‑Fi:
+
+1. Run `mise run serve` on your Mac.
+2. Open Airvoice on the iPhone and scan the terminal QR code.
+
+### mise tasks
+
+| Task | Description |
+|------|-------------|
+| `mise run setup` | Install tools, check deps, build CLI |
+| `mise run dev` | Interactive gum menu |
+| `mise run build` | Build Go CLI |
+| `mise run test` | `go test ./cli/...` |
+| `mise run serve` | Build + start server |
+| `mise run ios:device` | Build & install on physical iOS device (macOS) |
+
+Scripts live in `scripts/` (gum UI); `mise.toml` wires them as tasks.
 
 ---
 
