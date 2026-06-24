@@ -15,13 +15,13 @@
 | A5. `cli/server/` | ✅ completed |
 | A6. `cli/main.go` | ✅ completed |
 | A7. Go verify (`go test ./cli/... && go build`) | ✅ completed |
-| B1. iOS project shell | ⬜ pending |
-| B2. iOS models | ⬜ pending |
-| B3. `ConnectionManager.swift` | ⬜ pending |
-| B4. `AutoSendController.swift` | ⬜ pending |
-| B5. iOS views | ⬜ pending |
-| B6. `Info.plist` | ⬜ pending |
-| C. README update | ⬜ pending |
+| B1. iOS project shell | ✅ completed |
+| B2. iOS models | ✅ completed |
+| B3. `ConnectionManager.swift` | ✅ completed |
+| B4. `AutoSendController.swift` | ✅ completed |
+| B5. iOS views | ✅ completed |
+| B6. `Info.plist` | ✅ completed |
+| C. README update | ✅ completed |
 
 ## Goal
 
