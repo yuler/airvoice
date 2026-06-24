@@ -8,9 +8,9 @@
 
 | Task | Status |
 |------|--------|
-| A1. `go.mod` | ⬜ pending |
-| A2. `cli/protocol/messages.go` | ⬜ pending |
-| A3. `cli/pairing/` | ⬜ pending |
+| A1. `go.mod` | ✅ completed |
+| A2. `cli/protocol/messages.go` | ✅ completed |
+| A3. `cli/pairing/` | ✅ completed |
 | A4. `cli/paste/` | ⬜ pending |
 | A5. `cli/server/` | ⬜ pending |
 | A6. `cli/main.go` | ⬜ pending |
