@@ -1,0 +1,43 @@
+name: Airvoice
+options:
+  bundleIdPrefix: com.airvoice
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    DEVELOPMENT_TEAM: D7BK4XUL3B
+targets:
+  Airvoice:
+    type: application
+    platform: iOS
+    sources:
+      - path: Airvoice
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: com.airvoice.app
+      INFOPLIST_FILE: Airvoice/Info.plist
+      GENERATE_INFOPLIST_FILE: NO
+      MARKETING_VERSION: "0.1.0"
+      CURRENT_PROJECT_VERSION: "1"
+      TARGETED_DEVICE_FAMILY: "1"
+      IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+  AirvoiceTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: AirvoiceTests
+    dependencies:
+      - target: Airvoice
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: com.airvoice.app.tests
+      GENERATE_INFOPLIST_FILE: YES
+      IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+schemes:
+  Airvoice:
+    build:
+      targets:
+        Airvoice: all
+    test:
+      targets:
+        - AirvoiceTests

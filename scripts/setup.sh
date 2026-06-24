@@ -10,10 +10,15 @@ gum_header "Airvoice Setup"
 
 gum spin --spinner dot --title "Installing mise tools (go, gum, swift)…" -- mise install
 
+if [[ "$(uname -s)" == "Darwin" && ! -d "$IOS_PROJECT" ]]; then
+  gum spin --spinner dot --title "Generating Xcode project…" -- \
+    xcodegen generate --spec ios/project.yml --project ios/
+fi
+
 mkdir -p bin
 
 gum_info "Tool versions:"
-mise current go gum swift 2>/dev/null | while read -r line; do
+mise current 2>/dev/null | while read -r line; do
   gum style --foreground 212 "  $line"
 done
 

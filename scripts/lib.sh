@@ -58,7 +58,63 @@ require_xcode() {
 }
 
 list_physical_ios_devices() {
-  # Output: one device per line as "Name (OS) (UDID)"
+  # Prefer xcodebuild destinations — matches what the build step uses.
+  if [[ -d "$IOS_PROJECT" ]] && command -v xcodebuild >/dev/null 2>&1; then
+    local from_xcodebuild
+    from_xcodebuild=$(
+      xcodebuild -showdestinations -project "$IOS_PROJECT" -scheme "$IOS_SCHEME" 2>/dev/null \
+        | rg '\{ platform:iOS, arch:arm64, id:' \
+        | sed -E 's/.*id:([^,]+), name:([^}]+) \}.*/\2 (\1)/' \
+        | sed '/^$/d' || true
+    )
+    if [[ -n "$from_xcodebuild" ]]; then
+      echo "$from_xcodebuild"
+      return 0
+    fi
+  fi
+
+  # devicectl JSON (Xcode 15+); xctrace often crashes on newer Xcode builds.
+  if command -v xcrun >/dev/null 2>&1 && xcrun devicectl help list devices >/dev/null 2>&1; then
+    local tmp json_devices
+    tmp=$(mktemp)
+    if xcrun devicectl list devices --json-output "$tmp" >/dev/null 2>&1; then
+      json_devices=$(
+        python3 - "$tmp" <<'PY'
+import json, sys
+
+with open(sys.argv[1], encoding="utf-8") as f:
+    data = json.load(f)
+
+for device in data.get("result", {}).get("devices", []):
+    hw = device.get("hardwareProperties", {})
+    if hw.get("platform") != "iOS":
+        continue
+    props = device.get("deviceProperties", {})
+    conn = device.get("connectionProperties", {})
+    if conn.get("pairingState") not in (None, "paired"):
+        continue
+    name = props.get("name", "iPhone")
+    osv = props.get("osVersionNumber", "")
+    udid = hw.get("udid") or device.get("identifier", "")
+    if not udid:
+        continue
+    if osv:
+        print(f"{name} ({osv}) ({udid})")
+    else:
+        print(f"{name} ({udid})")
+PY
+      )
+      rm -f "$tmp"
+      if [[ -n "$json_devices" ]]; then
+        echo "$json_devices"
+        return 0
+      fi
+    else
+      rm -f "$tmp"
+    fi
+  fi
+
+  # Legacy fallback.
   xcrun xctrace list devices 2>/dev/null \
     | awk '
         /^== Devices ==$/ { in_devices=1; next }

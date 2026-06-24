@@ -24,8 +24,8 @@ gum_info "Device: $selected"
 gum_info "UDID: $udid"
 
 sign_team=""
-if xcodebuild -project "$IOS_PROJECT" -scheme "$IOS_SCHEME" -showBuildSettings 2>/dev/null \
-  | grep -q 'DEVELOPMENT_TEAM = $'; then
+if ! xcodebuild -project "$IOS_PROJECT" -scheme "$IOS_SCHEME" -showBuildSettings 2>/dev/null \
+  | grep -qE 'DEVELOPMENT_TEAM = [A-Z0-9]{10}'; then
   gum_warn "No development team configured in the Xcode project."
   sign_team=$(gum input --placeholder "Apple Team ID (10 chars, from developer.apple.com)" --width 40)
   if [[ -z "$sign_team" ]]; then
