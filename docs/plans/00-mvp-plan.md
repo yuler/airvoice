@@ -13,8 +13,8 @@
 | A3. `cli/pairing/` | ✅ completed |
 | A4. `cli/paste/` | ✅ completed |
 | A5. `cli/server/` | ✅ completed |
-| A6. `cli/main.go` | ⬜ pending |
-| A7. Go verify (`go test ./cli/... && go build`) | ⬜ pending |
+| A6. `cli/main.go` | ✅ completed |
+| A7. Go verify (`go test ./cli/... && go build`) | ✅ completed |
 | B1. iOS project shell | ⬜ pending |
 | B2. iOS models | ⬜ pending |
 | B3. `ConnectionManager.swift` | ⬜ pending |
