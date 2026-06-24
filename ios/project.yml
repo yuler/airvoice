@@ -8,6 +8,7 @@ settings:
   base:
     SWIFT_VERSION: "5.9"
     DEVELOPMENT_TEAM: D7BK4XUL3B
+    CODE_SIGN_STYLE: Automatic
 targets:
   Airvoice:
     type: application

@@ -23,32 +23,24 @@ udid=$(echo "$selected" | parse_device_udid)
 gum_info "Device: $selected"
 gum_info "UDID: $udid"
 
-sign_team=""
+IOS_SIGN_TEAM=""
 if ! xcodebuild -project "$IOS_PROJECT" -scheme "$IOS_SCHEME" -showBuildSettings 2>/dev/null \
   | grep -qE 'DEVELOPMENT_TEAM = [A-Z0-9]{10}'; then
   gum_warn "No development team configured in the Xcode project."
-  sign_team=$(gum input --placeholder "Apple Team ID (10 chars, from developer.apple.com)" --width 40)
-  if [[ -z "$sign_team" ]]; then
+  IOS_SIGN_TEAM=$(gum input --placeholder "Apple Team ID (10 chars, from developer.apple.com)" --width 40)
+  if [[ -z "$IOS_SIGN_TEAM" ]]; then
     gum_err "Team ID required for device signing. Set DEVELOPMENT_TEAM in Xcode → Signing & Capabilities."
     exit 1
   fi
 fi
+export IOS_SIGN_TEAM
 
 mkdir -p "$IOS_DERIVED"
-build_args=(
-  -project "$IOS_PROJECT"
-  -scheme "$IOS_SCHEME"
-  -configuration Debug
-  -destination "id=$udid"
-  -derivedDataPath "$IOS_DERIVED"
-  -allowProvisioningUpdates
-  build
-)
-if [[ -n "$sign_team" ]]; then
-  build_args+=(DEVELOPMENT_TEAM="$sign_team")
-fi
 
-gum spin --spinner dot --title "Building for device…" -- xcodebuild "${build_args[@]}"
+if ! build_ios_app_for_device "$udid"; then
+  hint_ios_build_failure "$IOS_DERIVED/xcodebuild.log"
+  exit 1
+fi
 
 app="$IOS_DERIVED/Build/Products/Debug-iphoneos/Airvoice.app"
 if [[ ! -d "$app" ]]; then
@@ -56,19 +48,8 @@ if [[ ! -d "$app" ]]; then
   exit 1
 fi
 
-if command -v xcrun >/dev/null 2>&1 && xcrun devicectl help device install app >/dev/null 2>&1; then
-  gum spin --spinner dot --title "Installing on device…" -- \
-    xcrun devicectl device install app --device "$udid" "$app"
-  gum style --foreground 10 "Installed on device. Open Airvoice on your iPhone."
-elif command -v ios-deploy >/dev/null 2>&1; then
-  gum spin --spinner dot --title "Installing via ios-deploy…" -- \
-    ios-deploy --id "$udid" --bundle "$app" --justlaunch
-  gum style --foreground 10 "Launched on device."
-else
-  gum_warn "Built $app but no installer found."
-  gum_info "Install manually: open Xcode → Window → Devices and Simulators → drag the .app"
-  gum_info "Or install ios-deploy: brew install ios-deploy"
-  open -R "$app"
+if ! install_ios_app_on_device "$udid" "$app"; then
+  exit 1
 fi
 
 gum style --margin "1 0 0 0" --bold "Desktop server"

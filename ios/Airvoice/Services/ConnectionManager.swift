@@ -13,48 +13,45 @@ class ConnectionManager: ObservableObject {
 
     @Published var state: ConnectionState = .disconnected
     @Published var hostName: String? = nil
-    
+
     var onAck: ((String, Bool, String?) -> Void)?
-    
+    var onTransportError: ((String) -> Void)?
+
     private var webSocketTask: URLSessionWebSocketTask?
     private var session: URLSession?
     private var isDisconnecting = false
-    
+
     func connect(payload: PairingPayload) {
         disconnect()
-        
+
         isDisconnecting = false
         state = .connecting
         hostName = nil
-        
+
         guard var components = URLComponents(string: payload.ws) else {
-            self.state = .error("Invalid WebSocket URL")
+            state = .error("Invalid WebSocket URL")
             return
         }
-        
+
         var queryItems = components.queryItems ?? []
         queryItems.append(URLQueryItem(name: "token", value: payload.token))
         components.queryItems = queryItems
-        
+
         guard let url = components.url else {
-            self.state = .error("Invalid URL generated")
+            state = .error("Invalid URL generated")
             return
         }
-        
+
         let session = URLSession(configuration: .default)
         self.session = session
         let task = session.webSocketTask(with: url)
-        self.webSocketTask = task
-        
+        webSocketTask = task
+
         task.resume()
-        
-        // Start receiving messages
         receiveMessage(task: task)
-        
-        // Send OutboundHello
         sendHello(task: task)
     }
-    
+
     func disconnect() {
         isDisconnecting = true
         webSocketTask?.cancel(with: .normalClosure, reason: nil)
@@ -64,119 +61,114 @@ class ConnectionManager: ObservableObject {
         state = .disconnected
         hostName = nil
     }
-    
-    func sendText(id: String, content: String) {
+
+    @discardableResult
+    func sendText(id: String, content: String) -> Bool {
         guard state == .connected, let task = webSocketTask else {
-            return
+            return false
         }
-        
+
         let outbound = OutboundText(
             id: id,
             content: content,
             ts: Int(Date().timeIntervalSince1970)
         )
-        
+
         do {
             let data = try JSONEncoder().encode(outbound)
             guard let jsonString = String(data: data, encoding: .utf8) else {
-                return
+                return false
             }
             task.send(.string(jsonString)) { [weak self] error in
-                if let error = error {
-                    Task { [weak self] @MainActor in
-                        self?.state = .error("Send failed: \(error.localizedDescription)")
+                if let error {
+                    Task { @MainActor [weak self] in
+                        guard let self, !self.isDisconnecting else { return }
+                        let message = "Send failed: \(error.localizedDescription)"
+                        self.state = .error(message)
+                        self.onTransportError?(message)
                     }
                 }
             }
+            return true
         } catch {
-            self.state = .error("Encoding failed: \(error.localizedDescription)")
+            state = .error("Encoding failed: \(error.localizedDescription)")
+            onTransportError?("Encoding failed: \(error.localizedDescription)")
+            return false
         }
     }
-    
+
     private func sendHello(task: URLSessionWebSocketTask) {
         let device = UIDevice.current.name
         let hello = OutboundHello(device: device, app: "0.1.0")
-        
+
         do {
             let data = try JSONEncoder().encode(hello)
             guard let jsonString = String(data: data, encoding: .utf8) else {
                 return
             }
             task.send(.string(jsonString)) { [weak self] error in
-                if let error = error {
-                    Task { [weak self] @MainActor in
-                        if !(self?.isDisconnecting ?? false) {
-                            self?.state = .error("Hello failed: \(error.localizedDescription)")
-                        }
+                if let error {
+                    Task { @MainActor [weak self] in
+                        guard let self, !self.isDisconnecting else { return }
+                        self.state = .error("Hello failed: \(error.localizedDescription)")
                     }
                 }
             }
         } catch {
-            self.state = .error("Hello encoding failed: \(error.localizedDescription)")
+            state = .error("Hello encoding failed: \(error.localizedDescription)")
         }
     }
-    
+
     private func receiveMessage(task: URLSessionWebSocketTask) {
         task.receive { [weak self] result in
-            guard let self = self else { return }
-            
-            switch result {
-            case .success(let message):
-                switch message {
-                case .string(let text):
-                    self.handleIncomingText(text)
-                case .data(let data):
-                    if let text = String(data: data, encoding: .utf8) {
-                        self.handleIncomingText(text)
+            Task { @MainActor [weak self] in
+                guard let self, self.webSocketTask === task else { return }
+
+                switch result {
+                case .success(let message):
+                    switch message {
+                    case .string(let text):
+                        self.processIncomingText(text)
+                    case .data(let data):
+                        if let text = String(data: data, encoding: .utf8) {
+                            self.processIncomingText(text)
+                        }
+                    @unknown default:
+                        break
                     }
-                @unknown default:
-                    break
-                }
-                
-                // Continue receiving
-                Task { [weak self] @MainActor in
-                    guard let self = self else { return }
-                    if self.webSocketTask === task {
-                        self.receiveMessage(task: task)
-                    }
-                }
-                
-            case .failure(let error):
-                Task { [weak self] @MainActor in
-                    guard let self = self else { return }
-                    if !self.isDisconnecting && self.webSocketTask === task {
+                    self.receiveMessage(task: task)
+
+                case .failure(let error):
+                    if !self.isDisconnecting {
                         self.state = .error("Connection lost: \(error.localizedDescription)")
                         self.hostName = nil
+                        self.onTransportError?("Connection lost: \(error.localizedDescription)")
                     }
                 }
             }
         }
     }
-    
-    private func handleIncomingText(_ text: String) {
+
+    private func processIncomingText(_ text: String) {
         guard let data = text.data(using: .utf8) else { return }
-        
+
         do {
             let msg = try JSONDecoder().decode(InboundMessage.self, from: data)
-            
-            Task { @MainActor in
-                switch msg.type {
-                case "hello":
-                    self.state = .connected
-                    self.hostName = msg.host ?? "Unknown Server"
-                case "ack":
-                    if let id = msg.id {
-                        let ok = msg.ok ?? false
-                        self.onAck?(id, ok, msg.message)
-                    }
-                case "pong":
-                    break
-                default:
-                    break
+            switch msg.type {
+            case "hello":
+                state = .connected
+                hostName = msg.host ?? "Unknown Server"
+            case "ack":
+                if let id = msg.id {
+                    onAck?(id, msg.ok ?? false, msg.message)
                 }
+            case "pong":
+                break
+            default:
+                break
             }
         } catch {
-            print("Failed to decode inbound message: \(error)")
+            print("[airvoice] decode error: \(error) raw=\(text)")
         }
     }
 }

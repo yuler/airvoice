@@ -71,13 +71,17 @@ func main() {
 			hostname = "PC"
 		}
 
+		addr := fmt.Sprintf("0.0.0.0:%d", port)
 		srv := server.New(server.Config{
-			Addr:     fmt.Sprintf("0.0.0.0:%d", port),
+			Addr:     addr,
 			Token:    token,
 			Hostname: hostname,
 			Version:  version,
 			Paster:   paster,
 		})
+
+		fmt.Fprintf(os.Stderr, "[airvoice] listening on %s (health: /health, ws: /ws)\n", addr)
+		fmt.Fprintf(os.Stderr, "[airvoice] waiting for iPhone connection...\n")
 
 		if err := srv.ListenAndServe(); err != nil {
 			fmt.Fprintf(os.Stderr, "Server failed: %v\n", err)

@@ -49,14 +49,17 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
 	if token != s.cfg.Token {
+		logStatus("ws rejected: invalid token from %s", r.RemoteAddr)
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
 	conn, err := s.upgrader.Upgrade(w, r, nil)
 	if err != nil {
+		logStatus("ws upgrade failed from %s: %v", r.RemoteAddr, err)
 		return
 	}
 
+	logStatus("client connected from %s", r.RemoteAddr)
 	s.handleConnection(conn)
 }

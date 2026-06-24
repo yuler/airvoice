@@ -24,6 +24,13 @@
     <true/>
     <key>NSCameraUsageDescription</key>
     <string>扫描二维码以连接电脑</string>
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>通过局域网连接电脑上的 Airvoice 服务并发送文字</string>
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <key>NSAllowsLocalNetworking</key>
+        <true/>
+    </dict>
     <key>UIApplicationSceneManifest</key>
     <dict>
         <key>UIApplicationSupportsMultipleScenes</key>

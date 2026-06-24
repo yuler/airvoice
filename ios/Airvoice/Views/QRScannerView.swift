@@ -39,7 +39,7 @@ struct QRScannerView: UIViewControllerRepresentable {
     }
     
     func updateUIViewController(_ uiViewController: DataScannerViewController, context: Context) {
-        if uiViewController.isSupported && uiViewController.isAvailable {
+        if DataScannerViewController.isSupported && DataScannerViewController.isAvailable {
             do {
                 try uiViewController.startScanning()
             } catch {

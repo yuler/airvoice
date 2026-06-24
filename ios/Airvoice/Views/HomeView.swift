@@ -4,27 +4,22 @@ import Combine
 struct HomeView: View {
     @StateObject private var connection = ConnectionManager()
     @StateObject private var autoSend = AutoSendController()
-    
-    @State private var text = ""
+    @StateObject private var viewModel = HomeViewModel()
+
     @FocusState private var isEditorFocused: Bool
-    
+
     @State private var showScanner = false
-    @State private var toastMessage: String? = nil
-    @State private var isToastError = false
-    
-    @State private var sendTimeoutTask: Task<Void, Never>? = nil
-    
+
     var body: some View {
         ZStack {
             Color(hex: "0D0E15").ignoresSafeArea()
-            
+
             VStack(spacing: 20) {
-                // Top Header / Status bar
                 HStack {
                     statusBadge
-                    
+
                     Spacer()
-                    
+
                     Button(action: {
                         showScanner = true
                     }) {
@@ -43,24 +38,23 @@ struct HomeView: View {
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 10)
-                
-                // Text editor card
+
                 ZStack(alignment: .topLeading) {
-                    if text.isEmpty {
+                    if viewModel.text.isEmpty {
                         Text("点击下方「说话」或直接在此处输入...")
                             .foregroundColor(.gray)
                             .padding(.horizontal, 16)
                             .padding(.vertical, 12)
                             .allowsHitTesting(false)
                     }
-                    
-                    TextEditor(text: $text)
+
+                    TextEditor(text: $viewModel.text)
                         .focused($isEditorFocused)
                         .scrollContentBackground(.hidden)
                         .foregroundColor(.white)
                         .font(.body)
                         .padding(8)
-                        .onChange(of: text) { oldValue, newValue in
+                        .onChange(of: viewModel.text) { _, newValue in
                             autoSend.textDidChange(newValue)
                         }
                 }
@@ -72,8 +66,7 @@ struct HomeView: View {
                         .stroke(Color.white.opacity(0.05), lineWidth: 1)
                 )
                 .padding(.horizontal, 20)
-                
-                // Mic button / status description
+
                 VStack(spacing: 12) {
                     if autoSend.inFlight {
                         HStack(spacing: 8) {
@@ -88,7 +81,7 @@ struct HomeView: View {
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
-                    
+
                     Button(action: {
                         autoSend.resetOnFocus()
                         isEditorFocused = true
@@ -110,30 +103,46 @@ struct HomeView: View {
                         .shadow(color: connection.state == .connected ? Color(hex: "3B82F6").opacity(0.3) : Color.clear, radius: 10)
                     }
                     .disabled(connection.state != .connected)
+
+                    Button(action: {
+                        viewModel.manualSend(connection: connection, autoSend: autoSend)
+                    }) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "paperplane.fill")
+                            Text("发送到电脑")
+                        }
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 44)
+                        .background(Color.white.opacity(connection.state == .connected ? 0.12 : 0.06))
+                        .cornerRadius(22)
+                    }
+                    .disabled(connection.state != .connected || autoSend.inFlight)
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 20)
             }
         }
-        .toast(message: $toastMessage, isError: $isToastError)
+        .toast(message: $viewModel.toastMessage, isError: $viewModel.isToastError)
         .sheet(isPresented: $showScanner) {
             scannerSheetView
         }
         .onAppear {
-            setupNotifications()
-            setupCallbacks()
+            viewModel.wire(connection: connection, autoSend: autoSend)
+            viewModel.observeKeyboard(autoSend: autoSend)
         }
-        .onChange(of: connection.state) { oldValue, newValue in
+        .onChange(of: connection.state) { _, newValue in
             UIApplication.shared.isIdleTimerDisabled = (newValue == .connected)
         }
     }
-    
+
     private var statusBadge: some View {
         HStack(spacing: 8) {
             Circle()
                 .fill(statusColor)
                 .frame(width: 8, height: 8)
-            
+
             Text(statusText)
                 .font(.subheadline)
                 .fontWeight(.semibold)
@@ -144,7 +153,7 @@ struct HomeView: View {
         .background(statusColor.opacity(0.15))
         .cornerRadius(12)
     }
-    
+
     private var statusColor: Color {
         switch connection.state {
         case .disconnected: return .gray
@@ -153,7 +162,7 @@ struct HomeView: View {
         case .error: return .red
         }
     }
-    
+
     private var statusText: String {
         switch connection.state {
         case .disconnected: return "未连接"
@@ -162,7 +171,7 @@ struct HomeView: View {
         case .error(let msg): return "连接错误: \(msg)"
         }
     }
-    
+
     private var scannerSheetView: some View {
         NavigationStack {
             QRScannerView(
@@ -172,11 +181,11 @@ struct HomeView: View {
                         connection.connect(payload: payload)
                         showScanner = false
                     } catch {
-                        triggerToast("无效的二维码", isError: true)
+                        viewModel.showToast("无效的二维码", isError: true)
                     }
                 },
                 onError: { error in
-                    triggerToast("相机错误: \(error.localizedDescription)", isError: true)
+                    viewModel.showToast("相机错误: \(error.localizedDescription)", isError: true)
                 }
             )
             .navigationTitle("扫描电脑端二维码")
@@ -190,58 +199,5 @@ struct HomeView: View {
             }
             .ignoresSafeArea(edges: .bottom)
         }
-    }
-    
-    private func setupNotifications() {
-        NotificationCenter.default.addObserver(
-            forName: UIResponder.keyboardWillHideNotification,
-            object: nil,
-            queue: .main
-        ) { _ in
-            autoSend.keyboardDidHide(currentText: text)
-        }
-    }
-    
-    private func setupCallbacks() {
-        autoSend.onSend = { [weak self] content in
-            guard let self = self else { return }
-            let msgId = UUID().uuidString
-            connection.sendText(id: msgId, content: content)
-            
-            // Start a 5-second timeout task
-            sendTimeoutTask?.cancel()
-            sendTimeoutTask = Task {
-                try? await Task.sleep(nanoseconds: 5_000_000_000)
-                guard !Task.isCancelled else {
-                    sendTimeoutTask = nil
-                    return
-                }
-                if await autoSend.inFlight {
-                    await autoSend.clearInFlight()
-                    await triggerToast("发送超时，请重试", isError: true)
-                }
-                sendTimeoutTask = nil
-            }
-        }
-        
-        connection.onAck = { [weak self] id, ok, errMsg in
-            guard let self = self else { return }
-            sendTimeoutTask?.cancel()
-            sendTimeoutTask = nil
-            if ok {
-                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                triggerToast("已发送到电脑", isError: false)
-                autoSend.markAcked(text)
-                text = ""
-            } else {
-                autoSend.clearInFlight()
-                triggerToast(errMsg ?? "发送失败", isError: true)
-            }
-        }
-    }
-    
-    private func triggerToast(_ msg: String, isError: Bool) {
-        isToastError = isError
-        toastMessage = msg
     }
 }

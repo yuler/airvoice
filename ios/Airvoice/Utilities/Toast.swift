@@ -34,7 +34,7 @@ struct ToastModifier: ViewModifier {
     
     @State private var dismissTask: Task<Void, Never>? = nil
     
-    func body(content: Content) -> View {
+    func body(content: Content) -> some View {
         ZStack {
             content
             

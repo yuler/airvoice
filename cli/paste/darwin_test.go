@@ -4,7 +4,9 @@ package paste
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -36,7 +38,7 @@ func TestDarwinPasters(t *testing.T) {
 		}
 		expected := []commandCall{
 			{name: "pbcopy", stdin: "hello world", args: nil},
-			{name: "osascript", stdin: "", args: []string{"-e", `tell application "System Events" to keystroke "v" using command down`}},
+			{name: "osascript", stdin: "", args: []string{"-e", pasteKeystrokeScript}},
 		}
 		if !reflect.DeepEqual(calls, expected) {
 			t.Errorf("got calls %+v, expected %+v", calls, expected)
@@ -52,7 +54,7 @@ func TestDarwinPasters(t *testing.T) {
 		}
 		p := &darwinPaster{}
 		err := p.Paste("hello")
-		if err == nil || err.Error() != "pbcopy failed" {
+		if err == nil || !strings.Contains(err.Error(), "pbcopy failed") {
 			t.Errorf("expected pbcopy failed error, got: %v", err)
 		}
 	})
@@ -76,6 +78,13 @@ func TestDarwinPasters(t *testing.T) {
 		_, err = New()
 		if err == nil {
 			t.Error("expected error on windows session, got nil")
+		}
+	})
+
+	t.Run("formatDarwinKeystrokeError accessibility", func(t *testing.T) {
+		err := formatDarwinKeystrokeError(fmt.Errorf(`36:68: execution error: System Events got an error: osascript is not allowed to send keystrokes. (1002)`))
+		if !strings.Contains(err.Error(), "辅助功能") {
+			t.Fatalf("expected accessibility hint, got: %v", err)
 		}
 	})
 }

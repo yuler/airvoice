@@ -40,6 +40,22 @@ import Foundation
         inFlight = false
     }
 
+    /// Manual send for debugging; bypasses dedup when `force` is true.
+    func sendNow(_ raw: String, force: Bool = false) {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        guard !inFlight else { return }
+
+        if !force {
+            let lastAckedTrimmed = lastAcked?.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard trimmed != lastAckedTrimmed else { return }
+        }
+
+        debounceTask?.cancel()
+        inFlight = true
+        onSend?(raw)
+    }
+
     private func attemptSend(_ raw: String) async {
         let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
