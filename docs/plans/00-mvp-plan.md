@@ -11,8 +11,8 @@
 | A1. `go.mod` | ✅ completed |
 | A2. `cli/protocol/messages.go` | ✅ completed |
 | A3. `cli/pairing/` | ✅ completed |
-| A4. `cli/paste/` | ⬜ pending |
-| A5. `cli/server/` | ⬜ pending |
+| A4. `cli/paste/` | ✅ completed |
+| A5. `cli/server/` | ✅ completed |
 | A6. `cli/main.go` | ⬜ pending |
 | A7. Go verify (`go test ./cli/... && go build`) | ⬜ pending |
 | B1. iOS project shell | ⬜ pending |
