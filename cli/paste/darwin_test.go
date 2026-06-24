@@ -86,5 +86,22 @@ func TestDarwinPasters(t *testing.T) {
 		if !strings.Contains(err.Error(), "辅助功能") {
 			t.Fatalf("expected accessibility hint, got: %v", err)
 		}
+		if !strings.Contains(err.Error(), "Cmd+V") {
+			t.Fatalf("expected clipboard fallback hint, got: %v", err)
+		}
+	})
+
+	t.Run("darwinAccessibilityTargets includes osascript", func(t *testing.T) {
+		targets := darwinAccessibilityTargets()
+		found := false
+		for _, t := range targets {
+			if t.Path == "/usr/bin/osascript" {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Fatalf("expected osascript in targets: %+v", targets)
+		}
 	})
 }

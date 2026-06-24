@@ -4,7 +4,6 @@ package paste
 
 import (
 	"fmt"
-	"strings"
 	"time"
 )
 
@@ -38,14 +37,8 @@ func (d *darwinPaster) Name() string {
 }
 
 func formatDarwinKeystrokeError(err error) error {
-	msg := err.Error()
-	lower := strings.ToLower(msg)
-	if strings.Contains(lower, "not allowed to send keystrokes") ||
-		strings.Contains(msg, "(1002)") ||
-		strings.Contains(lower, "assistive access") {
-		return fmt.Errorf(
-			"需要辅助功能权限：系统设置 → 隐私与安全性 → 辅助功能 → 启用运行 airvoice 的终端；文本已复制到剪贴板，可手动按 Cmd+V",
-		)
+	if IsKeystrokePermissionError(err) {
+		return fmt.Errorf("%s；文本已复制到剪贴板，可手动按 Cmd+V", darwinAccessibilityHintText())
 	}
 	return fmt.Errorf("keystroke (osascript) failed: %w", err)
 }

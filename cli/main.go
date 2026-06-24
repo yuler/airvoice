@@ -23,6 +23,8 @@ func main() {
 	switch cmd {
 	case "version":
 		fmt.Println("airvoice " + version)
+	case "doctor":
+		os.Exit(paste.PrintDoctor(os.Stdout))
 	case "serve":
 		port := 7383
 		fs := flag.NewFlagSet("serve", flag.ExitOnError)
@@ -97,5 +99,6 @@ func main() {
 func printUsage() {
 	fmt.Fprintf(os.Stderr, "Usage:\n")
 	fmt.Fprintf(os.Stderr, "  airvoice serve [--port 7383]\n")
+	fmt.Fprintf(os.Stderr, "  airvoice doctor\n")
 	fmt.Fprintf(os.Stderr, "  airvoice version\n")
 }

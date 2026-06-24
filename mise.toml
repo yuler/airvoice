@@ -23,7 +23,12 @@ run = "./scripts/ios-device.sh"
 
 [tasks.build]
 description = "Build Go CLI to bin/airvoice"
-run = "go build -o bin/airvoice ./cli"
+run = "go build -o bin/airvoice ./cli && ( [[ \"$(uname -s)\" == Darwin ]] && codesign -s - --force bin/airvoice || true )"
+
+[tasks.doctor]
+description = "Check macOS paste permissions"
+depends = ["build"]
+run = "./bin/airvoice doctor"
 
 [tasks.test]
 description = "Run Go unit tests"

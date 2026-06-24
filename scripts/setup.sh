@@ -26,8 +26,9 @@ gum style --margin "1 0 0 0" --bold "Platform dependencies"
 
 case "$(uname -s)" in
   Darwin)
-    gum_info "macOS: grant Accessibility to your terminal (or bin/airvoice) for paste injection."
+    gum_info "macOS: grant Accessibility for paste injection (run ./bin/airvoice doctor to verify)."
     gum_info "  System Settings → Privacy & Security → Accessibility"
+    gum_info "  Enable your host app (Cursor/Terminal/iTerm), bin/airvoice, and osascript — then fully quit and reopen the app."
   ;;
   Linux)
   if [[ "${XDG_SESSION_TYPE:-}" == "wayland" || -n "${WAYLAND_DISPLAY:-}" ]]; then
