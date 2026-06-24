@@ -2,7 +2,26 @@
 
 > **For agents:** Implement the full MVP from this document in one pass.  
 > Context: [background.md](../background.md) · Structure & protocol: [architecture.md](../architecture.md)  
-> Status: **approved**
+> Status: **in-progress**
+
+## Progress
+
+| Task | Status |
+|------|--------|
+| A1. `go.mod` | ⬜ pending |
+| A2. `cli/protocol/messages.go` | ⬜ pending |
+| A3. `cli/pairing/` | ⬜ pending |
+| A4. `cli/paste/` | ⬜ pending |
+| A5. `cli/server/` | ⬜ pending |
+| A6. `cli/main.go` | ⬜ pending |
+| A7. Go verify (`go test ./cli/... && go build`) | ⬜ pending |
+| B1. iOS project shell | ⬜ pending |
+| B2. iOS models | ⬜ pending |
+| B3. `ConnectionManager.swift` | ⬜ pending |
+| B4. `AutoSendController.swift` | ⬜ pending |
+| B5. iOS views | ⬜ pending |
+| B6. `Info.plist` | ⬜ pending |
+| C. README update | ⬜ pending |
 
 ## Goal
 
