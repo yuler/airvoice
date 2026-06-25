@@ -9,6 +9,11 @@ final class HomeViewModel: ObservableObject {
 
     private var sendTimeoutTask: Task<Void, Never>?
     private var keyboardObserver: NSObjectProtocol?
+    /// Maps in-flight message IDs to the content actually sent (for dedup after ack).
+    private var pendingSendContent: [String: String] = [:]
+    private var pendingSendMsgId: String?
+    /// Brief pause after keyboard hides so third-party IMEs can commit final transcription.
+    private let imeCommitDelayNs: UInt64 = 250_000_000
 
     func wire(connection: ConnectionManager, autoSend: AutoSendController) {
         autoSend.onSend = { [weak self] content in
@@ -17,9 +22,9 @@ final class HomeViewModel: ObservableObject {
             }
         }
 
-        connection.onAck = { [weak self] _, ok, errMsg in
+        connection.onAck = { [weak self] id, ok, errMsg in
             Task { @MainActor in
-                self?.handleAck(ok: ok, errMsg: errMsg, autoSend: autoSend)
+                self?.handleAck(id: id, ok: ok, errMsg: errMsg, autoSend: autoSend)
             }
         }
 
@@ -35,12 +40,13 @@ final class HomeViewModel: ObservableObject {
             NotificationCenter.default.removeObserver(keyboardObserver)
         }
         keyboardObserver = NotificationCenter.default.addObserver(
-            forName: UIResponder.keyboardWillHideNotification,
+            forName: UIResponder.keyboardDidHideNotification,
             object: nil,
             queue: .main
         ) { [weak self] _ in
             Task { @MainActor in
                 guard let self else { return }
+                try? await Task.sleep(nanoseconds: self.imeCommitDelayNs)
                 autoSend.keyboardDidHide(currentText: self.text)
             }
         }
@@ -73,7 +79,10 @@ final class HomeViewModel: ObservableObject {
         autoSend: AutoSendController
     ) {
         let msgId = UUID().uuidString
+        pendingSendMsgId = msgId
+        pendingSendContent[msgId] = content
         guard connection.sendText(id: msgId, content: content) else {
+            clearPendingSend(msgId: msgId)
             autoSend.clearInFlight()
             showToast("发送失败：未连接到电脑", isError: true)
             return
@@ -87,6 +96,9 @@ final class HomeViewModel: ObservableObject {
                 return
             }
             if autoSend.inFlight {
+                if let msgId = pendingSendMsgId {
+                    clearPendingSend(msgId: msgId)
+                }
                 autoSend.clearInFlight()
                 showToast("发送超时，请重试", isError: true)
             }
@@ -97,18 +109,34 @@ final class HomeViewModel: ObservableObject {
     private func handleTransportError(_ message: String, autoSend: AutoSendController) {
         sendTimeoutTask?.cancel()
         sendTimeoutTask = nil
+        if let msgId = pendingSendMsgId {
+            clearPendingSend(msgId: msgId)
+        }
         autoSend.clearInFlight()
         showToast(message, isError: true)
     }
 
-    private func handleAck(ok: Bool, errMsg: String?, autoSend: AutoSendController) {
+    private func clearPendingSend(msgId: String) {
+        pendingSendContent.removeValue(forKey: msgId)
+        if pendingSendMsgId == msgId {
+            pendingSendMsgId = nil
+        }
+    }
+
+    private func handleAck(id: String, ok: Bool, errMsg: String?, autoSend: AutoSendController) {
         sendTimeoutTask?.cancel()
         sendTimeoutTask = nil
+        let sentContent = pendingSendContent.removeValue(forKey: id)
+        if pendingSendMsgId == id {
+            pendingSendMsgId = nil
+        }
 
         if ok {
             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
             showToast("已发送到电脑", isError: false)
-            autoSend.markAcked(text)
+            if let sentContent {
+                autoSend.markAcked(sentContent)
+            }
             text = ""
         } else {
             autoSend.clearInFlight()
