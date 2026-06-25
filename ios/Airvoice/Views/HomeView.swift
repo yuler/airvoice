@@ -12,7 +12,7 @@ struct HomeView: View {
 
     var body: some View {
         ZStack {
-            Color(hex: "0D0E15").ignoresSafeArea()
+            Color(hex: "000000").ignoresSafeArea() // Pure black background
 
             VStack(spacing: 20) {
                 HStack {
@@ -59,11 +59,11 @@ struct HomeView: View {
                         }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color.white.opacity(0.03))
+                .background(Color(hex: "0d0e15")) // background-secondary
                 .cornerRadius(16)
                 .overlay(
                     RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color.white.opacity(0.05), lineWidth: 1)
+                        .stroke(Color(hex: "2e2e2e"), lineWidth: 1) // border-default
                 )
                 .padding(.horizontal, 20)
 
@@ -96,11 +96,11 @@ struct HomeView: View {
                         .frame(height: 56)
                         .background(
                             connection.state == .connected ?
-                            LinearGradient(colors: [Color(hex: "3B82F6"), Color(hex: "8B5CF6")], startPoint: .leading, endPoint: .trailing) :
-                            LinearGradient(colors: [Color.gray.opacity(0.3), Color.gray.opacity(0.3)], startPoint: .leading, endPoint: .trailing)
+                            Color(hex: "006efe") : // accent-blue
+                            Color.gray.opacity(0.3)
                         )
                         .cornerRadius(28)
-                        .shadow(color: connection.state == .connected ? Color(hex: "3B82F6").opacity(0.3) : Color.clear, radius: 10)
+                        .shadow(color: connection.state == .connected ? Color(hex: "006efe").opacity(0.3) : Color.clear, radius: 10)
                     }
                     .disabled(connection.state != .connected)
 
@@ -157,7 +157,7 @@ struct HomeView: View {
     private var statusColor: Color {
         switch connection.state {
         case .disconnected: return .gray
-        case .connecting: return .orange
+        case .connecting: return .yellow
         case .connected: return .green
         case .error: return .red
         }
