@@ -13,7 +13,7 @@ func (w *waylandPaster) Paste(text string) error {
 		return err
 	}
 	time.Sleep(80 * time.Millisecond)
-	return runCommand("ydotool", "", "key", "29:1", "47:1", "47:0", "29:0")
+	return runCommand("ydotool", "", "key", "CTRL+v")
 }
 
 func (w *waylandPaster) Name() string {

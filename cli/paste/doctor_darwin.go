@@ -49,7 +49,7 @@ func PrintDoctor(w io.Writer) int {
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "After changing permissions:")
 	fmt.Fprintln(w, "  1. Fully quit the host app (Cmd+Q), not just close the terminal tab")
-	fmt.Fprintln(w, "  2. Reopen and run: mise run serve")
+	fmt.Fprintln(w, "  2. Reopen and run: mise run dev")
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "Tip: Enabling only Terminal.app does not help if you run serve from Cursor's integrated terminal.")
 

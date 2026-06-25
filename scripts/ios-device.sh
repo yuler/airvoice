@@ -53,5 +53,5 @@ if ! install_ios_app_on_device "$udid" "$app"; then
 fi
 
 gum style --margin "1 0 0 0" --bold "Desktop server"
-gum_info "On your Mac, run: mise run serve"
+gum_info "On your Mac, run: mise run dev"
 gum_info "Then scan the terminal QR code from the iOS app."

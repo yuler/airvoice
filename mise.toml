@@ -14,7 +14,12 @@ description = "Install mise tools and platform dependencies"
 run = "./scripts/setup.sh"
 
 [tasks.dev]
-description = "Interactive development menu"
+description = "Build and run airvoice server (default dev workflow)"
+depends = ["build"]
+run = "./bin/airvoice serve"
+
+[tasks.menu]
+description = "Interactive development menu (gum)"
 run = "./scripts/dev.sh"
 
 [tasks."ios:device"]
@@ -35,6 +40,6 @@ description = "Run Go unit tests"
 run = "go test ./cli/..."
 
 [tasks.serve]
-description = "Build and run airvoice server"
+description = "Alias for dev — build and run airvoice server"
 depends = ["build"]
 run = "./bin/airvoice serve"

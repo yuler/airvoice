@@ -28,19 +28,19 @@ mise install          # install pinned tools
 mise run setup        # build CLI + check platform deps
 ```
 
-Or use the interactive menu:
+### 2. Run the Server
 
 ```bash
 mise run dev
 ```
 
-### 2. Run the Server
+This builds `bin/airvoice` and starts the server, printing a QR code in your terminal.
+
+For an interactive menu (build, test, iOS device, etc.):
 
 ```bash
-mise run serve
+mise run menu
 ```
-
-This builds `bin/airvoice` and starts the server, printing a QR code in your terminal.
 
 ### 3. Connect the iOS Client
 
@@ -54,7 +54,7 @@ mise run ios:device   # gum picker → build → install on USB-connected iPhone
 
 Then on the same Wi‑Fi:
 
-1. Run `mise run serve` on your Mac.
+1. Run `mise run dev` on your Mac.
 2. Open Airvoice on the iPhone and scan the terminal QR code.
 
 ### mise tasks
@@ -62,10 +62,11 @@ Then on the same Wi‑Fi:
 | Task | Description |
 |------|-------------|
 | `mise run setup` | Install tools, check deps, build CLI |
-| `mise run dev` | Interactive gum menu |
+| `mise run dev` | Build + start server (default) |
+| `mise run menu` | Interactive gum menu |
 | `mise run build` | Build Go CLI |
 | `mise run test` | `go test ./cli/...` |
-| `mise run serve` | Build + start server |
+| `mise run serve` | Alias for `dev` |
 | `mise run ios:device` | Build & install on physical iOS device (macOS) |
 
 Scripts live in `scripts/` (gum UI); `mise.toml` wires them as tasks.

@@ -74,7 +74,7 @@ func TestLinuxPasters(t *testing.T) {
 		}
 		expected := []commandCall{
 			{name: "wl-copy", stdin: "hello world", args: nil},
-			{name: "ydotool", stdin: "", args: []string{"key", "29:1", "47:1", "47:0", "29:0"}},
+			{name: "ydotool", stdin: "", args: []string{"key", "CTRL+v"}},
 		}
 		if !reflect.DeepEqual(calls, expected) {
 			t.Errorf("got calls %+v, expected %+v", calls, expected)
@@ -100,17 +100,24 @@ func TestLinuxPasters(t *testing.T) {
 		origSessionType := os.Getenv("XDG_SESSION_TYPE")
 		origWaylandDisplay := os.Getenv("WAYLAND_DISPLAY")
 		origDisplay := os.Getenv("DISPLAY")
+		origLookPath := lookPath
 		defer func() {
 			goos = origGOOS
 			os.Setenv("XDG_SESSION_TYPE", origSessionType)
 			os.Setenv("WAYLAND_DISPLAY", origWaylandDisplay)
 			os.Setenv("DISPLAY", origDisplay)
+			lookPath = origLookPath
 		}()
 
 		goos = "linux"
 		os.Unsetenv("XDG_SESSION_TYPE")
 		os.Unsetenv("WAYLAND_DISPLAY")
 		os.Unsetenv("DISPLAY")
+
+		// Mock lookPath to succeed
+		lookPath = func(file string) (string, error) {
+			return "/usr/bin/" + file, nil
+		}
 
 		// Wayland
 		os.Setenv("XDG_SESSION_TYPE", "wayland")
@@ -120,6 +127,20 @@ func TestLinuxPasters(t *testing.T) {
 		}
 		if p.Name() != "wayland" {
 			t.Errorf("expected wayland, got %s", p.Name())
+		}
+
+		// Wayland with missing ydotool
+		lookPath = func(file string) (string, error) {
+			return "", errors.New("not found")
+		}
+		_, err = New()
+		if err == nil {
+			t.Error("expected error on wayland when ydotool is missing, got nil")
+		}
+
+		// Restore mock
+		lookPath = func(file string) (string, error) {
+			return "/usr/bin/" + file, nil
 		}
 
 		// X11

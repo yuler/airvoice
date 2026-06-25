@@ -1,6 +1,8 @@
 package server
 
 import (
+	"sync"
+
 	"github.com/airvoice/airvoice/cli/protocol"
 	"github.com/gorilla/websocket"
 )
@@ -12,6 +14,17 @@ func (s *Server) handleConnection(conn *websocket.Conn) {
 		s.hub.Clear(conn)
 		logStatus("client disconnected")
 	}()
+
+	var writeMu sync.Mutex
+	writeOutbound := func(outbound protocol.Outbound) error {
+		data, err := outbound.Bytes()
+		if err != nil {
+			return err
+		}
+		writeMu.Lock()
+		defer writeMu.Unlock()
+		return conn.WriteMessage(websocket.TextMessage, data)
+	}
 
 	for {
 		messageType, message, err := conn.ReadMessage()
@@ -30,65 +43,65 @@ func (s *Server) handleConnection(conn *websocket.Conn) {
 			continue
 		}
 
-		var outbound protocol.Outbound
 		switch inbound.Type {
 		case "hello":
 			logStatus("hello from device=%q app=%q", inbound.Device, inbound.App)
-			outbound = protocol.Outbound{
+			outbound := protocol.Outbound{
 				Type:    "hello",
 				Host:    s.cfg.Hostname,
 				Version: s.cfg.Version,
 			}
+			if err := writeOutbound(outbound); err != nil {
+				logStatus("write error: %v", err)
+				return
+			}
+			logStatus("hello reply host=%s version=%s", outbound.Host, outbound.Version)
+
 		case "text":
 			logStatus("text id=%s len=%d preview=%q", inbound.ID, len(inbound.Content), previewText(inbound.Content, 40))
-			err := s.cfg.Paster.Paste(inbound.Content)
-			if err != nil {
-				logStatus("paste failed id=%s: %v", inbound.ID, err)
-				outbound = protocol.Outbound{
-					Type:    "ack",
-					ID:      inbound.ID,
-					OK:      false,
-					Message: err.Error(),
+			go func(inbound protocol.Inbound) {
+				var outbound protocol.Outbound
+				err := s.cfg.Paster.Paste(inbound.Content)
+				if err != nil {
+					logStatus("paste failed id=%s: %v", inbound.ID, err)
+					outbound = protocol.Outbound{
+						Type:    "ack",
+						ID:      inbound.ID,
+						OK:      false,
+						Message: err.Error(),
+					}
+				} else {
+					logStatus("paste ok id=%s backend=%s", inbound.ID, s.cfg.Paster.Name())
+					outbound = protocol.Outbound{
+						Type: "ack",
+						ID:   inbound.ID,
+						OK:   true,
+					}
 				}
-			} else {
-				logStatus("paste ok id=%s backend=%s", inbound.ID, s.cfg.Paster.Name())
-				outbound = protocol.Outbound{
-					Type: "ack",
-					ID:   inbound.ID,
-					OK:   true,
+				if err := writeOutbound(outbound); err != nil {
+					logStatus("write error: %v", err)
+				} else {
+					if outbound.OK {
+						logStatus("ack ok id=%s", outbound.ID)
+					} else {
+						logStatus("ack fail id=%s message=%s", outbound.ID, outbound.Message)
+					}
 				}
-			}
+			}(inbound)
+
 		case "ping":
 			logStatus("ping")
-			outbound = protocol.Outbound{
+			outbound := protocol.Outbound{
 				Type: "pong",
 			}
+			if err := writeOutbound(outbound); err != nil {
+				logStatus("write error: %v", err)
+				return
+			}
+			logStatus("pong")
+
 		default:
 			logStatus("ignored message type=%q", inbound.Type)
-			continue
-		}
-
-		data, err := outbound.Bytes()
-		if err != nil {
-			logStatus("encode response failed: %v", err)
-			continue
-		}
-
-		if err := conn.WriteMessage(websocket.TextMessage, data); err != nil {
-			logStatus("write error: %v", err)
-			break
-		}
-
-		if outbound.Type == "ack" {
-			if outbound.OK {
-				logStatus("ack ok id=%s", outbound.ID)
-			} else {
-				logStatus("ack fail id=%s message=%s", outbound.ID, outbound.Message)
-			}
-		} else if outbound.Type == "pong" {
-			logStatus("pong")
-		} else if outbound.Type == "hello" {
-			logStatus("hello reply host=%s version=%s", outbound.Host, outbound.Version)
 		}
 	}
 }
