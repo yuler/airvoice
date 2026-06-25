@@ -1,0 +1,4 @@
+// Copy to Signing.xcconfig (gitignored) and set your Apple Team ID for iPhone installs.
+// Team ID: Xcode → Settings → Accounts → [Apple ID] → Team ID
+CODE_SIGN_STYLE = Automatic
+DEVELOPMENT_TEAM =

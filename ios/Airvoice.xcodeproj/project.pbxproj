@@ -8,9 +8,12 @@
 
 /* Begin PBXBuildFile section */
 		05BBA615A645E734A9CD09DD /* PairingPayload.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A584E32977C8F174260E0D /* PairingPayload.swift */; };
+		1FA8494FD6388E50C4EFF1AD /* AppTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AD89AC3F8FD910DD0E66AA7 /* AppTheme.swift */; };
 		2B8245D83E1577AF85A97C20 /* HomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEB2C3ABFB2275E616CE1BF6 /* HomeViewModel.swift */; };
+		38E216AC2FF6CCC44797F882 /* PreferredKeyboardResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 058EB2747E389B6AF2CDD0DC /* PreferredKeyboardResolver.swift */; };
 		4F22931C33FC4BCA7F44275F /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B1269C9C141659D0AB341DB /* HomeView.swift */; };
 		5A92E466C095F7B5CFACB0F0 /* AutoSendControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B53681D4DAB6E5CCD7A16F3C /* AutoSendControllerTests.swift */; };
+		6B8E478A3080940AC014E3E4 /* VoiceInputTextEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3571D6FD70F8E5C26BBCB945 /* VoiceInputTextEditor.swift */; };
 		6F6274C1DA308E1986F13E93 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C653CDEEA8D67BDEFB5DBCE7 /* OnboardingView.swift */; };
 		765A1E3A3433F8204B3A5AF6 /* ConnectionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B13F4D18F23A1D46E83C066 /* ConnectionManager.swift */; };
 		90E2D6410B57143A810A4795 /* ProtocolMessageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 158A2C02AF8F8C9857E49BF1 /* ProtocolMessageTests.swift */; };
@@ -18,6 +21,7 @@
 		9531D0866EB99D244B59A4F8 /* ProtocolMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA75A67ED0F3AAB6BEEF9BE9 /* ProtocolMessage.swift */; };
 		A96EC93930A3EC4F6B81ACF0 /* Toast.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB13C031D7E7C10845E70A68 /* Toast.swift */; };
 		AA549E67ABB54A47CA59AD11 /* QRScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DAFDCBFA2414B50BE5CE99F /* QRScannerView.swift */; };
+		E055D164A6F955084B8F9494 /* InputMethodTipsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D14894FD9051DCD12BEC498E /* InputMethodTipsView.swift */; };
 		EBF41FCAC681664042ABE3A9 /* AutoSendController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8925B067B467783539CEB0AF /* AutoSendController.swift */; };
 		EE4D5384CA48FCEECD76C54E /* AirvoiceApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC00C5EBB20C533AAEB997FC /* AirvoiceApp.swift */; };
 /* End PBXBuildFile section */
@@ -33,22 +37,27 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		058EB2747E389B6AF2CDD0DC /* PreferredKeyboardResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferredKeyboardResolver.swift; sourceTree = "<group>"; };
 		158A2C02AF8F8C9857E49BF1 /* ProtocolMessageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProtocolMessageTests.swift; sourceTree = "<group>"; };
+		3571D6FD70F8E5C26BBCB945 /* VoiceInputTextEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceInputTextEditor.swift; sourceTree = "<group>"; };
 		385B9808F8B2C23F4373B8E7 /* Airvoice.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Airvoice.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		6B13F4D18F23A1D46E83C066 /* ConnectionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionManager.swift; sourceTree = "<group>"; };
 		7B1269C9C141659D0AB341DB /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		8925B067B467783539CEB0AF /* AutoSendController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoSendController.swift; sourceTree = "<group>"; };
-		9D1FB5B90043B86517CBE438 /* AirvoiceTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = AirvoiceTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		9AD89AC3F8FD910DD0E66AA7 /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTheme.swift; sourceTree = "<group>"; };
+		9D1FB5B90043B86517CBE438 /* AirvoiceTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AirvoiceTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		9DAFDCBFA2414B50BE5CE99F /* QRScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRScannerView.swift; sourceTree = "<group>"; };
 		A080A13C65BD8D11D4D9010C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		B53681D4DAB6E5CCD7A16F3C /* AutoSendControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoSendControllerTests.swift; sourceTree = "<group>"; };
 		C653CDEEA8D67BDEFB5DBCE7 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		CA75A67ED0F3AAB6BEEF9BE9 /* ProtocolMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProtocolMessage.swift; sourceTree = "<group>"; };
+		D14894FD9051DCD12BEC498E /* InputMethodTipsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputMethodTipsView.swift; sourceTree = "<group>"; };
 		DB13C031D7E7C10845E70A68 /* Toast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Toast.swift; sourceTree = "<group>"; };
 		E1A584E32977C8F174260E0D /* PairingPayload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairingPayload.swift; sourceTree = "<group>"; };
 		E343930354171783B6F3B910 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		EEB2C3ABFB2275E616CE1BF6 /* HomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModel.swift; sourceTree = "<group>"; };
 		FC00C5EBB20C533AAEB997FC /* AirvoiceApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AirvoiceApp.swift; sourceTree = "<group>"; };
+		"TEMP_A3BA42B4-17B4-4D00-A47A-A57DFF7DF935" /* Signing.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Signing.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -67,6 +76,7 @@
 				674F6DC7187A5EB59C04FEA9 /* Airvoice */,
 				39AFFCF1CDA615AA52FDFCD7 /* AirvoiceTests */,
 				7B798D00A6B7ADA273C349A9 /* Products */,
+				B49AA69F2FED1F2000FE1C56 /* Recovered References */,
 			);
 			sourceTree = "<group>";
 		};
@@ -97,8 +107,10 @@
 			children = (
 				E343930354171783B6F3B910 /* ContentView.swift */,
 				7B1269C9C141659D0AB341DB /* HomeView.swift */,
+				D14894FD9051DCD12BEC498E /* InputMethodTipsView.swift */,
 				C653CDEEA8D67BDEFB5DBCE7 /* OnboardingView.swift */,
 				9DAFDCBFA2414B50BE5CE99F /* QRScannerView.swift */,
+				3571D6FD70F8E5C26BBCB945 /* VoiceInputTextEditor.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -112,9 +124,19 @@
 			path = Models;
 			sourceTree = "<group>";
 		};
+		B49AA69F2FED1F2000FE1C56 /* Recovered References */ = {
+			isa = PBXGroup;
+			children = (
+				"TEMP_A3BA42B4-17B4-4D00-A47A-A57DFF7DF935" /* Signing.xcconfig */,
+			);
+			name = "Recovered References";
+			sourceTree = "<group>";
+		};
 		C25138567F97495EBC6DC9E5 /* Utilities */ = {
 			isa = PBXGroup;
 			children = (
+				9AD89AC3F8FD910DD0E66AA7 /* AppTheme.swift */,
+				058EB2747E389B6AF2CDD0DC /* PreferredKeyboardResolver.swift */,
 				DB13C031D7E7C10845E70A68 /* Toast.swift */,
 			);
 			path = Utilities;
@@ -181,7 +203,7 @@
 						ProvisioningStyle = Automatic;
 					};
 					F50B628947875EF0F4386BBF = {
-						DevelopmentTeam = D7BK4XUL3B;
+						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -220,16 +242,20 @@
 			buildActionMask = 2147483647;
 			files = (
 				EE4D5384CA48FCEECD76C54E /* AirvoiceApp.swift in Sources */,
+				1FA8494FD6388E50C4EFF1AD /* AppTheme.swift in Sources */,
 				EBF41FCAC681664042ABE3A9 /* AutoSendController.swift in Sources */,
 				765A1E3A3433F8204B3A5AF6 /* ConnectionManager.swift in Sources */,
 				94C019DDD752E4A996B637D6 /* ContentView.swift in Sources */,
 				4F22931C33FC4BCA7F44275F /* HomeView.swift in Sources */,
 				2B8245D83E1577AF85A97C20 /* HomeViewModel.swift in Sources */,
+				E055D164A6F955084B8F9494 /* InputMethodTipsView.swift in Sources */,
 				6F6274C1DA308E1986F13E93 /* OnboardingView.swift in Sources */,
 				05BBA615A645E734A9CD09DD /* PairingPayload.swift in Sources */,
+				38E216AC2FF6CCC44797F882 /* PreferredKeyboardResolver.swift in Sources */,
 				9531D0866EB99D244B59A4F8 /* ProtocolMessage.swift in Sources */,
 				AA549E67ABB54A47CA59AD11 /* QRScannerView.swift in Sources */,
 				A96EC93930A3EC4F6B81ACF0 /* Toast.swift in Sources */,
+				6B8E478A3080940AC014E3E4 /* VoiceInputTextEditor.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -246,6 +272,7 @@
 /* Begin XCBuildConfiguration section */
 		14F2D5F38A53A84EBF29DA05 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = "TEMP_A3BA42B4-17B4-4D00-A47A-A57DFF7DF935" /* Signing.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -280,7 +307,6 @@
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEVELOPMENT_TEAM = D7BK4XUL3B;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -389,6 +415,7 @@
 		};
 		EF238D827CFF3BD6BCB532DC /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = "TEMP_A3BA42B4-17B4-4D00-A47A-A57DFF7DF935" /* Signing.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -423,7 +450,6 @@
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = D7BK4XUL3B;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;

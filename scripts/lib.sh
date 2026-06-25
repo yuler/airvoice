@@ -178,8 +178,8 @@ hint_ios_build_failure() {
     gum_info "Apple 开发者协议未接受：请团队 Account Holder（Wei Shufang）登录 developer.apple.com 同意最新协议。"
   elif [[ -f "$log" ]] && grep -q 'No Accounts' "$log"; then
     gum_info "请在 Xcode → Settings → Accounts 登录 Apple ID。"
-  elif [[ -f "$log" ]] && grep -q 'No profiles for' "$log"; then
-    gum_info "签名未就绪：用 Xcode 打开 ios/Airvoice.xcodeproj，在 Signing 里选 Team，并对真机 Run 一次。"
+  elif [[ -f "$log" ]] && grep -qE 'No profiles for|No code signature|requires a development team|Signing for' "$log"; then
+    gum_info "真机安装需要签名：在 ios/Signing.xcconfig 填写 DEVELOPMENT_TEAM（参考 Signing.xcconfig.example），然后重新 xcodegen generate。"
   elif [[ -f "$log" ]] && grep -qE 'not installed|Unable to find a destination' "$log"; then
     gum_info "Xcode 缺少 iOS 平台支持：xcodebuild -downloadPlatform iOS"
     gum_info "若 iPhone 系统比 Xcode 新，请升级 Xcode。"
@@ -242,7 +242,7 @@ hint_ios_deploy_failure() {
   gum_info "Checklist:"
   gum_info "  • iPhone unlocked, USB connected, Trust This Computer accepted"
   gum_info "  • Settings → Privacy & Security → Developer Mode enabled (reboot if prompted)"
-  gum_info "  • Xcode → Settings → Accounts: Apple ID signed in for team D7BK4XUL3B"
+  gum_info "  • ios/Signing.xcconfig: DEVELOPMENT_TEAM set (see Signing.xcconfig.example)"
   gum_info "  • Xcode version supports your iPhone iOS (try: xcodebuild -downloadAllPlatforms)"
   gum_info "  • Or open ios/Airvoice.xcodeproj in Xcode and Run on your device once"
 }
@@ -307,6 +307,10 @@ build_ios_app_for_device() {
   local log="$IOS_DERIVED/xcodebuild.log"
   local -a base_args sign_args
 
+  if [[ -z "${IOS_SIGN_TEAM:-}" ]] && [[ -f "$ROOT/ios/Signing.xcconfig" ]]; then
+    IOS_SIGN_TEAM=$(grep -E '^DEVELOPMENT_TEAM\s*=' "$ROOT/ios/Signing.xcconfig" | head -1 | sed -E 's/^DEVELOPMENT_TEAM[[:space:]]*=[[:space:]]*//' | tr -d '[:space:]')
+  fi
+
   mkdir -p "$IOS_DERIVED"
   base_args=(
     -project "$IOS_PROJECT"
@@ -316,7 +320,6 @@ build_ios_app_for_device() {
     -allowProvisioningUpdates
   )
   sign_args=()
-
   if [[ -n "${IOS_SIGN_TEAM:-}" ]]; then
     sign_args+=(DEVELOPMENT_TEAM="$IOS_SIGN_TEAM")
   fi

@@ -2,6 +2,9 @@ import SwiftUI
 import Combine
 
 struct HomeView: View {
+    @AppStorage("appTheme") private var appThemeRaw = AppTheme.light.rawValue
+    @Environment(\.scenePhase) private var scenePhase
+
     @StateObject private var connection = ConnectionManager()
     @StateObject private var autoSend = AutoSendController()
     @StateObject private var viewModel = HomeViewModel()
@@ -10,15 +13,21 @@ struct HomeView: View {
 
     @State private var showScanner = false
 
+    private var theme: AppTheme {
+        AppTheme(rawValue: appThemeRaw) ?? .light
+    }
+
     var body: some View {
         ZStack {
-            Color(hex: "000000").ignoresSafeArea() // Pure black background
+            theme.background.ignoresSafeArea()
 
             VStack(spacing: 20) {
                 HStack {
                     statusBadge
 
                     Spacer()
+
+                    themeToggleButton
 
                     Button(action: {
                         showScanner = true
@@ -29,80 +38,83 @@ struct HomeView: View {
                         }
                         .font(.subheadline)
                         .fontWeight(.medium)
-                        .foregroundColor(.white)
+                        .foregroundColor(theme.primaryText)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 8)
-                        .background(Color.white.opacity(0.1))
+                        .background(theme.chipBackground)
                         .cornerRadius(20)
                     }
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 10)
 
-                ZStack(alignment: .topLeading) {
-                    if viewModel.text.isEmpty {
-                        Text("点击下方「说话」或直接在此处输入...")
-                            .foregroundColor(.gray)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 12)
-                            .allowsHitTesting(false)
-                    }
-
-                    TextEditor(text: $viewModel.text)
-                        .focused($isEditorFocused)
-                        .scrollContentBackground(.hidden)
-                        .foregroundColor(.white)
-                        .font(.body)
-                        .padding(8)
-                        .onChange(of: viewModel.text) { _, newValue in
-                            autoSend.textDidChange(newValue)
+                VStack(spacing: 8) {
+                    ZStack(alignment: .topLeading) {
+                        if viewModel.text.isEmpty {
+                            Text("在此输入，或使用键盘麦克风语音输入...")
+                                .foregroundColor(theme.placeholderText)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 12)
+                                .allowsHitTesting(false)
                         }
+
+                        TextEditor(text: $viewModel.text)
+                            .focused($isEditorFocused)
+                            .scrollContentBackground(.hidden)
+                            .foregroundColor(theme.primaryText)
+                            .font(.body)
+                            .padding(8)
+                            .onChange(of: viewModel.text) { _, newValue in
+                                autoSend.textDidChange(newValue)
+                                // Text is cleared after a successful send; keep focus so
+                                // the keyboard never drops.
+                                if newValue.isEmpty, !showScanner {
+                                    isEditorFocused = true
+                                }
+                            }
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(theme.secondaryBackground)
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(theme.border, lineWidth: 1)
+                    )
+
+                    AutoSendCountdownBar(
+                        active: autoSend.countdownActive,
+                        token: autoSend.countdownToken,
+                        duration: autoSend.autoSendDelay
+                    )
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color(hex: "0d0e15")) // background-secondary
-                .cornerRadius(16)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color(hex: "2e2e2e"), lineWidth: 1) // border-default
-                )
                 .padding(.horizontal, 20)
 
                 VStack(spacing: 12) {
                     if autoSend.inFlight {
-                        HStack(spacing: 8) {
+                        HStack(spacing: 6) {
                             ProgressView()
-                                .tint(.white)
-                            Text("正在发送至电脑...")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
+                                .controlSize(.small)
+                                .tint(theme.secondaryText)
+                            Text("发送中")
+                                .font(.caption)
+                                .foregroundColor(theme.secondaryText)
+                            Button {
+                                viewModel.cancelSend(autoSend: autoSend)
+                            } label: {
+                                Text("取消")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundColor(theme.accent)
+                            }
                         }
-                    } else {
-                        Text(connection.state == .connected ? "使用豆包或微信输入法，点击键盘麦克风开始说话" : "请先扫码连接电脑")
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(theme.chipBackground)
+                        .cornerRadius(14)
+                    } else if connection.state != .connected {
+                        Text("请先扫码连接电脑")
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(theme.secondaryText)
                     }
-
-                    Button(action: {
-                        autoSend.resetOnFocus()
-                        isEditorFocused = true
-                    }) {
-                        HStack(spacing: 10) {
-                            Image(systemName: "mic.fill")
-                            Text("说话")
-                        }
-                        .font(.headline)
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 56)
-                        .background(
-                            connection.state == .connected ?
-                            Color(hex: "006efe") : // accent-blue
-                            Color.gray.opacity(0.3)
-                        )
-                        .cornerRadius(28)
-                        .shadow(color: connection.state == .connected ? Color(hex: "006efe").opacity(0.3) : Color.clear, radius: 10)
-                    }
-                    .disabled(connection.state != .connected)
 
                     Button(action: {
                         viewModel.manualSend(connection: connection, autoSend: autoSend)
@@ -112,29 +124,72 @@ struct HomeView: View {
                             Text("发送到电脑")
                         }
                         .font(.subheadline.weight(.semibold))
-                        .foregroundColor(.white)
+                        .foregroundColor(theme.primaryText)
                         .frame(maxWidth: .infinity)
                         .frame(height: 44)
-                        .background(Color.white.opacity(connection.state == .connected ? 0.12 : 0.06))
+                        .background(
+                            theme.sendButtonBackground.opacity(
+                                connection.state == .connected ? 1 : 0.5
+                            )
+                        )
                         .cornerRadius(22)
                     }
                     .disabled(connection.state != .connected || autoSend.inFlight)
+
+                    InputMethodTipsView(theme: theme)
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 20)
             }
         }
-        .toast(message: $viewModel.toastMessage, isError: $viewModel.isToastError)
+        .toast(message: $viewModel.toastMessage, isError: $viewModel.isToastError, theme: theme)
         .sheet(isPresented: $showScanner) {
             scannerSheetView
         }
         .onAppear {
             viewModel.wire(connection: connection, autoSend: autoSend)
-            viewModel.observeKeyboard(autoSend: autoSend)
+            focusEditorForKeyboard()
+        }
+        .onChange(of: showScanner) { _, isShowing in
+            if isShowing {
+                isEditorFocused = false
+            } else {
+                focusEditorForKeyboard()
+            }
         }
         .onChange(of: connection.state) { _, newValue in
             UIApplication.shared.isIdleTimerDisabled = (newValue == .connected)
+            if newValue == .connected {
+                viewModel.flushPendingAutoSend(connection: connection, autoSend: autoSend)
+            }
         }
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .active, !showScanner {
+                focusEditorForKeyboard()
+            }
+        }
+    }
+
+    private func focusEditorForKeyboard() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+            isEditorFocused = true
+        }
+    }
+
+    private var themeToggleButton: some View {
+        Button {
+            var next = theme
+            next.toggle()
+            appThemeRaw = next.rawValue
+        } label: {
+            Image(systemName: theme == .light ? "moon.fill" : "sun.max.fill")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(theme.themeToggleForeground)
+                .frame(width: 36, height: 36)
+                .background(theme.themeToggleBackground)
+                .cornerRadius(18)
+        }
+        .padding(.trailing, 8)
     }
 
     private var statusBadge: some View {
@@ -146,7 +201,7 @@ struct HomeView: View {
             Text(statusText)
                 .font(.subheadline)
                 .fontWeight(.semibold)
-                .foregroundColor(.white)
+                .foregroundColor(theme.primaryText)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
@@ -199,5 +254,32 @@ struct HomeView: View {
             }
             .ignoresSafeArea(edges: .bottom)
         }
+    }
+}
+
+/// Thin red bar that drains from full width to empty over `duration`, signalling
+/// the idle countdown before an automatic send. Restarts whenever `token` changes.
+/// Uses a horizontal scale (clamped 0...1) so it can never overflow the text box.
+private struct AutoSendCountdownBar: View {
+    let active: Bool
+    let token: Int
+    let duration: Double
+
+    @State private var progress: CGFloat = 0
+
+    var body: some View {
+        Capsule()
+            .fill(Color.red)
+            .frame(height: 3)
+            .scaleEffect(x: min(max(progress, 0), 1), y: 1, anchor: .leading)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .opacity(active ? 1 : 0)
+            .animation(.easeOut(duration: 0.15), value: active)
+            .onChange(of: token) { _, _ in
+                progress = 1
+                withAnimation(.linear(duration: duration)) {
+                    progress = 0
+                }
+            }
     }
 }

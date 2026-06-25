@@ -9,3 +9,4 @@ bin/airvoice
 *.xcuserstate
 xcuserdata/
 DerivedData/
+ios/Signing.xcconfig

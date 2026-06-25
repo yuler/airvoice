@@ -23,17 +23,23 @@ udid=$(echo "$selected" | parse_device_udid)
 gum_info "Device: $selected"
 gum_info "UDID: $udid"
 
-IOS_SIGN_TEAM=""
-if ! xcodebuild -project "$IOS_PROJECT" -scheme "$IOS_SCHEME" -showBuildSettings 2>/dev/null \
-  | grep -qE 'DEVELOPMENT_TEAM = [A-Z0-9]{10}'; then
-  gum_warn "No development team configured in the Xcode project."
-  IOS_SIGN_TEAM=$(gum input --placeholder "Apple Team ID (10 chars, from developer.apple.com)" --width 40)
-  if [[ -z "$IOS_SIGN_TEAM" ]]; then
-    gum_err "Team ID required for device signing. Set DEVELOPMENT_TEAM in Xcode → Signing & Capabilities."
+if [[ ! -f ios/Signing.xcconfig ]]; then
+  cp ios/Signing.xcconfig.example ios/Signing.xcconfig
+  gum_warn "Created ios/Signing.xcconfig — edit DEVELOPMENT_TEAM before building."
+fi
+
+team=$(grep -E '^DEVELOPMENT_TEAM\s*=' ios/Signing.xcconfig 2>/dev/null | sed -E 's/^DEVELOPMENT_TEAM[[:space:]]*=[[:space:]]*//' | tr -d '[:space:]' || true)
+if [[ -z "$team" ]]; then
+  gum_warn "DEVELOPMENT_TEAM is empty in ios/Signing.xcconfig."
+  team=$(gum input --placeholder "Apple Team ID (10 chars)" --width 40)
+  if [[ -z "$team" ]]; then
+    gum_err "Team ID required for device install. Set DEVELOPMENT_TEAM in ios/Signing.xcconfig."
     exit 1
   fi
+  export IOS_SIGN_TEAM="$team"
+else
+  export IOS_SIGN_TEAM="$team"
 fi
-export IOS_SIGN_TEAM
 
 mkdir -p "$IOS_DERIVED"
 

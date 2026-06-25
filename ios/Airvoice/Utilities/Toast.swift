@@ -3,12 +3,13 @@ import SwiftUI
 struct Toast: View {
     let message: String
     let isError: Bool
-    
+    var theme: AppTheme = .light
+
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: isError ? "exclamationmark.triangle.fill" : "checkmark.circle.fill")
                 .foregroundStyle(isError ? .red : .green)
-            
+
             Text(message)
                 .font(.subheadline)
                 .foregroundColor(.white)
@@ -18,7 +19,7 @@ struct Toast: View {
         .padding(.vertical, 12)
         .background(
             Capsule()
-                .fill(Color(hex: "1F2030").opacity(0.95))
+                .fill(theme.toastBackground)
                 .overlay(
                     Capsule()
                         .stroke(Color.white.opacity(0.1), lineWidth: 1)
@@ -31,6 +32,7 @@ struct Toast: View {
 struct ToastModifier: ViewModifier {
     @Binding var toastMessage: String?
     @Binding var isError: Bool
+    var theme: AppTheme = .light
     
     @State private var dismissTask: Task<Void, Never>? = nil
     
@@ -41,7 +43,7 @@ struct ToastModifier: ViewModifier {
             VStack {
                 Spacer()
                 if let message = toastMessage {
-                    Toast(message: message, isError: isError)
+                    Toast(message: message, isError: isError, theme: theme)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                         .padding(.bottom, 50)
                 }
@@ -64,7 +66,7 @@ struct ToastModifier: ViewModifier {
 }
 
 extension View {
-    func toast(message: Binding<String?>, isError: Binding<Bool>) -> some View {
-        self.modifier(ToastModifier(toastMessage: message, isError: isError))
+    func toast(message: Binding<String?>, isError: Binding<Bool>, theme: AppTheme = .light) -> some View {
+        self.modifier(ToastModifier(toastMessage: message, isError: isError, theme: theme))
     }
 }

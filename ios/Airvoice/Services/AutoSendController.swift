@@ -1,34 +1,54 @@
 import Foundation
 
+enum SendTrigger {
+    case auto
+    case manual
+}
+
 @MainActor final class AutoSendController: ObservableObject {
-    var onSend: ((String) -> Void)?
-    private let idleSeconds = 1.5
+    /// Return `true` when a send actually started (connection ready, etc.).
+    var onSend: ((String, SendTrigger) -> Bool)?
+    /// Auto-send fires only after this many seconds of no new input. Streamed
+    /// voice-input characters keep resetting this window (and the countdown
+    /// animation) so we only send once dictation goes quiet.
+    let autoSendDelay: TimeInterval = 1.5
     private var debounceTask: Task<Void, Never>?
     private var lastAcked: String?
     @Published private(set) var inFlight = false
+    /// True while the idle countdown toward an auto-send is running.
+    @Published private(set) var countdownActive = false
+    /// Bumped every time the countdown (re)starts so the UI can restart its animation.
+    @Published private(set) var countdownToken = 0
 
     func textDidChange(_ text: String) {
         debounceTask?.cancel()
+
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, !inFlight else {
+            stopCountdown()
+            return
+        }
+
+        startCountdown()
         debounceTask = Task {
             do {
-                try await Task.sleep(nanoseconds: UInt64(idleSeconds * 1_000_000_000))
+                try await Task.sleep(nanoseconds: UInt64(autoSendDelay * 1_000_000_000))
                 guard !Task.isCancelled else { return }
-                await attemptSend(text)
+                countdownActive = false
+                _ = attemptSend(text)
             } catch {
                 // Task cancelled
             }
         }
     }
 
-    func keyboardDidHide(currentText: String) {
-        debounceTask?.cancel()
-        Task {
-            await attemptSend(currentText)
-        }
+    func resetOnFocus() {
+        stopCountdown()
     }
 
-    func resetOnFocus() {
-        debounceTask?.cancel()
+    func beginSend() {
+        stopCountdown()
+        inFlight = true
     }
 
     func markAcked(_ content: String) {
@@ -41,30 +61,41 @@ import Foundation
     }
 
     /// Manual send for debugging; bypasses dedup when `force` is true.
-    func sendNow(_ raw: String, force: Bool = false) {
+    @discardableResult
+    func sendNow(_ raw: String, force: Bool = false) -> Bool {
         let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
-        guard !inFlight else { return }
+        guard !trimmed.isEmpty else { return false }
+        guard !inFlight else { return false }
 
         if !force {
             let lastAckedTrimmed = lastAcked?.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard trimmed != lastAckedTrimmed else { return }
+            guard trimmed != lastAckedTrimmed else { return false }
         }
 
-        debounceTask?.cancel()
-        inFlight = true
-        onSend?(raw)
+        stopCountdown()
+        return onSend?(raw, .manual) ?? false
     }
 
-    private func attemptSend(_ raw: String) async {
+    @discardableResult
+    func attemptSend(_ raw: String) -> Bool {
         let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
-        guard !inFlight else { return }
-        
+        guard !trimmed.isEmpty else { return false }
+        guard !inFlight else { return false }
+
         let lastAckedTrimmed = lastAcked?.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard trimmed != lastAckedTrimmed else { return }
-        
-        inFlight = true
-        onSend?(raw)
+        guard trimmed != lastAckedTrimmed else { return false }
+
+        stopCountdown()
+        return onSend?(raw, .auto) ?? false
+    }
+
+    private func startCountdown() {
+        countdownToken &+= 1
+        countdownActive = true
+    }
+
+    private func stopCountdown() {
+        debounceTask?.cancel()
+        countdownActive = false
     }
 }

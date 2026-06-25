@@ -15,6 +15,11 @@ if [[ "$(uname -s)" == "Darwin" && ! -d "$IOS_PROJECT" ]]; then
     xcodegen generate --spec ios/project.yml --project ios/
 fi
 
+if [[ "$(uname -s)" == "Darwin" && ! -f ios/Signing.xcconfig ]]; then
+  cp ios/Signing.xcconfig.example ios/Signing.xcconfig
+  gum_warn "Created ios/Signing.xcconfig — set DEVELOPMENT_TEAM for iPhone device installs."
+fi
+
 mkdir -p bin
 
 gum_info "Tool versions:"

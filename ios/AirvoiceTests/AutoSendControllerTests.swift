@@ -4,104 +4,90 @@ import XCTest
 @MainActor
 final class AutoSendControllerTests: XCTestCase {
     var controller: AutoSendController!
-    var sentTexts: [String]!
-    
+    var sentTexts: [(String, SendTrigger)]!
+
     override func setUp() {
         super.setUp()
         controller = AutoSendController()
         sentTexts = []
-        controller.onSend = { [weak self] text in
-            self?.sentTexts.append(text)
+        controller.onSend = { [weak self] text, trigger in
+            self?.sentTexts.append((text, trigger))
+            self?.controller.beginSend()
+            return true
         }
     }
-    
+
     override func tearDown() {
         controller = nil
         sentTexts = nil
         super.tearDown()
     }
-    
+
+    private func sleep(_ fractionOfDelay: Double) async {
+        let seconds = controller.autoSendDelay * fractionOfDelay
+        try? await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+    }
+
     func testTextDidChangeDebounceAndSend() async {
         controller.textDidChange("hello")
-        
-        // At this point, should not have sent because of 1.5s debounce
+
         XCTAssertTrue(sentTexts.isEmpty)
-        
-        // Wait 1.6s
-        try? await Task.sleep(nanoseconds: 1_600_000_000)
-        
+
+        await sleep(1.3)
+
         XCTAssertEqual(sentTexts.count, 1)
-        XCTAssertEqual(sentTexts.first, "hello")
+        XCTAssertEqual(sentTexts.first?.0, "hello")
+        XCTAssertEqual(sentTexts.first?.1, .auto)
         XCTAssertTrue(controller.inFlight)
     }
-    
+
     func testDebounceCancellation() async {
         controller.textDidChange("hello")
-        try? await Task.sleep(nanoseconds: 500_000_000)
-        
-        // Update text again before 1.5s
+        await sleep(0.3)
+
         controller.textDidChange("hello world")
-        
-        // Wait another 1.2s (total 1.7s from first, but only 1.2s from second)
-        try? await Task.sleep(nanoseconds: 1_200_000_000)
-        XCTAssertTrue(sentTexts.isEmpty) // Not fired yet
-        
-        // Wait another 0.4s (to exceed 1.5s from second change)
-        try? await Task.sleep(nanoseconds: 400_000_000)
+
+        await sleep(0.5)
+        XCTAssertTrue(sentTexts.isEmpty)
+
+        await sleep(0.8)
         XCTAssertEqual(sentTexts.count, 1)
-        XCTAssertEqual(sentTexts.first, "hello world")
+        XCTAssertEqual(sentTexts.first?.0, "hello world")
     }
-    
-    func testKeyboardDidHideTriggersSendImmediately() async {
-        controller.keyboardDidHide(currentText: "hello immediate")
-        
-        // Give runloop a moment to execute the task
-        try? await Task.sleep(nanoseconds: 50_000_000)
-        
-        XCTAssertEqual(sentTexts.count, 1)
-        XCTAssertEqual(sentTexts.first, "hello immediate")
-    }
-    
+
     func testDeduplicationAfterAck() async {
-        controller.keyboardDidHide(currentText: "duplicate test")
-        try? await Task.sleep(nanoseconds: 50_000_000)
+        controller.attemptSend("duplicate test")
         XCTAssertEqual(sentTexts.count, 1)
-        
-        // Mark acked
+
         controller.markAcked("duplicate test")
         XCTAssertFalse(controller.inFlight)
-        
-        // Try sending same text again, should be skipped
-        controller.keyboardDidHide(currentText: "duplicate test")
-        try? await Task.sleep(nanoseconds: 50_000_000)
-        XCTAssertEqual(sentTexts.count, 1) // still 1
-        
-        // Try sending different text, should work
-        controller.keyboardDidHide(currentText: "different test")
-        try? await Task.sleep(nanoseconds: 50_000_000)
+
+        controller.attemptSend("duplicate test")
+        XCTAssertEqual(sentTexts.count, 1)
+
+        controller.attemptSend("different test")
         XCTAssertEqual(sentTexts.count, 2)
-        XCTAssertEqual(sentTexts.last, "different test")
+        XCTAssertEqual(sentTexts.last?.0, "different test")
     }
-    
+
     func testInFlightLock() async {
-        controller.keyboardDidHide(currentText: "first")
-        try? await Task.sleep(nanoseconds: 50_000_000)
+        controller.attemptSend("first")
         XCTAssertTrue(controller.inFlight)
         XCTAssertEqual(sentTexts.count, 1)
-        
-        // Attempt to send "second" while in-flight is true
-        controller.keyboardDidHide(currentText: "second")
-        try? await Task.sleep(nanoseconds: 50_000_000)
-        XCTAssertEqual(sentTexts.count, 1) // second was ignored
-        
-        // Clear in-flight
+
+        controller.attemptSend("second")
+        XCTAssertEqual(sentTexts.count, 1)
+
         controller.clearInFlight()
-        XCTAssertFalse(controller.inFlight)
-        
-        // Now it should send
-        controller.keyboardDidHide(currentText: "second")
-        try? await Task.sleep(nanoseconds: 50_000_000)
+
+        controller.attemptSend("second")
         XCTAssertEqual(sentTexts.count, 2)
-        XCTAssertEqual(sentTexts.last, "second")
+        XCTAssertEqual(sentTexts.last?.0, "second")
+    }
+
+    func testSendNowUsesManualTrigger() {
+        XCTAssertTrue(controller.sendNow("manual send", force: true))
+        XCTAssertEqual(sentTexts.count, 1)
+        XCTAssertEqual(sentTexts.first?.1, .manual)
     }
 }
