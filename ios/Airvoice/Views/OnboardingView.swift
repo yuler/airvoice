@@ -5,13 +5,8 @@ struct OnboardingView: View {
 
     var body: some View {
         ZStack {
-            // Background gradient
-            LinearGradient(
-                colors: [Color(hex: "0D0E15"), Color(hex: "1A1B2F")],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
+            // Pure black background
+            Color(hex: "000000").ignoresSafeArea()
             
             VStack(spacing: 24) {
                 Spacer()
@@ -21,14 +16,8 @@ struct OnboardingView: View {
                     .resizable()
                     .scaledToFit()
                     .frame(width: 80, height: 80)
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [Color(hex: "3B82F6"), Color(hex: "8B5CF6")],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .shadow(color: Color(hex: "8B5CF6").opacity(0.3), radius: 15)
+                    .foregroundStyle(Color(hex: "006efe")) // Accent-blue
+                    .shadow(color: Color(hex: "006efe").opacity(0.3), radius: 15)
                 
                 VStack(spacing: 8) {
                     Text("Airvoice")
@@ -70,10 +59,10 @@ struct OnboardingView: View {
                 .padding(20)
                 .background(
                     RoundedRectangle(cornerRadius: 20)
-                        .fill(Color.white.opacity(0.05))
+                        .fill(Color(hex: "0d0e15")) // background-secondary
                         .overlay(
                             RoundedRectangle(cornerRadius: 20)
-                                .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                                .stroke(Color(hex: "2e2e2e"), lineWidth: 1) // border-default
                         )
                 )
                 .padding(.horizontal, 24)
@@ -89,15 +78,9 @@ struct OnboardingView: View {
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 56)
-                        .background(
-                            LinearGradient(
-                                colors: [Color(hex: "3B82F6"), Color(hex: "8B5CF6")],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
+                        .background(Color(hex: "006efe")) // accent-blue
                         .cornerRadius(28)
-                        .shadow(color: Color(hex: "3B82F6").opacity(0.3), radius: 10)
+                        .shadow(color: Color(hex: "006efe").opacity(0.3), radius: 10)
                 }
                 .padding(.horizontal, 24)
                 .padding(.bottom, 32)
@@ -118,10 +101,10 @@ struct GuideStepView: View {
                 .fontWeight(.bold)
                 .foregroundStyle(.white)
                 .frame(width: 24, height: 24)
-                .background(Color(hex: "3B82F6").opacity(0.2))
+                .background(Color(hex: "006efe").opacity(0.2))
                 .cornerRadius(12)
                 .overlay(
-                    Circle().stroke(Color(hex: "3B82F6").opacity(0.5), lineWidth: 1)
+                    Circle().stroke(Color(hex: "006efe").opacity(0.5), lineWidth: 1)
                 )
             
             VStack(alignment: .leading, spacing: 2) {
