@@ -27,11 +27,14 @@ func PrintPairing(port int, banner string) (token, wsURL string, err error) {
 	}
 
 	if banner != "" {
-		fmt.Fprintf(os.Stderr, "\n[airvoice] %s\n", banner)
+		fmt.Fprintf(os.Stderr, "\n [airvoice] %s\n\n", banner)
+	} else {
+		fmt.Fprintf(os.Stderr, "\n")
 	}
 	PrintQR(payloadBytes)
-	fmt.Fprintf(os.Stderr, "Token: %s\n", token)
-	fmt.Fprintf(os.Stderr, "WebSocket URL: %s\n", wsURL)
-	fmt.Fprintf(os.Stderr, "[airvoice] waiting for iPhone connection...\n")
+	fmt.Fprintf(os.Stderr, "\n")
+	fmt.Fprintf(os.Stderr, "  Token: %s\n", token)
+	fmt.Fprintf(os.Stderr, "  WebSocket URL: %s\n\n", wsURL)
+	fmt.Fprintf(os.Stderr, "  [airvoice] waiting for iPhone connection...\n\n")
 	return token, wsURL, nil
 }

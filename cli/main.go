@@ -56,8 +56,8 @@ func main() {
 			os.Exit(1)
 		}
 
-		fmt.Fprintf(os.Stderr, "Paste backend: %s\n", paster.Name())
-		fmt.Fprintf(os.Stderr, "[airvoice] listening on %s (health: /health, ws: /ws)\n", addr)
+		fmt.Fprintf(os.Stderr, "  Paste backend: %s\n", paster.Name())
+		fmt.Fprintf(os.Stderr, "  [airvoice] listening on %s (health: /health, ws: /ws)\n\n", addr)
 
 		if err := srv.ListenAndServe(); err != nil {
 			fmt.Fprintf(os.Stderr, "Server failed: %v\n", err)

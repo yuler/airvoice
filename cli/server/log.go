@@ -8,7 +8,7 @@ import (
 )
 
 func logStatus(format string, args ...any) {
-	fmt.Fprintf(os.Stderr, "[airvoice] "+format+"\n", args...)
+	fmt.Fprintf(os.Stderr, " [airvoice] "+format+"\n", args...)
 }
 
 func previewText(s string, maxRunes int) string {
