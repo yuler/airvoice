@@ -11,8 +11,12 @@ import (
 func (s *Server) handleConnection(conn *websocket.Conn) {
 	s.hub.Set(conn)
 	defer func() {
-		s.hub.Clear(conn)
-		logStatus("client disconnected")
+		if s.hub.Clear(conn) {
+			logStatus("client disconnected")
+			if err := s.RotatePairing("client disconnected — scan the new QR code to reconnect"); err != nil {
+				logStatus("pairing refresh failed: %v", err)
+			}
+		}
 	}()
 
 	var writeMu sync.Mutex

@@ -28,7 +28,7 @@ func (m *mockPaster) Name() string {
 }
 
 func TestServerHealth(t *testing.T) {
-	s := New(Config{Addr: ":0", Token: "test-token", Hostname: "test-host", Version: "0.1.0"})
+	s := New(Config{Addr: ":0", Port: 7383, Hostname: "test-host", Version: "0.1.0"})
 	ts := httptest.NewServer(http.HandlerFunc(s.handleHealth))
 	defer ts.Close()
 
@@ -42,7 +42,8 @@ func TestServerHealth(t *testing.T) {
 }
 
 func TestServerWSAuth(t *testing.T) {
-	s := New(Config{Addr: ":0", Token: "valid-token", Hostname: "test-host", Version: "0.1.0"})
+	s := New(Config{Addr: ":0", Port: 7383, Hostname: "test-host", Version: "0.1.0"})
+	setTestToken(s, "valid-token")
 	ts := httptest.NewServer(http.HandlerFunc(s.handleWS))
 	defer ts.Close()
 
@@ -70,7 +71,8 @@ func TestServerWSAuth(t *testing.T) {
 
 func TestServerMessageHandling(t *testing.T) {
 	paster := &mockPaster{}
-	s := New(Config{Addr: ":0", Token: "token", Hostname: "host-pc", Version: "0.1.0", Paster: paster})
+	s := New(Config{Addr: ":0", Port: 7383, Hostname: "host-pc", Version: "0.1.0", Paster: paster})
+	setTestToken(s, "token")
 	ts := httptest.NewServer(http.HandlerFunc(s.handleWS))
 	defer ts.Close()
 
@@ -145,7 +147,8 @@ func TestServerMessageHandling(t *testing.T) {
 }
 
 func TestHubConnectionLifecycle(t *testing.T) {
-	s := New(Config{Addr: ":0", Token: "token", Hostname: "host-pc", Version: "0.1.0"})
+	s := New(Config{Addr: ":0", Port: 7383, Hostname: "host-pc", Version: "0.1.0"})
+	setTestToken(s, "token")
 	ts := httptest.NewServer(http.HandlerFunc(s.handleWS))
 	defer ts.Close()
 
@@ -193,5 +196,54 @@ func TestHubConnectionLifecycle(t *testing.T) {
 	s.hub.Clear(active2)
 	if s.hub.Get() != nil {
 		t.Error("hub failed to clear active connection")
+	}
+}
+
+func setTestToken(s *Server, token string) {
+	s.tokenMu.Lock()
+	s.token = token
+	s.tokenMu.Unlock()
+}
+
+func TestRotatePairingOnDisconnect(t *testing.T) {
+	s := New(Config{Addr: ":0", Port: 7383, Hostname: "host-pc", Version: "0.1.0"})
+	setTestToken(s, "token-old")
+	ts := httptest.NewServer(http.HandlerFunc(s.handleWS))
+	defer ts.Close()
+
+	wsURL := "ws" + strings.TrimPrefix(ts.URL, "http") + "?token=token-old"
+	conn, _, err := websocket.DefaultDialer.Dial(wsURL, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := conn.Close(); err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(50 * time.Millisecond)
+
+	s.tokenMu.RLock()
+	newToken := s.token
+	s.tokenMu.RUnlock()
+	if newToken == "" || newToken == "token-old" {
+		t.Fatalf("expected rotated token, got %q", newToken)
+	}
+
+	_, resp, err := websocket.DefaultDialer.Dial(wsURL, nil)
+	if err == nil {
+		t.Fatal("expected dial to fail with stale token")
+	}
+	if resp != nil && resp.StatusCode != http.StatusUnauthorized {
+		t.Errorf("expected status 401, got %d", resp.StatusCode)
+	}
+
+	freshURL := "ws" + strings.TrimPrefix(ts.URL, "http") + "?token=" + newToken
+	conn2, resp, err := websocket.DefaultDialer.Dial(freshURL, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer conn2.Close()
+	if resp.StatusCode != http.StatusSwitchingProtocols {
+		t.Errorf("expected status 101, got %d", resp.StatusCode)
 	}
 }

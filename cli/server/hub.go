@@ -29,7 +29,8 @@ func (h *Hub) Set(conn *websocket.Conn) {
 
 // Clear removes the connection only if it matches the current active one
 // (preventing clearing a new connection from an old connection teardown).
-func (h *Hub) Clear(conn *websocket.Conn) {
+// It returns true when the active client was removed.
+func (h *Hub) Clear(conn *websocket.Conn) bool {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	if h.conn == conn {
@@ -37,7 +38,9 @@ func (h *Hub) Clear(conn *websocket.Conn) {
 			h.conn.Close()
 		}
 		h.conn = nil
+		return true
 	}
+	return false
 }
 
 // Get returns the current active connection.
