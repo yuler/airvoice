@@ -131,7 +131,9 @@ final class HomeViewModel: ObservableObject {
 
         sendTimeoutTask?.cancel()
         sendTimeoutTask = Task {
-            try? await Task.sleep(nanoseconds: 15_000_000_000)
+            let timeoutMs = AppSettings.shared.sendTimeoutMs
+            let timeoutNs = UInt64(timeoutMs * 1_000_000)
+            try? await Task.sleep(nanoseconds: timeoutNs)
             guard !Task.isCancelled else {
                 sendTimeoutTask = nil
                 return

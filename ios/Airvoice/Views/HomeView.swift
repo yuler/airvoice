@@ -12,6 +12,7 @@ struct HomeView: View {
     @FocusState private var isEditorFocused: Bool
 
     @State private var showScanner = false
+    @State private var isBreathing = false
 
     private var theme: AppTheme {
         AppTheme(rawValue: appThemeRaw) ?? .light
@@ -79,15 +80,28 @@ struct HomeView: View {
     // MARK: - Status Bar
 
     private var statusBar: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 8) {
             Circle()
-                .fill(connection.state == .connecting ? Color.white : Color.white.opacity(0.8))
-                .frame(width: 6, height: 6)
-                .opacity(connection.state == .connecting ? 0.5 : 1.0)
+                .fill(stateDotColor)
+                .frame(width: 8, height: 8)
+                .scaleEffect(isBreathing && connection.state == .connecting ? 1.25 : 1.0)
+                .opacity(isBreathing && connection.state == .connecting ? 0.4 : 1.0)
+                .onAppear {
+                    if connection.state == .connecting {
+                        startBreathingAnimation()
+                    }
+                }
+                .onChange(of: connection.state) { _, newState in
+                    if newState == .connecting {
+                        startBreathingAnimation()
+                    } else {
+                        isBreathing = false
+                    }
+                }
 
             Text(statusText)
-                .font(.system(size: 12, weight: .semibold, design: .rounded))
-                .foregroundColor(.white)
+                .font(.system(size: 13, weight: .medium, design: .rounded))
+                .foregroundColor(theme.primaryText.opacity(0.8))
 
             Spacer()
 
@@ -99,9 +113,9 @@ struct HomeView: View {
                 } label: {
                     Image(systemName: theme == .light ? "moon.fill" : "sun.max.fill")
                         .font(.system(size: 13, weight: .bold))
-                        .foregroundColor(.white)
+                        .foregroundColor(theme.primaryText)
                         .frame(width: 28, height: 28)
-                        .background(Color.white.opacity(0.18))
+                        .background(theme.chipBackground)
                         .clipShape(Circle())
                 }
 
@@ -110,25 +124,34 @@ struct HomeView: View {
                 } label: {
                     Image(systemName: "qrcode.viewfinder")
                         .font(.system(size: 13, weight: .bold))
-                        .foregroundColor(.white)
+                        .foregroundColor(theme.primaryText)
                         .frame(width: 28, height: 28)
-                        .background(Color.white.opacity(0.18))
+                        .background(theme.chipBackground)
                         .clipShape(Circle())
                 }
             }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
-        .background(statusBarColor)
+        .background(theme.background)
         .animation(.easeInOut(duration: 0.3), value: connection.state)
     }
 
-    private var statusBarColor: Color {
+    private var stateDotColor: Color {
         switch connection.state {
         case .disconnected: return theme.statusBarDisconnected
         case .connecting: return theme.statusBarConnecting
         case .connected: return theme.statusBarConnected
         case .error: return theme.statusBarError
+        }
+    }
+
+    private func startBreathingAnimation() {
+        withAnimation(
+            .easeInOut(duration: 1.0)
+            .repeatForever(autoreverses: true)
+        ) {
+            isBreathing = true
         }
     }
 
