@@ -63,10 +63,16 @@ func TestHubRemoveOnDisconnect(t *testing.T) {
 	defer ts.Close()
 	wsURL := "ws" + strings.TrimPrefix(ts.URL, "http") + "?token=tok"
 
-	conn1, _, _ := websocket.DefaultDialer.Dial(wsURL, nil)
+	conn1, _, err := websocket.DefaultDialer.Dial(wsURL, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
 	time.Sleep(20 * time.Millisecond)
 
-	conn2, _, _ := websocket.DefaultDialer.Dial(wsURL, nil)
+	conn2, _, err := websocket.DefaultDialer.Dial(wsURL, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer conn2.Close()
 	time.Sleep(20 * time.Millisecond)
 

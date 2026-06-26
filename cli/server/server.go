@@ -3,6 +3,7 @@ package server
 import (
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/airvoice/airvoice/cli/paste"
 	"github.com/gorilla/websocket"
@@ -50,7 +51,14 @@ func (s *Server) ListenAndServe() error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/health", s.handleHealth)
 	mux.HandleFunc("/ws", s.handleWS)
-	return http.ListenAndServe(s.cfg.Addr, mux)
+	srv := &http.Server{
+		Addr:         s.cfg.Addr,
+		Handler:      mux,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  120 * time.Second,
+	}
+	return srv.ListenAndServe()
 }
 
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {

@@ -1,6 +1,7 @@
 package server
 
 import (
+	"errors"
 	"sync"
 
 	"github.com/airvoice/airvoice/cli/protocol"
@@ -63,9 +64,14 @@ func (s *Server) handleConnection(conn *websocket.Conn) {
 
 		case "text":
 			logStatus("text id=%s len=%d preview=%q", inbound.ID, len(inbound.Content), previewText(inbound.Content, 40))
-			go func(inbound protocol.Inbound) {
-				var outbound protocol.Outbound
-				err := s.cfg.Paster.Paste(inbound.Content)
+		go func(inbound protocol.Inbound) {
+			var outbound protocol.Outbound
+			var err error
+			if s.cfg.Paster != nil {
+				err = s.cfg.Paster.Paste(inbound.Content)
+			} else {
+				err = errors.New("paster not initialized")
+			}
 				if err != nil {
 					logStatus("paste failed id=%s: %v", inbound.ID, err)
 					outbound = protocol.Outbound{
