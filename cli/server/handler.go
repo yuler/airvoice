@@ -9,12 +9,12 @@ import (
 
 // handleConnection handles the WebSocket read/write loops.
 func (s *Server) handleConnection(conn *websocket.Conn) {
-	s.hub.Set(conn)
+	s.hub.Add(conn)
 	defer func() {
-		if s.hub.Clear(conn) {
-			logStatus("client disconnected")
-			if err := s.RotatePairing("client disconnected — scan the new QR code to reconnect"); err != nil {
-				logStatus("pairing refresh failed: %v", err)
+		if s.hub.Remove(conn) {
+			logStatus("client disconnected (active: %d)", s.hub.Count())
+			if s.hub.Count() == 0 {
+				logStatus("all clients disconnected — waiting for reconnection...")
 			}
 		}
 	}()
@@ -64,8 +64,12 @@ func (s *Server) handleConnection(conn *websocket.Conn) {
 		case "text":
 			logStatus("text id=%s len=%d preview=%q", inbound.ID, len(inbound.Content), previewText(inbound.Content, 40))
 			go func(inbound protocol.Inbound) {
-				var outbound protocol.Outbound
+				// Serialize paste operations across all connections.
+				s.pasteMu.Lock()
 				err := s.cfg.Paster.Paste(inbound.Content)
+				s.pasteMu.Unlock()
+
+				var outbound protocol.Outbound
 				if err != nil {
 					logStatus("paste failed id=%s: %v", inbound.ID, err)
 					outbound = protocol.Outbound{

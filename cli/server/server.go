@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/airvoice/airvoice/cli/pairing"
 	"github.com/airvoice/airvoice/cli/paste"
 	"github.com/gorilla/websocket"
 )
@@ -23,6 +22,7 @@ type Server struct {
 	upgrader websocket.Upgrader
 	tokenMu  sync.RWMutex
 	token    string
+	pasteMu  sync.Mutex
 }
 
 // New returns a newly configured Server instance.
@@ -36,6 +36,13 @@ func New(cfg Config) *Server {
 			},
 		},
 	}
+}
+
+// SetToken sets the authentication token. Called once at startup.
+func (s *Server) SetToken(token string) {
+	s.tokenMu.Lock()
+	s.token = token
+	s.tokenMu.Unlock()
 }
 
 // ListenAndServe starts the HTTP/WS server.
@@ -65,20 +72,8 @@ func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logStatus("client connected from %s", r.RemoteAddr)
+	logStatus("client connected from %s (active: %d)", r.RemoteAddr, s.hub.Count()+1)
 	s.handleConnection(conn)
-}
-
-// RotatePairing issues a new token and prints a fresh QR code to stderr.
-func (s *Server) RotatePairing(banner string) error {
-	token, _, err := pairing.PrintPairing(s.cfg.Port, banner)
-	if err != nil {
-		return err
-	}
-	s.tokenMu.Lock()
-	s.token = token
-	s.tokenMu.Unlock()
-	return nil
 }
 
 func (s *Server) validToken(token string) bool {

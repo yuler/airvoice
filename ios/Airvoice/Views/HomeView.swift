@@ -18,128 +18,26 @@ struct HomeView: View {
     }
 
     var body: some View {
-        ZStack {
+        ZStack(alignment: .top) {
             theme.background.ignoresSafeArea()
 
-            VStack(spacing: 20) {
-                HStack {
-                    statusBadge
+            VStack(spacing: 0) {
+                // — Status bar (narrow, full width, at the very top of safe area)
+                statusBar
 
-                    Spacer()
+                // — Countdown bar (full width, no spacing, directly below status bar)
+                AutoSendCountdownBar(
+                    active: autoSend.countdownActive,
+                    token: autoSend.countdownToken,
+                    duration: autoSend.autoSendDelay
+                )
 
-                    themeToggleButton
-
-                    Button(action: {
-                        showScanner = true
-                    }) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "qrcode.viewfinder")
-                            Text(connection.state == .connected ? "重新配对" : "扫码配对")
-                        }
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                        .foregroundColor(theme.primaryText)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(theme.chipBackground)
-                        .cornerRadius(20)
-                    }
+                // — Main content
+                VStack(spacing: 20) {
+                    editorSection
+                    bottomControls
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 10)
-
-                VStack(spacing: 8) {
-                    ZStack(alignment: .topLeading) {
-                        if viewModel.text.isEmpty {
-                            Text("在此输入，或使用键盘麦克风语音输入...")
-                                .foregroundColor(theme.placeholderText)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 12)
-                                .allowsHitTesting(false)
-                        }
-
-                        TextEditor(text: $viewModel.text)
-                            .focused($isEditorFocused)
-                            .scrollContentBackground(.hidden)
-                            .foregroundColor(theme.primaryText)
-                            .font(.body)
-                            .padding(8)
-                            .onChange(of: viewModel.text) { _, newValue in
-                                autoSend.textDidChange(newValue)
-                                // Text is cleared after a successful send; keep focus so
-                                // the keyboard never drops.
-                                if newValue.isEmpty, !showScanner {
-                                    isEditorFocused = true
-                                }
-                            }
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(theme.secondaryBackground)
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16)
-                            .stroke(theme.border, lineWidth: 1)
-                    )
-
-                    AutoSendCountdownBar(
-                        active: autoSend.countdownActive,
-                        token: autoSend.countdownToken,
-                        duration: autoSend.autoSendDelay
-                    )
-                }
-                .padding(.horizontal, 20)
-
-                VStack(spacing: 12) {
-                    if autoSend.inFlight {
-                        HStack(spacing: 6) {
-                            ProgressView()
-                                .controlSize(.small)
-                                .tint(theme.secondaryText)
-                            Text("发送中")
-                                .font(.caption)
-                                .foregroundColor(theme.secondaryText)
-                            Button {
-                                viewModel.cancelSend(autoSend: autoSend)
-                            } label: {
-                                Text("取消")
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundColor(theme.accent)
-                            }
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(theme.chipBackground)
-                        .cornerRadius(14)
-                    } else if connection.state != .connected {
-                        Text("请先扫码连接电脑")
-                            .font(.caption)
-                            .foregroundColor(theme.secondaryText)
-                    }
-
-                    Button(action: {
-                        viewModel.manualSend(connection: connection, autoSend: autoSend)
-                    }) {
-                        HStack(spacing: 8) {
-                            Image(systemName: "paperplane.fill")
-                            Text("发送到电脑")
-                        }
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundColor(theme.primaryText)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 44)
-                        .background(
-                            theme.sendButtonBackground.opacity(
-                                connection.state == .connected ? 1 : 0.5
-                            )
-                        )
-                        .cornerRadius(22)
-                    }
-                    .disabled(connection.state != .connected || autoSend.inFlight)
-
-                    InputMethodTipsView(theme: theme)
-                }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 20)
+                .padding(.top, 12)
             }
         }
         .toast(message: $viewModel.toastMessage, isError: $viewModel.isToastError, theme: theme)
@@ -164,57 +62,73 @@ struct HomeView: View {
             }
         }
         .onChange(of: scenePhase) { _, newPhase in
-            if newPhase == .active, !showScanner {
-                focusEditorForKeyboard()
+            if newPhase == .active {
+                if !showScanner {
+                    focusEditorForKeyboard()
+                }
+                // Auto-reconnect when returning to foreground
+                if connection.state != .connected,
+                   connection.state != .connecting,
+                   connection.canReconnect {
+                    connection.reconnect()
+                }
             }
         }
     }
 
-    private func focusEditorForKeyboard() {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-            isEditorFocused = true
-        }
-    }
+    // MARK: - Status Bar
 
-    private var themeToggleButton: some View {
-        Button {
-            var next = theme
-            next.toggle()
-            appThemeRaw = next.rawValue
-        } label: {
-            Image(systemName: theme == .light ? "moon.fill" : "sun.max.fill")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(theme.themeToggleForeground)
-                .frame(width: 36, height: 36)
-                .background(theme.themeToggleBackground)
-                .cornerRadius(18)
-        }
-        .padding(.trailing, 8)
-    }
-
-    private var statusBadge: some View {
-        HStack(spacing: 8) {
+    private var statusBar: some View {
+        HStack(spacing: 12) {
             Circle()
-                .fill(statusColor)
-                .frame(width: 8, height: 8)
+                .fill(connection.state == .connecting ? Color.white : Color.white.opacity(0.8))
+                .frame(width: 6, height: 6)
+                .opacity(connection.state == .connecting ? 0.5 : 1.0)
 
             Text(statusText)
-                .font(.subheadline)
-                .fontWeight(.semibold)
-                .foregroundColor(theme.primaryText)
+                .font(.system(size: 12, weight: .semibold, design: .rounded))
+                .foregroundColor(.white)
+
+            Spacer()
+
+            HStack(spacing: 8) {
+                Button {
+                    var next = theme
+                    next.toggle()
+                    appThemeRaw = next.rawValue
+                } label: {
+                    Image(systemName: theme == .light ? "moon.fill" : "sun.max.fill")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundColor(.white)
+                        .frame(width: 28, height: 28)
+                        .background(Color.white.opacity(0.18))
+                        .clipShape(Circle())
+                }
+
+                Button {
+                    showScanner = true
+                } label: {
+                    Image(systemName: "qrcode.viewfinder")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundColor(.white)
+                        .frame(width: 28, height: 28)
+                        .background(Color.white.opacity(0.18))
+                        .clipShape(Circle())
+                }
+            }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .background(statusColor.opacity(0.15))
-        .cornerRadius(12)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .background(statusBarColor)
+        .animation(.easeInOut(duration: 0.3), value: connection.state)
     }
 
-    private var statusColor: Color {
+    private var statusBarColor: Color {
         switch connection.state {
-        case .disconnected: return .gray
-        case .connecting: return .yellow
-        case .connected: return .green
-        case .error: return .red
+        case .disconnected: return theme.statusBarDisconnected
+        case .connecting: return theme.statusBarConnecting
+        case .connected: return theme.statusBarConnected
+        case .error: return theme.statusBarError
         }
     }
 
@@ -223,7 +137,106 @@ struct HomeView: View {
         case .disconnected: return "未连接"
         case .connecting: return "连接中..."
         case .connected: return "已连接: \(connection.hostName ?? "电脑")"
-        case .error(let msg): return "连接错误: \(msg)"
+        case .error(let msg): return msg
+        }
+    }
+
+    // MARK: - Editor
+
+    private var editorSection: some View {
+        ZStack(alignment: .topLeading) {
+            if viewModel.text.isEmpty {
+                Text("在此输入，或使用键盘麦克风语音输入...")
+                    .foregroundColor(theme.placeholderText)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .allowsHitTesting(false)
+            }
+
+            TextEditor(text: $viewModel.text)
+                .focused($isEditorFocused)
+                .scrollContentBackground(.hidden)
+                .foregroundColor(theme.primaryText)
+                .font(.body)
+                .padding(8)
+                .onChange(of: viewModel.text) { _, newValue in
+                    autoSend.textDidChange(newValue)
+                    if newValue.isEmpty, !showScanner {
+                        isEditorFocused = true
+                    }
+                }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(theme.secondaryBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(theme.border, lineWidth: 1)
+        )
+        .padding(.horizontal, 20)
+    }
+
+    // MARK: - Bottom Controls
+
+    private var bottomControls: some View {
+        VStack(spacing: 12) {
+            if autoSend.inFlight {
+                HStack(spacing: 6) {
+                    ProgressView()
+                        .controlSize(.small)
+                        .tint(theme.secondaryText)
+                    Text("发送中")
+                        .font(.caption)
+                        .foregroundColor(theme.secondaryText)
+                    Button {
+                        viewModel.cancelSend(autoSend: autoSend)
+                    } label: {
+                        Text("取消")
+                            .font(.caption.weight(.semibold))
+                            .foregroundColor(theme.accent)
+                    }
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(theme.chipBackground)
+                .cornerRadius(14)
+            } else if connection.state != .connected {
+                Text(connection.canReconnect ? "连接中断，正在重连..." : "请先扫码连接电脑")
+                    .font(.caption)
+                    .foregroundColor(theme.secondaryText)
+            }
+
+            Button(action: {
+                viewModel.manualSend(connection: connection, autoSend: autoSend)
+            }) {
+                HStack(spacing: 8) {
+                    Image(systemName: "paperplane.fill")
+                    Text("发送到电脑")
+                }
+                .font(.subheadline.weight(.semibold))
+                .foregroundColor(theme.primaryText)
+                .frame(maxWidth: .infinity)
+                .frame(height: 44)
+                .background(
+                    theme.sendButtonBackground.opacity(
+                        connection.state == .connected ? 1 : 0.5
+                    )
+                )
+                .cornerRadius(22)
+            }
+            .disabled(connection.state != .connected || autoSend.inFlight)
+
+            InputMethodTipsView(theme: theme)
+        }
+        .padding(.horizontal, 20)
+        .padding(.bottom, 20)
+    }
+
+    // MARK: - Helpers
+
+    private func focusEditorForKeyboard() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+            isEditorFocused = true
         }
     }
 
@@ -257,9 +270,8 @@ struct HomeView: View {
     }
 }
 
-/// Thin red bar that drains from full width to empty over `duration`, signalling
+/// Thin bar that drains from full width to empty over `duration`, signalling
 /// the idle countdown before an automatic send. Restarts whenever `token` changes.
-/// Uses a horizontal scale (clamped 0...1) so it can never overflow the text box.
 private struct AutoSendCountdownBar: View {
     let active: Bool
     let token: Int
@@ -268,7 +280,7 @@ private struct AutoSendCountdownBar: View {
     @State private var progress: CGFloat = 0
 
     var body: some View {
-        Capsule()
+        Rectangle()
             .fill(Color.red)
             .frame(height: 3)
             .scaleEffect(x: min(max(progress, 0), 1), y: 1, anchor: .leading)

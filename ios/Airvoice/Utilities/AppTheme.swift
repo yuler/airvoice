@@ -91,6 +91,11 @@ enum AppTheme: String, CaseIterable {
         }
     }
 
+    var statusBarConnected: Color { Color(hex: "00ac3a") }
+    var statusBarConnecting: Color { Color(hex: "ffae00") }
+    var statusBarError: Color { Color(hex: "e2162a") }
+    var statusBarDisconnected: Color { Color(hex: "8f8f8f") }
+
     mutating func toggle() {
         self = self == .light ? .dark : .light
     }

@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/airvoice/airvoice/cli/pairing"
 	"github.com/airvoice/airvoice/cli/paste"
 	"github.com/airvoice/airvoice/cli/server"
+	"github.com/google/uuid"
 )
 
 const version = "0.1.0"
@@ -42,6 +44,9 @@ func main() {
 			hostname = "PC"
 		}
 
+		// Generate a stable token for the entire process lifetime.
+		token := uuid.NewString()
+
 		addr := fmt.Sprintf("0.0.0.0:%d", port)
 		srv := server.New(server.Config{
 			Addr:     addr,
@@ -50,8 +55,9 @@ func main() {
 			Version:  version,
 			Paster:   paster,
 		})
+		srv.SetToken(token)
 
-		if err := srv.RotatePairing(""); err != nil {
+		if _, err := pairing.PrintPairingWithToken(port, token, ""); err != nil {
 			fmt.Fprintf(os.Stderr, "Error creating pairing session: %v\n", err)
 			os.Exit(1)
 		}

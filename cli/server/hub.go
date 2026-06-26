@@ -6,46 +6,42 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// Hub maintains the single active connection.
+// Hub maintains all active WebSocket connections.
 type Hub struct {
-	mu   sync.Mutex
-	conn *websocket.Conn
+	mu    sync.Mutex
+	conns map[*websocket.Conn]struct{}
 }
 
 // NewHub initializes and returns a Hub.
 func NewHub() *Hub {
-	return &Hub{}
-}
-
-// Set saves the connection and closes any previous connection.
-func (h *Hub) Set(conn *websocket.Conn) {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-	if h.conn != nil {
-		h.conn.Close()
+	return &Hub{
+		conns: make(map[*websocket.Conn]struct{}),
 	}
-	h.conn = conn
 }
 
-// Clear removes the connection only if it matches the current active one
-// (preventing clearing a new connection from an old connection teardown).
-// It returns true when the active client was removed.
-func (h *Hub) Clear(conn *websocket.Conn) bool {
+// Add registers a connection.
+func (h *Hub) Add(conn *websocket.Conn) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	if h.conn == conn {
-		if h.conn != nil {
-			h.conn.Close()
-		}
-		h.conn = nil
+	h.conns[conn] = struct{}{}
+}
+
+// Remove unregisters a connection and closes it.
+// Returns true if the connection was present.
+func (h *Hub) Remove(conn *websocket.Conn) bool {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if _, ok := h.conns[conn]; ok {
+		conn.Close()
+		delete(h.conns, conn)
 		return true
 	}
 	return false
 }
 
-// Get returns the current active connection.
-func (h *Hub) Get() *websocket.Conn {
+// Count returns the number of active connections.
+func (h *Hub) Count() int {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	return h.conn
+	return len(h.conns)
 }
