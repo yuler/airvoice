@@ -6,9 +6,7 @@ import (
 	"errors"
 	"os"
 	"reflect"
-	"sync"
 	"testing"
-	"time"
 )
 
 type commandCall struct {
@@ -41,12 +39,6 @@ func TestLinuxPasters(t *testing.T) {
 			{name: "xclip", stdin: "hello world", args: []string{"-selection", "clipboard"}},
 			{name: "xdotool", stdin: "", args: []string{"key", "ctrl+v"}},
 		}
-		for i := 0; i < 25; i++ {
-			if len(calls) >= 2 {
-				break
-			}
-			time.Sleep(10 * time.Millisecond)
-		}
 		if !reflect.DeepEqual(calls, expected) {
 			t.Errorf("got calls %+v, expected %+v", calls, expected)
 		}
@@ -67,11 +59,8 @@ func TestLinuxPasters(t *testing.T) {
 	})
 
 	t.Run("waylandPaster success", func(t *testing.T) {
-		var mu sync.Mutex
 		runCommand = func(name string, stdin string, args ...string) error {
-			mu.Lock()
 			calls = append(calls, commandCall{name: name, stdin: stdin, args: args})
-			mu.Unlock()
 			return nil
 		}
 		calls = nil
@@ -87,20 +76,8 @@ func TestLinuxPasters(t *testing.T) {
 			{name: "wl-copy", stdin: "hello world", args: nil},
 			{name: "ydotool", stdin: "", args: []string{"key", "CTRL+v"}},
 		}
-		for i := 0; i < 25; i++ {
-			mu.Lock()
-			length := len(calls)
-			mu.Unlock()
-			if length >= 2 {
-				break
-			}
-			time.Sleep(10 * time.Millisecond)
-		}
-		mu.Lock()
-		actualCalls := calls
-		mu.Unlock()
-		if !reflect.DeepEqual(actualCalls, expected) {
-			t.Errorf("got calls %+v, expected %+v", actualCalls, expected)
+		if !reflect.DeepEqual(calls, expected) {
+			t.Errorf("got calls %+v, expected %+v", calls, expected)
 		}
 	})
 

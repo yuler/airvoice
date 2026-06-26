@@ -64,12 +64,8 @@ func (s *Server) handleConnection(conn *websocket.Conn) {
 		case "text":
 			logStatus("text id=%s len=%d preview=%q", inbound.ID, len(inbound.Content), previewText(inbound.Content, 40))
 			go func(inbound protocol.Inbound) {
-				// Serialize paste operations across all connections.
-				s.pasteMu.Lock()
-				err := s.cfg.Paster.Paste(inbound.Content)
-				s.pasteMu.Unlock()
-
 				var outbound protocol.Outbound
+				err := s.cfg.Paster.Paste(inbound.Content)
 				if err != nil {
 					logStatus("paste failed id=%s: %v", inbound.ID, err)
 					outbound = protocol.Outbound{
