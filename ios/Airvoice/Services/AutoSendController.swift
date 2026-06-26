@@ -30,12 +30,13 @@ enum SendTrigger {
         }
 
         startCountdown()
-        debounceTask = Task {
+        debounceTask = Task { [weak self] in
             do {
-                try await Task.sleep(nanoseconds: UInt64(autoSendDelay * 1_000_000_000))
+                guard let self else { return }
+                try await Task.sleep(nanoseconds: UInt64(self.autoSendDelay * 1_000_000_000))
                 guard !Task.isCancelled else { return }
-                countdownActive = false
-                _ = attemptSend(text)
+                self.countdownActive = false
+                _ = self.attemptSend(text)
             } catch {
                 // Task cancelled
             }

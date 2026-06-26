@@ -21,24 +21,27 @@ final class HomeViewModel: ObservableObject {
     private var inFlightIsRetry = false
 
     func wire(connection: ConnectionManager, autoSend: AutoSendController) {
-        autoSend.onSend = { [weak self] content, trigger in
-            self?.handleSend(
+        autoSend.onSend = { [weak self, weak connection, weak autoSend] content, trigger in
+            guard let self, let connection, let autoSend else { return false }
+            return self.handleSend(
                 content: content,
                 trigger: trigger,
                 connection: connection,
                 autoSend: autoSend
-            ) ?? false
+            )
         }
 
-        connection.onAck = { [weak self] id, ok, errMsg in
+        connection.onAck = { [weak self, weak connection, weak autoSend] id, ok, errMsg in
             Task { @MainActor in
-                self?.handleAck(id: id, ok: ok, errMsg: errMsg, connection: connection, autoSend: autoSend)
+                guard let self, let connection, let autoSend else { return }
+                self.handleAck(id: id, ok: ok, errMsg: errMsg, connection: connection, autoSend: autoSend)
             }
         }
 
-        connection.onTransportError = { [weak self] message in
+        connection.onTransportError = { [weak self, weak autoSend] message in
             Task { @MainActor in
-                self?.handleTransportError(message, autoSend: autoSend)
+                guard let self, let autoSend else { return }
+                self.handleTransportError(message, autoSend: autoSend)
             }
         }
     }
@@ -132,24 +135,25 @@ final class HomeViewModel: ObservableObject {
         }
 
         sendTimeoutTask?.cancel()
-        sendTimeoutTask = Task {
+        sendTimeoutTask = Task { [weak self, weak autoSend] in
             let timeoutMs = AppSettings.shared.sendTimeoutMs
             let timeoutNs = UInt64(timeoutMs * 1_000_000)
             try? await Task.sleep(nanoseconds: timeoutNs)
             guard !Task.isCancelled else {
-                sendTimeoutTask = nil
+                self?.sendTimeoutTask = nil
                 return
             }
+            guard let self, let autoSend else { return }
             if autoSend.inFlight {
-                if let msgId = pendingSendMsgId {
-                    clearPendingSend(msgId: msgId)
+                if let msgId = self.pendingSendMsgId {
+                    self.clearPendingSend(msgId: msgId)
                 }
                 autoSend.clearInFlight()
-                inFlightContent = nil
-                sendTimedOut = true
-                showToast("发送超时，请重试", isError: true)
+                self.inFlightContent = nil
+                self.sendTimedOut = true
+                self.showToast("发送超时，请重试", isError: true)
             }
-            sendTimeoutTask = nil
+            self.sendTimeoutTask = nil
         }
         return true
     }
