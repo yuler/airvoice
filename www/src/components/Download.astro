@@ -1,0 +1,33 @@
+---
+const lang = Astro.props.lang as 'en' | 'zh';
+---
+
+<section class="py-20">
+  <div class="max-w-6xl mx-auto px-6">
+    <h2 class="text-3xl font-bold text-center mb-12">
+      {lang === 'en' ? 'Get Started' : '开始使用'}
+    </h2>
+    <div class="max-w-2xl mx-auto space-y-6">
+      <div class="bg-bg-secondary border border-border rounded-lg p-6">
+        <h3 class="font-semibold mb-3">mise (recommended)</h3>
+        <code class="block bg-bg border border-border rounded-md p-3 text-sm font-mono">
+          mise trust && mise install
+        </code>
+      </div>
+      <div class="bg-bg-secondary border border-border rounded-lg p-6">
+        <h3 class="font-semibold mb-3">Go</h3>
+        <code class="block bg-bg border border-border rounded-md p-3 text-sm font-mono">
+          go install github.com/anthropics/airvoice/cli@latest
+        </code>
+      </div>
+      <div class="text-center">
+        <a
+          href="https://github.com/anthropics/airvoice/releases"
+          class="text-accent hover:underline text-sm"
+        >
+          {lang === 'en' ? 'All releases on GitHub →' : '所有版本见 GitHub →'}
+        </a>
+      </div>
+    </div>
+  </div>
+</section>

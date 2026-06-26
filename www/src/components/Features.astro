@@ -1,0 +1,32 @@
+---
+const lang = Astro.props.lang as 'en' | 'zh';
+
+const features = lang === 'en' ? [
+  { icon: '📡', title: 'LAN Only', desc: 'Data never leaves your local network. No cloud, no servers.' },
+  { icon: '🔒', title: 'Zero Cloud', desc: 'No accounts, no subscriptions, no tracking.' },
+  { icon: '💻', title: 'Cross-Platform', desc: 'macOS + Linux (X11 and Wayland).' },
+  { icon: '📖', title: 'Open Source', desc: 'MIT License. Fully transparent.' },
+] : [
+  { icon: '📡', title: '纯局域网', desc: '数据不离开本地网络，无云端中转。' },
+  { icon: '🔒', title: '零云端', desc: '无需账号、无订阅、无追踪。' },
+  { icon: '💻', title: '跨平台', desc: '支持 macOS 和 Linux（X11 / Wayland）。' },
+  { icon: '📖', title: '开源', desc: 'MIT License，完全透明。' },
+];
+---
+
+<section class="py-20 bg-bg-secondary">
+  <div class="max-w-6xl mx-auto px-6">
+    <h2 class="text-3xl font-bold text-center mb-12">
+      {lang === 'en' ? 'Why Airvoice?' : '为什么选择 Airvoice？'}
+    </h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+      {features.map(f => (
+        <div class="bg-bg border border-border rounded-lg p-6">
+          <div class="text-3xl mb-4">{f.icon}</div>
+          <h3 class="font-semibold mb-2">{f.title}</h3>
+          <p class="text-sm text-text-secondary">{f.desc}</p>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>

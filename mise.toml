@@ -43,3 +43,13 @@ run = "go test ./cli/..."
 description = "Alias for dev — build and run airvoice server"
 depends = ["build"]
 run = "./bin/airvoice serve"
+
+[tasks.www]
+description = "Start www dev server (Astro)"
+run = "npm run dev"
+dir = "./www"
+
+[tasks."www:build"]
+description = "Build www static site"
+run = "npm run build"
+dir = "./www"

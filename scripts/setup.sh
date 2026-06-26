@@ -58,5 +58,10 @@ esac
 
 gum spin --spinner dot --title "Building CLI…" -- go build -o bin/airvoice ./cli
 
+if [[ -d "www" && -f "www/package.json" ]]; then
+  gum spin --spinner dot --title "Installing www dependencies…" -- npm ci --prefix www
+fi
+
 gum style --margin "1 0 0 0" --foreground 10 "Setup complete."
 gum_info "Next: mise run dev"
+gum_info "Website: mise run www"

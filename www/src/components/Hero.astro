@@ -1,0 +1,31 @@
+---
+const lang = Astro.props.lang as 'en' | 'zh';
+---
+
+<section class="relative py-24 md:py-32">
+  <div class="max-w-6xl mx-auto px-6 text-center">
+    <h1 class="text-4xl md:text-6xl font-bold tracking-tight mb-6">
+      {lang === 'en' ? (
+        <>Speak on your phone,<br />type on your PC</>
+      ) : (
+        <>手机说话，<br />电脑打字</>
+      )}
+    </h1>
+    <p class="text-lg md:text-xl text-text-secondary max-w-2xl mx-auto mb-10">
+      {lang === 'en'
+        ? 'Airvoice is a LAN bridge — no cloud, no accounts, no data leaves your network.'
+        : 'Airvoice 是局域网语音桥接工具 — 无云端、无账号、数据不出本地网络。'}
+    </p>
+    <div class="flex flex-col sm:flex-row gap-4 justify-center">
+      <code class="inline-block bg-bg-secondary border border-border rounded-md px-6 py-3 font-mono text-sm">
+        mise install
+      </code>
+      <a
+        href="https://github.com/anthropics/airvoice"
+        class="inline-flex items-center justify-center px-6 py-3 border border-border rounded-full text-sm hover:bg-bg-secondary transition-colors"
+      >
+        GitHub →
+      </a>
+    </div>
+  </div>
+</section>

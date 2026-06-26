@@ -1,0 +1,36 @@
+---
+const lang = Astro.props.lang as 'en' | 'zh';
+
+const platforms = lang === 'en' ? [
+  { name: 'macOS', deps: ['Accessibility permission for Terminal'], cmd: null },
+  { name: 'Linux X11', deps: ['xclip', 'xdotool'], cmd: 'sudo apt install xclip xdotool' },
+  { name: 'Linux Wayland', deps: ['wl-clipboard', 'ydotool'], cmd: 'sudo apt install wl-clipboard ydotool' },
+] : [
+  { name: 'macOS', deps: ['终端的辅助功能权限'], cmd: null },
+  { name: 'Linux X11', deps: ['xclip', 'xdotool'], cmd: 'sudo apt install xclip xdotool' },
+  { name: 'Linux Wayland', deps: ['wl-clipboard', 'ydotool'], cmd: 'sudo apt install wl-clipboard ydotool' },
+];
+---
+
+<section class="py-20 bg-bg-secondary">
+  <div class="max-w-6xl mx-auto px-6">
+    <h2 class="text-3xl font-bold text-center mb-12">
+      {lang === 'en' ? 'Platform Support' : '平台支持'}
+    </h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      {platforms.map(p => (
+        <div class="bg-bg border border-border rounded-lg p-6">
+          <h3 class="text-xl font-semibold mb-4">{p.name}</h3>
+          <ul class="text-sm text-text-secondary space-y-2 mb-4">
+            {p.deps.map(d => <li>• {d}</li>)}
+          </ul>
+          {p.cmd && (
+            <code class="block bg-bg-secondary border border-border rounded-md p-3 text-xs font-mono">
+              {p.cmd}
+            </code>
+          )}
+        </div>
+      ))}
+    </div>
+  </div>
+</section>

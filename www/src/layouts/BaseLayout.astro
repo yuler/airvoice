@@ -1,0 +1,42 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description: string;
+  lang: 'en' | 'zh';
+}
+
+const { title, description, lang } = Astro.props;
+const currentPath = Astro.url.pathname;
+const otherLang = lang === 'en' ? 'zh' : 'en';
+const otherPath = currentPath.replace(`/${lang}/`, `/${otherLang}/`);
+---
+
+<!doctype html>
+<html lang={lang}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content={description} />
+    <title>{title}</title>
+  </head>
+  <body class="min-h-screen bg-bg text-text">
+    <nav class="fixed top-0 w-full bg-bg/80 backdrop-blur-sm border-b border-border z-50">
+      <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+        <a href={`/${lang}/`} class="text-xl font-bold">Airvoice</a>
+        <div class="flex items-center gap-4">
+          <a href={`/${lang}/docs/quick-start/`} class="text-sm text-text-secondary hover:text-text">
+            {lang === 'en' ? 'Docs' : '文档'}
+          </a>
+          <a href={otherPath} class="text-sm text-text-secondary hover:text-text">
+            {otherLang.toUpperCase()}
+          </a>
+        </div>
+      </div>
+    </nav>
+    <main class="pt-16">
+      <slot />
+    </main>
+  </body>
+</html>

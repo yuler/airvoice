@@ -1,0 +1,19 @@
+---
+const lang = Astro.props.lang as 'en' | 'zh';
+---
+
+<footer class="py-12 border-t border-border">
+  <div class="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
+    <div class="text-sm text-text-muted">
+      © 2024 Airvoice. MIT License.
+    </div>
+    <div class="flex gap-6">
+      <a href="https://github.com/anthropics/airvoice" class="text-sm text-text-secondary hover:text-text">
+        GitHub
+      </a>
+      <a href={`/${lang}/docs/quick-start/`} class="text-sm text-text-secondary hover:text-text">
+        {lang === 'en' ? 'Docs' : '文档'}
+      </a>
+    </div>
+  </div>
+</footer>
