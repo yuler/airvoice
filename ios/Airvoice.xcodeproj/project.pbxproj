@@ -13,7 +13,7 @@
 		38E216AC2FF6CCC44797F882 /* PreferredKeyboardResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 058EB2747E389B6AF2CDD0DC /* PreferredKeyboardResolver.swift */; };
 		4F22931C33FC4BCA7F44275F /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B1269C9C141659D0AB341DB /* HomeView.swift */; };
 		5A92E466C095F7B5CFACB0F0 /* AutoSendControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B53681D4DAB6E5CCD7A16F3C /* AutoSendControllerTests.swift */; };
-		6B8E478A3080940AC014E3E4 /* VoiceInputTextEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3571D6FD70F8E5C26BBCB945 /* VoiceInputTextEditor.swift */; };
+
 		6F6274C1DA308E1986F13E93 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C653CDEEA8D67BDEFB5DBCE7 /* OnboardingView.swift */; };
 		765A1E3A3433F8204B3A5AF6 /* ConnectionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B13F4D18F23A1D46E83C066 /* ConnectionManager.swift */; };
 		8DCA813CAC193A8348BEF4A0 /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 668B6023156A450CBA8B8CCD /* AppSettings.swift */; };
@@ -40,7 +40,7 @@
 /* Begin PBXFileReference section */
 		058EB2747E389B6AF2CDD0DC /* PreferredKeyboardResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferredKeyboardResolver.swift; sourceTree = "<group>"; };
 		158A2C02AF8F8C9857E49BF1 /* ProtocolMessageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProtocolMessageTests.swift; sourceTree = "<group>"; };
-		3571D6FD70F8E5C26BBCB945 /* VoiceInputTextEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceInputTextEditor.swift; sourceTree = "<group>"; };
+
 		385B9808F8B2C23F4373B8E7 /* Airvoice.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Airvoice.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		668B6023156A450CBA8B8CCD /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
 		6B13F4D18F23A1D46E83C066 /* ConnectionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionManager.swift; sourceTree = "<group>"; };
@@ -112,7 +112,7 @@
 				D14894FD9051DCD12BEC498E /* InputMethodTipsView.swift */,
 				C653CDEEA8D67BDEFB5DBCE7 /* OnboardingView.swift */,
 				9DAFDCBFA2414B50BE5CE99F /* QRScannerView.swift */,
-				3571D6FD70F8E5C26BBCB945 /* VoiceInputTextEditor.swift */,
+
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -259,7 +259,7 @@
 				9531D0866EB99D244B59A4F8 /* ProtocolMessage.swift in Sources */,
 				AA549E67ABB54A47CA59AD11 /* QRScannerView.swift in Sources */,
 				A96EC93930A3EC4F6B81ACF0 /* Toast.swift in Sources */,
-				6B8E478A3080940AC014E3E4 /* VoiceInputTextEditor.swift in Sources */,
+
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

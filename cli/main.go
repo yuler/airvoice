@@ -26,12 +26,11 @@ func main() {
 	case "doctor":
 		os.Exit(paste.PrintDoctor(os.Stdout))
 	case "serve":
-		port := 7383
+		var port int
 		fs := flag.NewFlagSet("serve", flag.ExitOnError)
-		portPtr := fs.Int("port", 7383, "port to listen on")
-		if err := fs.Parse(os.Args[2:]); err == nil {
-			port = *portPtr
-		}
+		fs.IntVar(&port, "port", 7383, "port to listen on")
+		fs.IntVar(&port, "p", 7383, "port to listen on (shorthand)")
+		_ = fs.Parse(os.Args[2:])
 
 		paster, err := paste.New()
 		if err != nil {

@@ -17,7 +17,7 @@ func TestHubMultipleConnections(t *testing.T) {
 	}
 
 	s := New(Config{Addr: ":0", Port: 7383, Hostname: "test", Version: "0.1.0"})
-	setTestToken(s, "tok")
+	s.SetToken("tok")
 	ts := httptest.NewServer(http.HandlerFunc(s.handleWS))
 	defer ts.Close()
 	wsURL := "ws" + strings.TrimPrefix(ts.URL, "http") + "?token=tok"
@@ -58,7 +58,7 @@ func TestHubRemoveOnDisconnect(t *testing.T) {
 	hub := NewHub()
 	s := New(Config{Addr: ":0", Port: 7383, Hostname: "test", Version: "0.1.0"})
 	s.hub = hub
-	setTestToken(s, "tok")
+	s.SetToken("tok")
 	ts := httptest.NewServer(http.HandlerFunc(s.handleWS))
 	defer ts.Close()
 	wsURL := "ws" + strings.TrimPrefix(ts.URL, "http") + "?token=tok"

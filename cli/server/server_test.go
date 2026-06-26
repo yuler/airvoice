@@ -43,7 +43,7 @@ func TestServerHealth(t *testing.T) {
 
 func TestServerWSAuth(t *testing.T) {
 	s := New(Config{Addr: ":0", Port: 7383, Hostname: "test-host", Version: "0.1.0"})
-	setTestToken(s, "valid-token")
+	s.SetToken("valid-token")
 	ts := httptest.NewServer(http.HandlerFunc(s.handleWS))
 	defer ts.Close()
 
@@ -72,7 +72,7 @@ func TestServerWSAuth(t *testing.T) {
 func TestServerMessageHandling(t *testing.T) {
 	paster := &mockPaster{}
 	s := New(Config{Addr: ":0", Port: 7383, Hostname: "host-pc", Version: "0.1.0", Paster: paster})
-	setTestToken(s, "token")
+	s.SetToken("token")
 	ts := httptest.NewServer(http.HandlerFunc(s.handleWS))
 	defer ts.Close()
 
@@ -148,7 +148,7 @@ func TestServerMessageHandling(t *testing.T) {
 
 func TestHubConnectionLifecycle(t *testing.T) {
 	s := New(Config{Addr: ":0", Port: 7383, Hostname: "host-pc", Version: "0.1.0"})
-	setTestToken(s, "token")
+	s.SetToken("token")
 	ts := httptest.NewServer(http.HandlerFunc(s.handleWS))
 	defer ts.Close()
 
@@ -201,7 +201,7 @@ func TestHubConnectionLifecycle(t *testing.T) {
 
 func TestTokenStableAfterDisconnect(t *testing.T) {
 	s := New(Config{Addr: ":0", Port: 7383, Hostname: "host-pc", Version: "0.1.0"})
-	setTestToken(s, "stable-token")
+	s.SetToken("stable-token")
 	ts := httptest.NewServer(http.HandlerFunc(s.handleWS))
 	defer ts.Close()
 
@@ -234,8 +234,3 @@ func TestTokenStableAfterDisconnect(t *testing.T) {
 	}
 }
 
-func setTestToken(s *Server, token string) {
-	s.tokenMu.Lock()
-	s.token = token
-	s.tokenMu.Unlock()
-}

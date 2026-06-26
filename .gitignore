@@ -10,3 +10,5 @@ bin/airvoice
 xcuserdata/
 DerivedData/
 ios/Signing.xcconfig
+
+tmp
