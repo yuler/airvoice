@@ -6,7 +6,7 @@ final class AppSettings: ObservableObject {
     static let shared = AppSettings()
 
     /// Timeout in milliseconds for clipboard transmission acknowledgment from CLI.
-    @AppStorage("sendTimeoutMs") var sendTimeoutMs: Double = 2000.0
+    @AppStorage("sendAckTimeoutMs") var sendTimeoutMs: Double = 3000.0
 
     private init() {}
 }

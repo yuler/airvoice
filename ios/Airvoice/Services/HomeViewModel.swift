@@ -6,6 +6,7 @@ final class HomeViewModel: ObservableObject {
     @Published var text = ""
     @Published var toastMessage: String?
     @Published var isToastError = false
+    @Published var sendTimedOut = false
 
     private var sendTimeoutTask: Task<Void, Never>?
     /// Maps in-flight message IDs to the content actually sent (for dedup after ack).
@@ -114,6 +115,7 @@ final class HomeViewModel: ObservableObject {
         }
 
         autoSend.beginSend()
+        sendTimedOut = false
 
         inFlightContent = content
         inFlightTrigger = trigger
@@ -144,6 +146,7 @@ final class HomeViewModel: ObservableObject {
                 }
                 autoSend.clearInFlight()
                 inFlightContent = nil
+                sendTimedOut = true
                 showToast("发送超时，请重试", isError: true)
             }
             sendTimeoutTask = nil
@@ -185,6 +188,7 @@ final class HomeViewModel: ObservableObject {
 
         if ok {
             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            sendTimedOut = false
             showToast("已发送到电脑", isError: false)
             // Always release the in-flight lock on success, even if the acked id
             // didn't match a tracked message (otherwise "发送中" sticks forever).

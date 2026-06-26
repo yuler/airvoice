@@ -81,23 +81,7 @@ struct HomeView: View {
 
     private var statusBar: some View {
         HStack(spacing: 8) {
-            Circle()
-                .fill(stateDotColor)
-                .frame(width: 8, height: 8)
-                .scaleEffect(isBreathing && connection.state == .connecting ? 1.25 : 1.0)
-                .opacity(isBreathing && connection.state == .connecting ? 0.4 : 1.0)
-                .onAppear {
-                    if connection.state == .connecting {
-                        startBreathingAnimation()
-                    }
-                }
-                .onChange(of: connection.state) { _, newState in
-                    if newState == .connecting {
-                        startBreathingAnimation()
-                    } else {
-                        isBreathing = false
-                    }
-                }
+            statusIndicator
 
             Text(statusText)
                 .font(.system(size: 13, weight: .medium, design: .rounded))
@@ -135,6 +119,38 @@ struct HomeView: View {
         .padding(.vertical, 8)
         .background(theme.background)
         .animation(.easeInOut(duration: 0.3), value: connection.state)
+    }
+
+    @ViewBuilder
+    private var statusIndicator: some View {
+        if viewModel.sendTimedOut {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundColor(theme.statusBarConnecting)
+                .frame(width: 8, height: 8)
+        } else {
+            Circle()
+                .fill(stateDotColor)
+                .frame(width: 8, height: 8)
+                .scaleEffect(shouldBreatheDot && isBreathing ? 1.25 : 1.0)
+                .opacity(shouldBreatheDot && isBreathing ? 0.4 : 1.0)
+                .onAppear {
+                    if shouldBreatheDot {
+                        startBreathingAnimation()
+                    }
+                }
+                .onChange(of: connection.state) { _, newState in
+                    if newState == .connecting || newState == .connected {
+                        startBreathingAnimation()
+                    } else {
+                        isBreathing = false
+                    }
+                }
+        }
+    }
+
+    private var shouldBreatheDot: Bool {
+        connection.state == .connecting || connection.state == .connected
     }
 
     private var stateDotColor: Color {

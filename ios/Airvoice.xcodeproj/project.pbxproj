@@ -16,6 +16,7 @@
 		6B8E478A3080940AC014E3E4 /* VoiceInputTextEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3571D6FD70F8E5C26BBCB945 /* VoiceInputTextEditor.swift */; };
 		6F6274C1DA308E1986F13E93 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C653CDEEA8D67BDEFB5DBCE7 /* OnboardingView.swift */; };
 		765A1E3A3433F8204B3A5AF6 /* ConnectionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B13F4D18F23A1D46E83C066 /* ConnectionManager.swift */; };
+		8DCA813CAC193A8348BEF4A0 /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 668B6023156A450CBA8B8CCD /* AppSettings.swift */; };
 		90E2D6410B57143A810A4795 /* ProtocolMessageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 158A2C02AF8F8C9857E49BF1 /* ProtocolMessageTests.swift */; };
 		94C019DDD752E4A996B637D6 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E343930354171783B6F3B910 /* ContentView.swift */; };
 		9531D0866EB99D244B59A4F8 /* ProtocolMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA75A67ED0F3AAB6BEEF9BE9 /* ProtocolMessage.swift */; };
@@ -41,6 +42,7 @@
 		158A2C02AF8F8C9857E49BF1 /* ProtocolMessageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProtocolMessageTests.swift; sourceTree = "<group>"; };
 		3571D6FD70F8E5C26BBCB945 /* VoiceInputTextEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceInputTextEditor.swift; sourceTree = "<group>"; };
 		385B9808F8B2C23F4373B8E7 /* Airvoice.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Airvoice.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		668B6023156A450CBA8B8CCD /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
 		6B13F4D18F23A1D46E83C066 /* ConnectionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionManager.swift; sourceTree = "<group>"; };
 		7B1269C9C141659D0AB341DB /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		8925B067B467783539CEB0AF /* AutoSendController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoSendController.swift; sourceTree = "<group>"; };
@@ -57,7 +59,7 @@
 		E343930354171783B6F3B910 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		EEB2C3ABFB2275E616CE1BF6 /* HomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModel.swift; sourceTree = "<group>"; };
 		FC00C5EBB20C533AAEB997FC /* AirvoiceApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AirvoiceApp.swift; sourceTree = "<group>"; };
-		"TEMP_A3BA42B4-17B4-4D00-A47A-A57DFF7DF935" /* Signing.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Signing.xcconfig; sourceTree = "<group>"; };
+		"TEMP_AE851291-FF8B-479A-B72B-B0437A26FD5B" /* Signing.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Signing.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -76,7 +78,7 @@
 				674F6DC7187A5EB59C04FEA9 /* Airvoice */,
 				39AFFCF1CDA615AA52FDFCD7 /* AirvoiceTests */,
 				7B798D00A6B7ADA273C349A9 /* Products */,
-				B49AA69F2FED1F2000FE1C56 /* Recovered References */,
+				B446FE492FEE4DA60018210A /* Recovered References */,
 			);
 			sourceTree = "<group>";
 		};
@@ -124,10 +126,10 @@
 			path = Models;
 			sourceTree = "<group>";
 		};
-		B49AA69F2FED1F2000FE1C56 /* Recovered References */ = {
+		B446FE492FEE4DA60018210A /* Recovered References */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_A3BA42B4-17B4-4D00-A47A-A57DFF7DF935" /* Signing.xcconfig */,
+				"TEMP_AE851291-FF8B-479A-B72B-B0437A26FD5B" /* Signing.xcconfig */,
 			);
 			name = "Recovered References";
 			sourceTree = "<group>";
@@ -135,6 +137,7 @@
 		C25138567F97495EBC6DC9E5 /* Utilities */ = {
 			isa = PBXGroup;
 			children = (
+				668B6023156A450CBA8B8CCD /* AppSettings.swift */,
 				9AD89AC3F8FD910DD0E66AA7 /* AppTheme.swift */,
 				058EB2747E389B6AF2CDD0DC /* PreferredKeyboardResolver.swift */,
 				DB13C031D7E7C10845E70A68 /* Toast.swift */,
@@ -242,6 +245,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				EE4D5384CA48FCEECD76C54E /* AirvoiceApp.swift in Sources */,
+				8DCA813CAC193A8348BEF4A0 /* AppSettings.swift in Sources */,
 				1FA8494FD6388E50C4EFF1AD /* AppTheme.swift in Sources */,
 				EBF41FCAC681664042ABE3A9 /* AutoSendController.swift in Sources */,
 				765A1E3A3433F8204B3A5AF6 /* ConnectionManager.swift in Sources */,
@@ -272,7 +276,7 @@
 /* Begin XCBuildConfiguration section */
 		14F2D5F38A53A84EBF29DA05 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_A3BA42B4-17B4-4D00-A47A-A57DFF7DF935" /* Signing.xcconfig */;
+			baseConfigurationReference = "TEMP_AE851291-FF8B-479A-B72B-B0437A26FD5B" /* Signing.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -415,7 +419,7 @@
 		};
 		EF238D827CFF3BD6BCB532DC /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_A3BA42B4-17B4-4D00-A47A-A57DFF7DF935" /* Signing.xcconfig */;
+			baseConfigurationReference = "TEMP_AE851291-FF8B-479A-B72B-B0437A26FD5B" /* Signing.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
