@@ -96,6 +96,14 @@ enum AppTheme: String, CaseIterable {
     var statusBarError: Color { Color(hex: "e2162a") }
     var statusBarDisconnected: Color { Color(hex: "8f8f8f") }
 
+    /// Soft accent for the auto-send idle countdown bar at the top.
+    var countdownBar: Color {
+        switch self {
+        case .light: Color(hex: "ffae00").opacity(0.4)
+        case .dark: Color(hex: "ffae00").opacity(0.45)
+        }
+    }
+
     mutating func toggle() {
         self = self == .light ? .dark : .light
     }

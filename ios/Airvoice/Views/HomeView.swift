@@ -30,7 +30,8 @@ struct HomeView: View {
                 AutoSendCountdownBar(
                     active: autoSend.countdownActive,
                     token: autoSend.countdownToken,
-                    duration: autoSend.autoSendDelay
+                    duration: autoSend.autoSendDelay,
+                    theme: theme
                 )
 
                 // — Main content
@@ -123,42 +124,43 @@ struct HomeView: View {
 
     @ViewBuilder
     private var statusIndicator: some View {
-        if viewModel.sendTimedOut {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundColor(theme.statusBarConnecting)
-                .frame(width: 8, height: 8)
-        } else {
-            Circle()
-                .fill(stateDotColor)
-                .frame(width: 8, height: 8)
-                .scaleEffect(shouldBreatheDot && isBreathing ? 1.25 : 1.0)
-                .opacity(shouldBreatheDot && isBreathing ? 0.4 : 1.0)
-                .onAppear {
-                    if shouldBreatheDot {
-                        startBreathingAnimation()
-                    }
-                }
-                .onChange(of: connection.state) { _, newState in
-                    if newState == .connecting || newState == .connected {
-                        startBreathingAnimation()
-                    } else {
-                        isBreathing = false
-                    }
-                }
+        Circle()
+            .fill(statusDotColor)
+            .frame(width: 8, height: 8)
+            .scaleEffect(shouldBlinkStatusDot && isBreathing ? 1.25 : 1.0)
+            .opacity(shouldBlinkStatusDot && isBreathing ? 0.4 : 1.0)
+            .onAppear {
+                syncStatusDotAnimation()
+            }
+            .onChange(of: connection.state) { _, _ in
+                syncStatusDotAnimation()
+            }
+            .onChange(of: viewModel.sendTimedOut) { _, _ in
+                syncStatusDotAnimation()
+            }
+    }
+
+    /// Gray when offline, green blink when connected, yellow for errors and other warnings.
+    private var statusDotColor: Color {
+        switch connection.state {
+        case .disconnected:
+            return theme.statusBarDisconnected
+        case .connected where !viewModel.sendTimedOut:
+            return theme.statusBarConnected
+        case .connecting, .connected, .error:
+            return theme.statusBarConnecting
         }
     }
 
-    private var shouldBreatheDot: Bool {
-        connection.state == .connecting || connection.state == .connected
+    private var shouldBlinkStatusDot: Bool {
+        connection.state == .connected && !viewModel.sendTimedOut
     }
 
-    private var stateDotColor: Color {
-        switch connection.state {
-        case .disconnected: return theme.statusBarDisconnected
-        case .connecting: return theme.statusBarConnecting
-        case .connected: return theme.statusBarConnected
-        case .error: return theme.statusBarError
+    private func syncStatusDotAnimation() {
+        if shouldBlinkStatusDot {
+            startBreathingAnimation()
+        } else {
+            isBreathing = false
         }
     }
 
@@ -315,12 +317,13 @@ private struct AutoSendCountdownBar: View {
     let active: Bool
     let token: Int
     let duration: Double
+    let theme: AppTheme
 
     @State private var progress: CGFloat = 0
 
     var body: some View {
         Rectangle()
-            .fill(Color.red)
+            .fill(theme.countdownBar)
             .frame(height: 3)
             .scaleEffect(x: min(max(progress, 0), 1), y: 1, anchor: .leading)
             .frame(maxWidth: .infinity, alignment: .leading)
