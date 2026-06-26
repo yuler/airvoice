@@ -12,7 +12,3 @@ DerivedData/
 ios/Signing.xcconfig
 
 tmp
-
-# Local docs (removed from remote)
-docs/plans/
-docs/superpowers/
