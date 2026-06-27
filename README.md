@@ -42,7 +42,23 @@ For an interactive menu (build, test, iOS device, etc.):
 mise run menu
 ```
 
-### 3. Connect the iOS Client
+### 3. Desktop GUI (Optional)
+
+For a native GUI instead of CLI:
+
+```bash
+cd desktop
+wails dev
+```
+
+Or build a production binary:
+
+```bash
+cd desktop && wails build
+./build/bin/Airvoice.app/Contents/MacOS/Airvoice
+```
+
+### 4. Connect the iOS Client
 
 **Simulator or Xcode:** open `ios/Airvoice.xcodeproj` and run on a device/simulator.
 

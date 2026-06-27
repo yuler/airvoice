@@ -11,8 +11,9 @@
 └───────┼────────────────────────────────────────────────────┘
         ▼
 ┌────────────────────────────────────────────────────────────┐
-│  airvoice CLI (Go)                                         │
-│  QR pairing │ WS server │ token auth │ paste injection     │
+│  airvoice CLI (Go)          │  Desktop GUI (Wails + Vue 3) │
+│  QR pairing │ WS server    │  QR code │ status │ history  │
+│  token auth │ paste inject │  settings │ system tray       │
 └────────────────────────────────────────────────────────────┘
         ▼
    Focused app on macOS / Linux (any text field)
@@ -84,6 +85,16 @@ airvoice/
 | `cli/pairing` | LAN IP, QR payload marshal, terminal QR render |
 | `cli/server` | `/health`, `/ws`, token auth, hello/text/ping handlers, single-client hub |
 | `cli/paste` | Platform paste: clipboard + synthetic paste key |
+
+## Desktop GUI modules
+
+| Module | Responsibility |
+|--------|----------------|
+| `desktop/main.go` | Wails entry point, app bootstrap |
+| `desktop/app.go` | Go backend: WS server, QR generation, connection management, bindings for frontend |
+| `desktop/history.go` | SQLite-based message history store |
+| `desktop/tray.go` | System tray icon and menu |
+| `desktop/frontend/` | Vue 3 + TailwindCSS SPA: QR code, status badge, history list, settings panel, i18n |
 
 ### Paste backends
 
