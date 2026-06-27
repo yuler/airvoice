@@ -51,6 +51,7 @@ class AutoSendController(
             connectionManager.incomingMessages.collect { msg ->
                 if (msg.type == "ack" && msg.id == pendingMessageId) {
                     timeoutJob?.cancel()
+                    pendingMessageId = null
                     isSending = false
                     val success = msg.ok == true
                     if (success) {
@@ -68,7 +69,9 @@ class AutoSendController(
                 if (status is ConnectionStatus.Disconnected || status is ConnectionStatus.Error) {
                     if (isSending) {
                         timeoutJob?.cancel()
+                        pendingMessageId = null
                         isSending = false
+                        onSentAck(false, sendingText)
                     }
                 }
             }
@@ -103,6 +106,7 @@ class AutoSendController(
             timeoutJob = scope.launch {
                 delay(5000L)
                 if (isSending && pendingMessageId == msgId) {
+                    pendingMessageId = null
                     isSending = false
                     onSentAck(false, sendingText)
                 }

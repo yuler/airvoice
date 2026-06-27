@@ -85,7 +85,12 @@ fun QRScannerScreen(
                     
                     cameraProviderFuture.addListener({
                         if (!isActive.value) return@addListener
-                        val provider = cameraProviderFuture.get()
+                        val provider = try {
+                            cameraProviderFuture.get()
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                            return@addListener
+                        }
                         cameraProviderState = provider
 
                         val preview = Preview.Builder().build().apply {

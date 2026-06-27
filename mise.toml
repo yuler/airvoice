@@ -46,20 +46,24 @@ run = "./bin/airvoice serve"
 
 [tasks."android:build"]
 description = "Build Android debug APK"
-run = "bash -c 'source ./scripts/java-env.sh && cd android && ./gradlew assembleDebug --no-daemon'"
+run = "bash -c 'source ./scripts/java-env.sh && cd android && ./gradlew assembleDebug'"
 
 [tasks."android:release"]
 description = "Build Android release APK"
-run = "bash -c 'source ./scripts/java-env.sh && cd android && ./gradlew assembleRelease --no-daemon'"
+run = "bash -c 'source ./scripts/java-env.sh && cd android && ./gradlew assembleRelease'"
 
 [tasks."android:test"]
 description = "Run Android unit tests"
-run = "bash -c 'source ./scripts/java-env.sh && cd android && ./gradlew testDebugUnitTest --no-daemon'"
+run = "bash -c 'source ./scripts/java-env.sh && cd android && ./gradlew testDebugUnitTest'"
 
 [tasks."android:clean"]
 description = "Clean Android build outputs"
-run = "bash -c 'source ./scripts/java-env.sh && cd android && ./gradlew clean --no-daemon'"
+run = "bash -c 'source ./scripts/java-env.sh && cd android && ./gradlew clean'"
 
 [tasks."android:install"]
 description = "Build and install debug APK on connected device"
-run = "bash -c 'source ./scripts/java-env.sh && cd android && ./gradlew installDebug --no-daemon'"
+run = "bash -c 'source ./scripts/java-env.sh && cd android && ./gradlew installDebug'"
+
+[tasks."android:serve"]
+description = "Serve debug APK over LAN for phone download"
+run = "bash -c 'APK=android/app/build/outputs/apk/debug/app-debug.apk; if [ ! -f \"$APK\" ]; then echo \"APK not found. Run: mise android:build first\"; exit 1; fi; IP=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || echo localhost); echo \"\"; echo \"  Download on your phone:  http://${IP}:8888/app-debug.apk\"; echo \"\"; cd android/app/build/outputs/apk/debug && python3 -m http.server 8888 --bind 0.0.0.0'"
