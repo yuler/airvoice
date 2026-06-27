@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ListIcon, XIcon } from '@phosphor-icons/react';
+import { List, X } from '@phosphor-icons/react';
 import { Button } from '@cloudflare/kumo';
 
 interface SidebarProps {
@@ -37,7 +37,7 @@ export default function DocsSidebar({ lang, base, currentPath }: SidebarProps) {
         <Button
           variant="ghost"
           shape="square"
-          icon={open ? XIcon : ListIcon}
+          icon={open ? X : List}
           onClick={() => setOpen(!open)}
           aria-label={isZh ? '切换菜单' : 'Toggle menu'}
         />

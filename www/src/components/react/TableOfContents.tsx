@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 
 interface TocProps {
   headings: { depth: number; slug: string; text: string }[];
@@ -6,7 +6,7 @@ interface TocProps {
 }
 
 export default function TableOfContents({ headings, lang }: TocProps) {
-  const filtered = headings.filter((h) => h.depth <= 3);
+  const filtered = useMemo(() => headings.filter((h) => h.depth <= 3), [headings]);
   const [activeId, setActiveId] = useState<string>('');
 
   useEffect(() => {
