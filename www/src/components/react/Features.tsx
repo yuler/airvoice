@@ -27,7 +27,7 @@ export default function Features({ lang }: FeaturesProps) {
     {
       icon: '💻',
       title: isZh ? '跨平台' : 'Cross-Platform',
-      desc: isZh ? 'macOS + Linux + Windows' : 'macOS + Linux + Windows',
+      desc: isZh ? 'macOS + Linux (X11/Wayland)' : 'macOS + Linux (X11/Wayland)',
     },
     {
       icon: '📖',

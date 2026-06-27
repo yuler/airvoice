@@ -7,9 +7,10 @@ interface HeaderProps {
   lang: 'en' | 'zh';
   base: string;
   active?: 'home' | 'docs';
+  currentPath?: string;
 }
 
-export default function Header({ lang, base, active = 'home' }: HeaderProps) {
+export default function Header({ lang, base, active = 'home', currentPath }: HeaderProps) {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [langOpen, setLangOpen] = useState(false);
   const langRef = useRef<HTMLDivElement>(null);
@@ -35,6 +36,17 @@ export default function Header({ lang, base, active = 'home' }: HeaderProps) {
   }, []);
 
   const loc = (path: string) => lang === 'en' ? `${base}${path}` : `${base}zh/${path}`;
+
+  const getLangPath = (targetLang: 'en' | 'zh') => {
+    if (!currentPath) return loc('');
+    if (lang === targetLang) return currentPath;
+    const normalizedBase = base.endsWith('/') ? base : `${base}/`;
+    if (targetLang === 'zh') {
+      return currentPath.replace(normalizedBase, `${normalizedBase}zh/`);
+    } else {
+      return currentPath.replace(`${normalizedBase}zh/`, normalizedBase);
+    }
+  };
 
   const toggleTheme = () => {
     const next = theme === 'dark' ? 'light' : 'dark';
@@ -93,7 +105,7 @@ export default function Header({ lang, base, active = 'home' }: HeaderProps) {
             {langOpen && (
               <div className="absolute right-0 top-full mt-1 w-36 rounded-lg border border-kumo-hairline bg-kumo-canvas shadow-lg py-1">
                 <a
-                  href={`${base}${active === 'docs' ? 'docs/background/' : ''}`}
+                  href={getLangPath('en')}
                   onClick={() => setLangOpen(false)}
                   className={`flex items-center gap-2.5 px-3 py-2 text-sm transition-colors ${
                     lang === 'en' ? 'text-kumo-default bg-kumo-control' : 'text-kumo-subtle hover:text-kumo-default hover:bg-kumo-control'
@@ -102,7 +114,7 @@ export default function Header({ lang, base, active = 'home' }: HeaderProps) {
                   🇺🇸 English
                 </a>
                 <a
-                  href={`${base}zh/${active === 'docs' ? 'docs/background/' : ''}`}
+                  href={getLangPath('zh')}
                   onClick={() => setLangOpen(false)}
                   className={`flex items-center gap-2.5 px-3 py-2 text-sm transition-colors ${
                     lang === 'zh' ? 'text-kumo-default bg-kumo-control' : 'text-kumo-subtle hover:text-kumo-default hover:bg-kumo-control'

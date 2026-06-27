@@ -20,7 +20,7 @@ const base = import.meta.env.BASE_URL;
   <DocsSidebar lang={lang} base={base} currentPath={Astro.url.pathname} client:load />
 
   <div class="main-content min-h-screen md:ml-64">
-    <Header lang={lang} base={base} active="docs" client:load />
+    <Header lang={lang} base={base} active="docs" currentPath={Astro.url.pathname} client:load />
 
     <div class="flex">
       <main class="flex-1 overflow-auto px-6 py-10 md:px-12 lg:pr-0">

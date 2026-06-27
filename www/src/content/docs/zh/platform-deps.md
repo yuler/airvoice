@@ -37,17 +37,3 @@ systemctl --user enable --now ydotoold
 CLI 可通过 `go build` 在 Windows 上编译。WebSocket 服务器正常工作，但剪贴板粘贴和按键注入尚未实现。
 
 当前状态：**实验性，未经测试**。欢迎贡献。
-
-## Linux (Wayland)
-
-需要 `wl-clipboard` 用于剪贴板访问，`ydotool` 用于键盘模拟：
-
-```bash
-sudo apt install wl-clipboard ydotool
-```
-
-确保 `ydotoold` 服务已启用并运行：
-
-```bash
-systemctl --user enable --now ydotoold
-```
