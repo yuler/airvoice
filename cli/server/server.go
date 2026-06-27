@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/airvoice/airvoice/cli/paste"
+	"github.com/yuler/airvoice/cli/paste"
 	"github.com/gorilla/websocket"
 )
 

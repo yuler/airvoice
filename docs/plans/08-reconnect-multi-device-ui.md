@@ -219,7 +219,7 @@ package server
 import (
 	"sync"
 
-	"github.com/airvoice/airvoice/cli/protocol"
+	"github.com/yuler/airvoice/cli/protocol"
 	"github.com/gorilla/websocket"
 )
 
@@ -342,7 +342,7 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/airvoice/airvoice/cli/paste"
+	"github.com/yuler/airvoice/cli/paste"
 	"github.com/gorilla/websocket"
 )
 
@@ -568,7 +568,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/airvoice/airvoice/cli/protocol"
+	"github.com/yuler/airvoice/cli/protocol"
 	"github.com/gorilla/websocket"
 )
 
