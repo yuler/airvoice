@@ -38,9 +38,11 @@ export default function Header({ lang, base, active = 'home', currentPath }: Hea
   const loc = (path: string) => lang === 'en' ? `${base}${path}` : `${base}zh/${path}`;
 
   const getLangPath = (targetLang: 'en' | 'zh') => {
-    if (!currentPath) return loc('');
-    if (lang === targetLang) return currentPath;
+    if (lang === targetLang) return currentPath || (lang === 'en' ? `${base}` : `${base}zh/`);
     const normalizedBase = base.endsWith('/') ? base : `${base}/`;
+    if (!currentPath) {
+      return targetLang === 'en' ? normalizedBase : `${normalizedBase}zh/`;
+    }
     if (targetLang === 'zh') {
       return currentPath.replace(normalizedBase, `${normalizedBase}zh/`);
     } else {

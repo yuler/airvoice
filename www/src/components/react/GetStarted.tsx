@@ -46,7 +46,7 @@ export default function GetStarted({ lang, base }: GetStartedProps) {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90"
-                style={{ backgroundColor: '#006efe' }}
+                style={{ backgroundColor: 'var(--accent-blue, #006efe)' }}
               >
                 {isZh ? '下载' : 'Download'}
                 <ArrowSquareOut size={12} />
@@ -75,7 +75,7 @@ export default function GetStarted({ lang, base }: GetStartedProps) {
               <a
                 href={loc('docs/quick-start/')}
                 className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90"
-                style={{ backgroundColor: '#006efe' }}
+                style={{ backgroundColor: 'var(--accent-blue, #006efe)' }}
               >
                 {isZh ? '安装文档' : 'Install Docs'}
                 <ArrowSquareOut size={12} />

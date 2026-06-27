@@ -4,6 +4,11 @@
 
 @custom-variant dark (&:where([data-mode="dark"], [data-mode="dark"] *));
 
+:root {
+  --text-color-kumo-inactive: oklch(55% 0 0);
+  --accent-blue: #006efe;
+}
+
 [data-mode="dark"] {
   --text-color-kumo-default: oklch(98% 0 0);
   --text-color-kumo-strong: oklch(99% 0 0);
@@ -14,7 +19,7 @@
 /* Docs prose styling — Light mode (DESIGN.md tokens) */
 .prose-kumo h2,
 .prose-kumo h3 {
-  color: var(--color-kumo-default, #171717);
+  color: var(--text-color-kumo-default, #171717);
   font-weight: 700;
   margin-top: 2em;
   margin-bottom: 0.75em;
@@ -28,19 +33,19 @@
 .prose-kumo p {
   margin-bottom: 1.25em;
   line-height: 1.75;
-  color: var(--color-kumo-subtle, #666666);
+  color: var(--text-color-kumo-subtle, #666666);
 }
 
 .prose-kumo li {
-  color: var(--color-kumo-subtle, #666666);
+  color: var(--text-color-kumo-subtle, #666666);
 }
 
 .prose-kumo blockquote {
-  color: var(--color-kumo-subtle, #888888);
+  color: var(--text-color-kumo-subtle, #888888);
 }
 
 .prose-kumo td {
-  color: var(--color-kumo-subtle, #666666);
+  color: var(--text-color-kumo-subtle, #666666);
 }
 
 /* Dark mode overrides */
@@ -64,13 +69,13 @@
 }
 
 .prose-kumo a {
-  color: var(--color-kumo-default, #171717);
+  color: var(--text-color-kumo-default, #171717);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 
 .prose-kumo a:hover {
-  color: var(--color-kumo-subtle, #666666);
+  color: var(--text-color-kumo-subtle, #666666);
 }
 
 .prose-kumo :not(pre) > code {
@@ -137,7 +142,7 @@
 .prose-kumo li {
   margin-bottom: 0.5em;
   line-height: 1.75;
-  color: var(--color-kumo-subtle, #666666);
+  color: var(--text-color-kumo-subtle, #666666);
 }
 
 .prose-kumo ul { list-style-type: disc; }
@@ -147,7 +152,7 @@
   border-left: 3px solid var(--color-kumo-hairline, #eaeaea);
   padding-left: 1em;
   margin-bottom: 1.25em;
-  color: var(--color-kumo-subtle, #888888);
+  color: var(--text-color-kumo-subtle, #888888);
   font-style: italic;
 }
 
@@ -163,13 +168,13 @@
   padding: 0.75em 1em;
   border-bottom: 2px solid var(--color-kumo-hairline, #eaeaea);
   font-weight: 600;
-  color: var(--color-kumo-default, #171717);
+  color: var(--text-color-kumo-default, #171717);
 }
 
 .prose-kumo td {
   padding: 0.75em 1em;
   border-bottom: 1px solid var(--color-kumo-hairline, #eaeaea);
-  color: var(--color-kumo-subtle, #666666);
+  color: var(--text-color-kumo-subtle, #666666);
 }
 
 .prose-kumo hr {
@@ -180,7 +185,7 @@
 
 .prose-kumo strong {
   font-weight: 600;
-  color: var(--color-kumo-default, #171717);
+  color: var(--text-color-kumo-default, #171717);
 }
 
 [data-mode="dark"] .prose-kumo blockquote {

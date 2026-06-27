@@ -25,7 +25,7 @@ export default function Hero({ lang, base }: HeroProps) {
           <a
             href="#get-started"
             className="inline-flex items-center gap-2 rounded-full px-6 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
-            style={{ backgroundColor: '#006efe' }}
+            style={{ backgroundColor: 'var(--accent-blue, #006efe)' }}
           >
             {isZh ? '快速开始' : 'Get Started'}
             <ArrowRight size={14} />

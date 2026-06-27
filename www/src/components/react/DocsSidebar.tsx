@@ -11,7 +11,8 @@ interface SidebarProps {
 export default function DocsSidebar({ lang, base, currentPath }: SidebarProps) {
   const [open, setOpen] = useState(false);
   const isZh = lang === 'zh';
-  const loc = (path: string) => lang === 'en' ? `${base}${path}` : `${base}zh/${path}`;
+  const normalizedBase = base.endsWith('/') ? base : `${base}/`;
+  const loc = (path: string) => lang === 'en' ? `${normalizedBase}${path}` : `${normalizedBase}zh/${path}`;
 
   const sections = [
     {
