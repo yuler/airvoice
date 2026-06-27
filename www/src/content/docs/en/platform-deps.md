@@ -1,10 +1,8 @@
 ---
 title: Platform Dependencies
 description: System requirements for each platform.
-order: 4
+order: 5
 ---
-
-# Platform Dependencies
 
 ## macOS
 
@@ -33,3 +31,9 @@ Ensure the `ydotoold` service is enabled and running:
 ```bash
 systemctl --user enable --now ydotoold
 ```
+
+## Windows
+
+The CLI compiles on Windows via `go build`. The WebSocket server works, but clipboard paste and keystroke injection are not yet implemented.
+
+Current status: **experimental, untested**. Contributions welcome.

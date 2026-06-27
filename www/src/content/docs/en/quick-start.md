@@ -1,50 +1,92 @@
 ---
 title: Quick Start
-description: Get Airvoice up and running in minutes.
-order: 1
+description: Install Airvoice and get it running.
+order: 2
 ---
 
-# Quick Start
+Airvoice has two parts: a **desktop server** (CLI) and an **iOS client**. Both must be on the same Wi‑Fi.
 
-## 1. Setup
+## 1. Install the CLI
 
-```bash
-mise trust            # first time in this repo
-mise install          # install pinned tools
-mise run setup        # build CLI + check platform deps
-```
-
-## 2. Run the Server
+Install `mise` if you haven't:
 
 ```bash
-mise run dev
+curl https://mise.run | sh
 ```
 
-This builds `bin/airvoice` and starts the server, printing a QR code in your terminal.
-
-## 3. Connect the iOS Client
-
-**Simulator or Xcode:** open `ios/Airvoice.xcodeproj` and run on a device/simulator.
-
-**Physical device (macOS):**
+Then install Airvoice:
 
 ```bash
-mise run ios:device   # gum picker → build → install on USB-connected iPhone
+mise trust
+mise install
 ```
 
-Then on the same Wi‑Fi:
+Or with Go directly:
 
-1. Run `mise run dev` on your Mac.
-2. Open Airvoice on the iPhone and scan the terminal QR code.
+```bash
+go install github.com/yuler/airvoice/cli@latest
+```
 
-## mise Tasks
+## 2. Start the Server
 
-| Task | Description |
-|------|-------------|
-| `mise run setup` | Install tools, check deps, build CLI |
-| `mise run dev` | Build + start server (default) |
-| `mise run menu` | Interactive gum menu |
-| `mise run build` | Build Go CLI |
-| `mise run test` | `go test ./cli/...` |
-| `mise run serve` | Alias for `dev` |
-| `mise run ios:device` | Build & install on physical iOS device (macOS) |
+```bash
+airvoice serve
+```
+
+A QR code appears in your terminal. Keep it running.
+
+## 3. Install the iOS App
+
+We don't have an Apple Developer Account, so you build from source with your Mac. It's free — just a regular Apple ID.
+
+**What you need:**
+
+- Mac with **Xcode 15+** (free from Mac App Store)
+- Apple ID signed into Xcode
+- iPhone with **iOS 17+**
+- USB cable
+
+### Step 1 — Enable Developer Mode on iPhone
+
+On your iPhone: **Settings → Privacy & Security → Developer Mode** → turn it ON → restart when prompted.
+
+> Don't see it? Connect your iPhone to your Mac with Xcode open first.
+
+### Step 2 — Get the Source Code
+
+```bash
+git clone https://github.com/yuler/airvoice.git
+cd airvoice
+```
+
+### Step 3 — Open in Xcode
+
+```bash
+open ios/Airvoice.xcodeproj
+```
+
+### Step 4 — Configure Signing
+
+In Xcode:
+
+1. Select the **Airvoice** project → **Airvoice** target
+2. Under **Signing & Capabilities**: check **Automatically manage signing**
+3. Set **Team** to your Apple ID (sign in if prompted)
+
+### Step 5 — Build and Install
+
+1. Connect iPhone via USB, unlock it, tap **Trust This Computer**
+2. Select your iPhone from the device dropdown in Xcode
+3. Press `Cmd + R` to build and install
+
+### Step 6 — Trust the Developer Certificate
+
+First time only on iPhone: **Settings → General → VPN & Device Management** → find your Apple ID → tap **Trust**.
+
+### Step 7 — Connect
+
+1. Make sure iPhone and Mac are on the same Wi‑Fi
+2. Open Airvoice on iPhone
+3. Scan the QR code from your terminal
+
+Done. Speak on your phone — text appears at your cursor on the desktop.

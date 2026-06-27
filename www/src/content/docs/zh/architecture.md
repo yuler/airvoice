@@ -1,10 +1,8 @@
 ---
 title: 架构
 description: 系统设计、仓库结构和通信协议。
-order: 3
+order: 4
 ---
-
-# 架构
 
 ## 系统概览
 

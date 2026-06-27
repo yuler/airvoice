@@ -1,11 +1,13 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import Hero from '../../components/Hero.astro';
-import Features from '../../components/Features.astro';
-import HowItWorks from '../../components/HowItWorks.astro';
-import PlatformSupport from '../../components/PlatformSupport.astro';
-import Download from '../../components/Download.astro';
-import Footer from '../../components/Footer.astro';
+import Header from '../../components/react/Header';
+import Hero from '../../components/react/Hero';
+import Features from '../../components/react/Features';
+import HowItWorks from '../../components/react/HowItWorks';
+import GetStarted from '../../components/react/GetStarted';
+import Footer from '../../components/react/Footer';
+
+const base = import.meta.env.BASE_URL;
 ---
 
 <BaseLayout
@@ -13,10 +15,10 @@ import Footer from '../../components/Footer.astro';
   description="局域网语音桥接工具，支持 Mac 和 Linux。无云端、无账号。"
   lang="zh"
 >
-  <Hero lang="zh" />
+  <Header lang="zh" base={base} active="home" client:load />
+  <Hero lang="zh" base={base} />
   <Features lang="zh" />
   <HowItWorks lang="zh" />
-  <PlatformSupport lang="zh" />
-  <Download lang="zh" />
-  <Footer lang="zh" />
+  <GetStarted lang="zh" base={base} />
+  <Footer lang="zh" base={base} />
 </BaseLayout>

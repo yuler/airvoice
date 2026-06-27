@@ -1,10 +1,8 @@
 ---
 title: Architecture
 description: System design, repository structure, and wire protocol.
-order: 3
+order: 4
 ---
-
-# Architecture
 
 ## System overview
 

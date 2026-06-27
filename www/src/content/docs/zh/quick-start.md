@@ -1,50 +1,92 @@
 ---
 title: 快速开始
-description: 几分钟内启动并运行 Airvoice。
-order: 1
+description: 安装 Airvoice 并开始使用。
+order: 2
 ---
 
-# 快速开始
+Airvoice 由两部分组成：**桌面端服务器**（CLI）和 **iOS 客户端**。两者必须在同一 Wi‑Fi 下。
 
-## 1. 安装
+## 1. 安装 CLI
 
-```bash
-mise trust            # 首次在此仓库运行
-mise install          # 安装固定版本的工具
-mise run setup        # 构建 CLI + 检查平台依赖
-```
-
-## 2. 运行服务器
+如果还没有安装 `mise`：
 
 ```bash
-mise run dev
+curl https://mise.run | sh
 ```
 
-此命令构建 `bin/airvoice` 并启动服务器，在终端中打印 QR 码。
-
-## 3. 连接 iOS 客户端
-
-**模拟器或 Xcode：** 打开 `ios/Airvoice.xcodeproj`，在设备/模拟器上运行。
-
-**物理设备（macOS）：**
+然后安装 Airvoice：
 
 ```bash
-mise run ios:device   # gum 选择器 → 构建 → 安装到 USB 连接的 iPhone
+mise trust
+mise install
 ```
 
-然后在同一 Wi-Fi 下：
+或者直接用 Go 安装：
 
-1. 在 Mac 上运行 `mise run dev`。
-2. 在 iPhone 上打开 Airvoice 并扫描终端中的 QR 码。
+```bash
+go install github.com/yuler/airvoice/cli@latest
+```
 
-## mise 任务
+## 2. 启动服务器
 
-| 任务 | 描述 |
-|------|------|
-| `mise run setup` | 安装工具、检查依赖、构建 CLI |
-| `mise run dev` | 构建 + 启动服务器（默认） |
-| `mise run menu` | 交互式 gum 菜单 |
-| `mise run build` | 构建 Go CLI |
-| `mise run test` | `go test ./cli/...` |
-| `mise run serve` | `dev` 的别名 |
-| `mise run ios:device` | 构建并安装到物理 iOS 设备（macOS） |
+```bash
+airvoice serve
+```
+
+终端会打印一个二维码。保持此进程运行。
+
+## 3. 安装 iOS 应用
+
+我们没有 Apple 开发者账号，所以你需要通过 Mac 从源代码构建。这是免费的 — 只需要一个普通的 Apple ID。
+
+**前提条件：**
+
+- 安装了 **Xcode 15+** 的 Mac（Mac App Store 免费下载）
+- 在 Xcode 中登录了 Apple ID
+- 运行 **iOS 17+** 的 iPhone
+- USB 数据线
+
+### 第一步 — 在 iPhone 上开启开发者模式
+
+在 iPhone 上：**设置 → 隐私与安全性 → 开发者模式** → 打开 → 提示时重启。
+
+> 没看到选项？先把 iPhone 连接到打开了 Xcode 的 Mac。
+
+### 第二步 — 获取源代码
+
+```bash
+git clone https://github.com/yuler/airvoice.git
+cd airvoice
+```
+
+### 第三步 — 在 Xcode 中打开
+
+```bash
+open ios/Airvoice.xcodeproj
+```
+
+### 第四步 — 配置签名
+
+在 Xcode 中：
+
+1. 选择 **Airvoice** 项目 → **Airvoice** Target
+2. 在 **Signing & Capabilities** 下：勾选 **Automatically manage signing**
+3. **Team** 选择你的 Apple ID（如果没有登录会提示）
+
+### 第五步 — 构建并安装
+
+1. USB 连接 iPhone，解锁，点击 **信任此电脑**
+2. 在 Xcode 顶部选择你的 iPhone
+3. 按 `Cmd + R` 构建并安装
+
+### 第六步 — 信任开发者证书
+
+首次在 iPhone 上：**设置 → 通用 → VPN 与设备管理** → 找到你的 Apple ID → 点击 **信任**。
+
+### 第七步 — 连接
+
+1. 确保 iPhone 和 Mac 在同一 Wi‑Fi
+2. 在 iPhone 上打开 Airvoice
+3. 扫描终端中的二维码
+
+完成。在手机上说话，文字出现在电脑光标处。

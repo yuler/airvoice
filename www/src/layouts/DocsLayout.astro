@@ -1,6 +1,9 @@
 ---
 import '../styles/global.css';
 import BaseLayout from './BaseLayout.astro';
+import Header from '../components/react/Header';
+import DocsSidebar from '../components/react/DocsSidebar';
+import TableOfContents from '../components/react/TableOfContents';
 
 interface Props {
   title: string;
@@ -10,61 +13,32 @@ interface Props {
 }
 
 const { title, description, lang, headings } = Astro.props;
-
-const docsNav = lang === 'en' ? [
-  { href: '/en/docs/quick-start/', label: 'Quick Start' },
-  { href: '/en/docs/background/', label: 'Background' },
-  { href: '/en/docs/architecture/', label: 'Architecture' },
-  { href: '/en/docs/platform-deps/', label: 'Platform Dependencies' },
-] : [
-  { href: '/zh/docs/quick-start/', label: '快速开始' },
-  { href: '/zh/docs/background/', label: '背景' },
-  { href: '/zh/docs/architecture/', label: '架构' },
-  { href: '/zh/docs/platform-deps/', label: '平台依赖' },
-];
+const base = import.meta.env.BASE_URL;
 ---
 
 <BaseLayout title={title} description={description} lang={lang}>
-  <div class="max-w-6xl mx-auto px-6 py-12 flex gap-12">
-    <aside class="w-64 shrink-0 hidden lg:block">
-      <nav class="sticky top-24 space-y-1">
-        {docsNav.map(link => (
-          <a
-            href={link.href}
-            class:list={[
-              'block px-4 py-2 text-sm rounded-md transition-colors',
-              Astro.url.pathname === link.href
-                ? 'bg-bg-secondary text-text font-medium'
-                : 'text-text-secondary hover:text-text hover:bg-bg-secondary',
-            ]}
-          >
-            {link.label}
-          </a>
-        ))}
-      </nav>
-    </aside>
-    <article class="prose prose-neutral dark:prose-invert max-w-3xl">
-      <slot />
-    </article>
-    {headings.length > 0 && (
-      <aside class="w-48 shrink-0 hidden xl:block">
-        <nav class="sticky top-24 space-y-1">
-          <p class="text-xs font-semibold text-text-muted uppercase mb-3">
-            {lang === 'en' ? 'On this page' : '本页目录'}
-          </p>
-          {headings.filter(h => h.depth <= 3).map(h => (
-            <a
-              href={`#${h.slug}`}
-              class:list={[
-                'block text-sm text-text-secondary hover:text-text transition-colors',
-                h.depth === 3 && 'pl-4',
-              ]}
-            >
-              {h.text}
-            </a>
-          ))}
-        </nav>
-      </aside>
-    )}
+  <DocsSidebar lang={lang} base={base} currentPath={Astro.url.pathname} client:load />
+
+  <div class="main-content min-h-screen md:ml-64">
+    <Header lang={lang} base={base} active="docs" client:load />
+
+    <div class="flex">
+      <main class="flex-1 overflow-auto px-6 py-10 md:px-12 lg:pr-0">
+        <article class="mx-auto max-w-3xl">
+          <h1 class="mb-8 text-3xl font-bold tracking-tight text-kumo-default">{title}</h1>
+          <div class="prose prose-sm prose-kumo max-w-none">
+            <slot />
+          </div>
+        </article>
+      </main>
+
+      {headings.length > 0 && (
+        <aside class="hidden w-56 shrink-0 xl:block">
+          <div class="sticky top-24 overflow-auto px-6 py-10">
+            <TableOfContents headings={headings} lang={lang} client:load />
+          </div>
+        </aside>
+      )}
+    </div>
   </div>
 </BaseLayout>
