@@ -6,9 +6,16 @@ declare module '*.vue' {
   export default component
 }
 
+interface ConnectionStatus {
+  state: 'disconnected' | 'connecting' | 'connected' | 'waiting'
+  deviceName: string
+  host: string
+  port: number
+}
+
 interface WailsApp {
   GetQRCode(): Promise<string>
-  GetConnectionStatus(): Promise<string>
+  GetConnectionStatus(): Promise<ConnectionStatus>
 }
 
 interface Window {
