@@ -1,5 +1,5 @@
 import { LayerCard, Badge } from '@cloudflare/kumo';
-import { DesktopIcon, DeviceMobileIcon, ArrowSquareOutIcon } from '@phosphor-icons/react';
+import { Desktop, DeviceMobile, ArrowSquareOut } from '@phosphor-icons/react';
 
 interface GetStartedProps {
   lang: 'en' | 'zh';
@@ -25,7 +25,7 @@ export default function GetStarted({ lang, base }: GetStartedProps) {
         <div className="mx-auto grid max-w-3xl grid-cols-1 gap-6 md:grid-cols-2">
           <LayerCard className="rounded-xl p-6">
             <div className="mb-4 flex items-center gap-2">
-              <DesktopIcon size={20} className="text-kumo-subtle" />
+              <Desktop size={20} className="text-kumo-subtle" />
               <h3 className="text-sm font-semibold text-kumo-default">
                 {isZh ? '桌面端 CLI' : 'Desktop CLI'}
               </h3>
@@ -49,7 +49,7 @@ export default function GetStarted({ lang, base }: GetStartedProps) {
                 style={{ backgroundColor: '#006efe' }}
               >
                 {isZh ? '下载' : 'Download'}
-                <ArrowSquareOutIcon size={12} />
+                <ArrowSquareOut size={12} />
               </a>
               <Badge variant="neutral">
                 <kbd className="font-mono">⌘S</kbd>
@@ -59,7 +59,7 @@ export default function GetStarted({ lang, base }: GetStartedProps) {
 
           <LayerCard className="rounded-xl p-6">
             <div className="mb-4 flex items-center gap-2">
-              <DeviceMobileIcon size={20} className="text-kumo-subtle" />
+              <DeviceMobile size={20} className="text-kumo-subtle" />
               <h3 className="text-sm font-semibold text-kumo-default">
                 {isZh ? 'iOS 客户端' : 'iOS Client'}
               </h3>
@@ -78,7 +78,7 @@ export default function GetStarted({ lang, base }: GetStartedProps) {
                 style={{ backgroundColor: '#006efe' }}
               >
                 {isZh ? '安装文档' : 'Install Docs'}
-                <ArrowSquareOutIcon size={12} />
+                <ArrowSquareOut size={12} />
               </a>
               <Badge variant="neutral">
                 <kbd className="font-mono">⌘R</kbd>

@@ -1,6 +1,6 @@
+@import "tailwindcss";
 @source "../../node_modules/@cloudflare/kumo/dist/**/*.{js,jsx,ts,tsx}";
 @import "@cloudflare/kumo/styles/tailwind";
-@import "tailwindcss";
 
 @custom-variant dark (&:where([data-mode="dark"], [data-mode="dark"] *));
 
@@ -98,16 +98,22 @@
   line-height: 1.5;
 }
 
-.astro-code,
-.astro-code span {
+.astro-code {
   color: var(--shiki-light) !important;
   background-color: var(--shiki-light-bg) !important;
 }
 
-[data-mode="dark"] .astro-code,
-[data-mode="dark"] .astro-code span {
+.astro-code span {
+  color: var(--shiki-light) !important;
+}
+
+[data-mode="dark"] .astro-code {
   color: var(--shiki-dark) !important;
   background-color: var(--shiki-dark-bg) !important;
+}
+
+[data-mode="dark"] .astro-code span {
+  color: var(--shiki-dark) !important;
 }
 
 [data-mode="dark"] .prose-kumo pre,

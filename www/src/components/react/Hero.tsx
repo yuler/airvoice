@@ -1,4 +1,4 @@
-import { ArrowRightIcon } from '@phosphor-icons/react';
+import { ArrowRight } from '@phosphor-icons/react';
 
 interface HeroProps {
   lang: 'en' | 'zh';
@@ -28,7 +28,7 @@ export default function Hero({ lang, base }: HeroProps) {
             style={{ backgroundColor: '#006efe' }}
           >
             {isZh ? '快速开始' : 'Get Started'}
-            <ArrowRightIcon size={14} />
+            <ArrowRight size={14} />
           </a>
           <a
             href={loc('docs/background/')}

@@ -1,4 +1,4 @@
-import { SunIcon, MoonIcon, GithubLogoIcon, CaretDownIcon } from '@phosphor-icons/react';
+import { Sun, Moon, GithubLogo, CaretDown } from '@phosphor-icons/react';
 import { Button } from '@cloudflare/kumo';
 import { useState, useEffect, useRef } from 'react';
 
@@ -83,13 +83,13 @@ export default function Header({ lang, base, active = 'home', currentPath }: Hea
             rel="noopener noreferrer"
             className="inline-flex items-center rounded-md p-1.5 text-kumo-subtle hover:text-kumo-default transition-colors"
           >
-            <GithubLogoIcon size={16} />
+            <GithubLogo size={16} />
           </a>
           <Button
             variant="ghost"
             shape="square"
             size="sm"
-            icon={theme === 'dark' ? SunIcon : MoonIcon}
+            icon={theme === 'dark' ? Sun : Moon}
             onClick={toggleTheme}
             aria-label={isZh ? '切换主题' : 'Toggle theme'}
           />
@@ -100,7 +100,7 @@ export default function Header({ lang, base, active = 'home', currentPath }: Hea
             >
               <span>{lang === 'en' ? '🇺🇸' : '🇨🇳'}</span>
               <span className="hidden sm:inline text-xs">{lang === 'en' ? 'EN' : '中文'}</span>
-              <CaretDownIcon size={12} />
+              <CaretDown size={12} />
             </button>
             {langOpen && (
               <div className="absolute right-0 top-full mt-1 w-36 rounded-lg border border-kumo-hairline bg-kumo-canvas shadow-lg py-1">

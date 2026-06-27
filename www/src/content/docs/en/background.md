@@ -4,8 +4,6 @@ description: Why Airvoice exists, how it works, and when to use it.
 order: 1
 ---
 
-## Introduction
-
 ## Why This Exists
 
 I work at a desk with a tower PC and a Mac mini — neither has a built-in microphone. Bluetooth headsets are unreliable, and I didn't want to buy a dedicated mic just for occasional voice input.
