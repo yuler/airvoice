@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/airvoice/airvoice/cli/protocol"
+	"github.com/yuler/airvoice/cli/protocol"
 	"github.com/gorilla/websocket"
 )
 

@@ -63,7 +63,7 @@ list_physical_ios_devices() {
     local from_xcodebuild
     from_xcodebuild=$(
       xcodebuild -showdestinations -project "$IOS_PROJECT" -scheme "$IOS_SCHEME" 2>/dev/null \
-        | rg '\{ platform:iOS, arch:arm64, id:' \
+        | grep '{ platform:iOS, arch:arm64, id:' \
         | sed -E 's/.*id:([^,]+), name:([^}]+) \}.*/\2 (\1)/' \
         | sed '/^$/d' || true
     )

@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/airvoice/airvoice/cli/pairing"
-	"github.com/airvoice/airvoice/cli/paste"
-	"github.com/airvoice/airvoice/cli/server"
+	"github.com/yuler/airvoice/cli/pairing"
+	"github.com/yuler/airvoice/cli/paste"
+	"github.com/yuler/airvoice/cli/server"
 	"github.com/google/uuid"
 )
 

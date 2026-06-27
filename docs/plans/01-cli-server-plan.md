@@ -78,7 +78,7 @@ func (h *Hub) Get() *websocket.Conn {
 package server
 
 import (
-	"github.com/airvoice/airvoice/cli/protocol"
+	"github.com/yuler/airvoice/cli/protocol"
 	"github.com/gorilla/websocket"
 )
 
@@ -159,7 +159,7 @@ package server
 import (
 	"net/http"
 
-	"github.com/airvoice/airvoice/cli/paste"
+	"github.com/yuler/airvoice/cli/paste"
 	"github.com/gorilla/websocket"
 )
 
@@ -235,7 +235,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/airvoice/airvoice/cli/protocol"
+	"github.com/yuler/airvoice/cli/protocol"
 	"github.com/gorilla/websocket"
 )
 

@@ -55,7 +55,7 @@ Deliver a working Airvoice MVP:
 ### A1. `go.mod`
 
 ```go
-module github.com/airvoice/airvoice
+module github.com/yuler/airvoice
 
 go 1.22
 
@@ -172,7 +172,7 @@ Test: bad token → 401 on WS dial.
 // airvoice version → "airvoice 0.1.0"
 ```
 
-Imports in `cli/main.go` use `github.com/airvoice/airvoice/cli/pairing`, `cli/paste`, `cli/server`, etc.
+Imports in `cli/main.go` use `github.com/yuler/airvoice/cli/pairing`, `cli/paste`, `cli/server`, etc.
 
 Log paste backend + ws URL to **stderr**. QR to stderr.
 

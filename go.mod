@@ -1,4 +1,4 @@
-module github.com/airvoice/airvoice
+module github.com/yuler/airvoice
 
 go 1.22
 
