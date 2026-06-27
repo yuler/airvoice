@@ -20,11 +20,19 @@ interface HistoryEntry {
   createdAt: string
 }
 
+interface Settings {
+  port: number
+  autoStart: boolean
+  language: string
+}
+
 interface WailsApp {
   GetQRCode(): Promise<string>
   GetConnectionStatus(): Promise<ConnectionStatus>
   GetHistory(limit: number): Promise<HistoryEntry[]>
   ClearHistory(): Promise<void>
+  GetSettings(): Promise<Settings>
+  SaveSettings(settings: Settings): Promise<void>
 }
 
 interface Window {

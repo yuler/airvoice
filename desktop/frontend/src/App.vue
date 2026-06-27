@@ -2,12 +2,14 @@
 import QRCode from './components/QRCode.vue'
 import StatusBadge from './components/StatusBadge.vue'
 import HistoryList from './components/HistoryList.vue'
+import SettingsPanel from './components/SettingsPanel.vue'
 </script>
 
 <template>
   <div class="min-h-screen bg-bg-primary text-text-primary flex flex-col">
-    <header class="p-4 border-b border-border-default">
+    <header class="p-4 border-b border-border-default flex items-center justify-between">
       <h1 class="text-xl font-semibold">Airvoice</h1>
+      <SettingsPanel />
     </header>
 
     <main class="flex-1 flex flex-col items-center justify-center p-4">
