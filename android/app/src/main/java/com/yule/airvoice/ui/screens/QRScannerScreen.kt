@@ -34,6 +34,7 @@ import com.yule.airvoice.ui.theme.backgroundColor
 import com.yule.airvoice.ui.theme.primaryTextColor
 import kotlinx.serialization.json.Json
 import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicBoolean
 
 @OptIn(ExperimentalGetImage::class)
 @Composable
@@ -46,6 +47,12 @@ fun QRScannerScreen(
     val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
     val textColor = primaryTextColor()
     val bgColor = backgroundColor()
+
+    DisposableEffect(Unit) {
+        onDispose {
+            cameraExecutor.shutdown()
+        }
+    }
 
     var hasCameraPermission by remember {
         mutableStateOf(
@@ -84,8 +91,13 @@ fun QRScannerScreen(
                             .build()
 
                         val barcodeScanner = BarcodeScanning.getClient()
+                        val isScanned = AtomicBoolean(false)
 
                         imageAnalysis.setAnalyzer(cameraExecutor) { imageProxy ->
+                            if (isScanned.get()) {
+                                imageProxy.close()
+                                return@setAnalyzer
+                            }
                             val mediaImage = imageProxy.image
                             if (mediaImage != null) {
                                 val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
@@ -95,7 +107,9 @@ fun QRScannerScreen(
                                             val rawValue = barcode.rawValue ?: continue
                                             try {
                                                 val payload = Json.decodeFromString<PairingPayload>(rawValue)
-                                                onQrCodeScanned(payload)
+                                                if (isScanned.compareAndSet(false, true)) {
+                                                    onQrCodeScanned(payload)
+                                                }
                                                 break
                                             } catch (e: Exception) {
                                                 // Ignore invalid barcodes

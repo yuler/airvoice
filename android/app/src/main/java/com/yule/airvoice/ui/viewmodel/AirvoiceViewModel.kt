@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 
@@ -43,14 +44,12 @@ class AirvoiceViewModel(application: Application) : AndroidViewModel(application
 
     init {
         viewModelScope.launch {
-            // Read saved connection details
-            storage.wsUrlFlow.collect { wsUrl ->
-                storage.tokenFlow.collect { token ->
-                    if (!wsUrl.isNullOrEmpty() && !token.isNullOrEmpty()) {
-                        _currentScreen.value = Screen.HOME
-                        connectionManager.connect(wsUrl, token)
-                    }
-                }
+            // Read saved connection details on startup
+            val wsUrl = storage.wsUrlFlow.first()
+            val token = storage.tokenFlow.first()
+            if (!wsUrl.isNullOrEmpty() && !token.isNullOrEmpty()) {
+                _currentScreen.value = Screen.HOME
+                connectionManager.connect(wsUrl, token)
             }
         }
 

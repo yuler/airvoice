@@ -3,6 +3,8 @@ package com.yule.airvoice.services
 import com.yule.airvoice.models.ProtocolMessage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,13 +29,16 @@ class ConnectionManager(private val client: OkHttpClient) {
     private val _status = MutableStateFlow<ConnectionStatus>(ConnectionStatus.Disconnected)
     val status: StateFlow<ConnectionStatus> = _status
 
-    private val _incomingMessages = MutableSharedFlow<ProtocolMessage>()
+    private val _incomingMessages = MutableSharedFlow<ProtocolMessage>(
+        extraBufferCapacity = 64,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
     val incomingMessages: SharedFlow<ProtocolMessage> = _incomingMessages
 
     private var webSocket: WebSocket? = null
     private var currentUrl: String? = null
     private var currentToken: String? = null
-    private val scope = CoroutineScope(Dispatchers.IO)
+    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private var reconnectJob: kotlinx.coroutines.Job? = null
     private var backoffMs = 2000L
 
@@ -57,12 +62,10 @@ class ConnectionManager(private val client: OkHttpClient) {
             override fun onMessage(webSocket: WebSocket, text: String) {
                 try {
                     val msg = Json.decodeFromString<ProtocolMessage>(text)
-                    scope.launch {
-                        if (msg.type == "hello") {
-                            _status.value = ConnectionStatus.Connected(msg.host ?: "Computer")
-                        }
-                        _incomingMessages.emit(msg)
+                    if (msg.type == "hello") {
+                        _status.value = ConnectionStatus.Connected(msg.host ?: "Computer")
                     }
+                    _incomingMessages.tryEmit(msg)
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
@@ -81,6 +84,8 @@ class ConnectionManager(private val client: OkHttpClient) {
 
     fun disconnect() {
         reconnectJob?.cancel()
+        currentUrl = null
+        currentToken = null
         webSocket?.close(1000, "User disconnect")
         webSocket = null
         _status.value = ConnectionStatus.Disconnected

@@ -4,7 +4,8 @@ import com.yule.airvoice.models.ProtocolMessage
 import java.util.UUID
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -16,12 +17,13 @@ class AutoSendController(
     private val connectionManager: ConnectionManager,
     private val onSentAck: (Boolean) -> Unit
 ) {
-    private val scope = CoroutineScope(Dispatchers.Main)
-    private var debounceJob: Job? = null
+    private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+    private var debounceJob: kotlinx.coroutines.Job? = null
     private var lastAckedText = ""
     private var isSending = false
+    private var sendingText = ""
     private var pendingMessageId: String? = null
-    private var timeoutJob: Job? = null
+    private var timeoutJob: kotlinx.coroutines.Job? = null
 
     init {
         startListening()
@@ -48,7 +50,7 @@ class AutoSendController(
                     isSending = false
                     val success = msg.ok == true
                     if (success) {
-                        lastAckedText = textFlow.value
+                        lastAckedText = sendingText
                     }
                     onSentAck(success)
                 }
@@ -66,6 +68,7 @@ class AutoSendController(
     private fun sendText(text: String) {
         if (isSending) return
         isSending = true
+        sendingText = text
         
         val msgId = UUID.randomUUID().toString()
         pendingMessageId = msgId
@@ -98,7 +101,6 @@ class AutoSendController(
     }
     
     fun cleanup() {
-        debounceJob?.cancel()
-        timeoutJob?.cancel()
+        scope.cancel()
     }
 }
