@@ -11,4 +11,16 @@ xcuserdata/
 DerivedData/
 ios/Signing.xcconfig
 
+# Android
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/.idea/
+android/captures/
+android/*.hprof
+android/app/release/
+*.apk
+*.aab
+
 tmp
