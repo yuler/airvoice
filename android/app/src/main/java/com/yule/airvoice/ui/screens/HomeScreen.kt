@@ -171,19 +171,18 @@ fun HomeScreen(viewModel: AirvoiceViewModel) {
                     .padding(1.dp)
                     .background(editorBg, RoundedCornerShape(16.dp))
             ) {
-                if (text.isEmpty()) {
-                    Text(
-                        text = "在此输入，或使用键盘麦克风语音输入...",
-                        color = placeholderClr,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
-                    )
-                }
                 TextField(
                     value = text,
                     onValueChange = { viewModel.updateInputText(it) },
                     modifier = Modifier
                         .fillMaxSize()
                         .focusRequester(focusRequester),
+                    placeholder = {
+                        Text(
+                            text = "在此输入，或使用键盘麦克风语音输入...",
+                            color = placeholderClr
+                        )
+                    },
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = Color.Transparent,
                         unfocusedContainerColor = Color.Transparent,

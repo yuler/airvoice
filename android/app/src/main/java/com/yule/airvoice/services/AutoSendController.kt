@@ -10,6 +10,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 class AutoSendController(
@@ -56,6 +58,18 @@ class AutoSendController(
                 }
             }
         }
+
+        // Reset isSending when connection drops
+        connectionManager.status
+            .onEach { status ->
+                if (status is ConnectionStatus.Disconnected || status is ConnectionStatus.Error) {
+                    if (isSending) {
+                        timeoutJob?.cancel()
+                        isSending = false
+                    }
+                }
+            }
+            .launchIn(scope)
     }
 
     fun triggerImmediateSend() {

@@ -111,9 +111,13 @@ class ConnectionManager(private val client: OkHttpClient) {
     private fun triggerReconnect() {
         reconnectJob?.cancel()
         reconnectJob = scope.launch {
-            delay(backoffMs)
-            val (url, token) = synchronized(this@ConnectionManager) {
+            val currentBackoff = synchronized(this@ConnectionManager) {
+                val b = backoffMs
                 backoffMs = (backoffMs * 2).coerceAtMost(30000L)
+                b
+            }
+            delay(currentBackoff)
+            val (url, token) = synchronized(this@ConnectionManager) {
                 currentUrl to currentToken
             }
             if (url != null && token != null) {

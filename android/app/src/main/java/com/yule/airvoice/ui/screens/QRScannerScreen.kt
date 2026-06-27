@@ -46,11 +46,13 @@ fun QRScannerScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
     val barcodeScanner = remember { BarcodeScanning.getClient() }
+    var cameraProviderState by remember { mutableStateOf<ProcessCameraProvider?>(null) }
     val textColor = primaryTextColor()
     val bgColor = backgroundColor()
 
     DisposableEffect(Unit) {
         onDispose {
+            cameraProviderState?.unbindAll()
             barcodeScanner.close()
             cameraExecutor.shutdown()
         }
@@ -81,8 +83,9 @@ fun QRScannerScreen(
                     val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
                     
                     cameraProviderFuture.addListener({
-                        val cameraProvider = cameraProviderFuture.get()
-                        
+                        val provider = cameraProviderFuture.get()
+                        cameraProviderState = provider
+
                         val preview = Preview.Builder().build().apply {
                             setSurfaceProvider(previewView.surfaceProvider)
                         }
@@ -126,8 +129,8 @@ fun QRScannerScreen(
                         }
 
                         try {
-                            cameraProvider.unbindAll()
-                            cameraProvider.bindToLifecycle(
+                            provider.unbindAll()
+                            provider.bindToLifecycle(
                                 lifecycleOwner,
                                 CameraSelector.DEFAULT_BACK_CAMERA,
                                 preview,

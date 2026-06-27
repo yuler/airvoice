@@ -47,7 +47,7 @@ class AirvoiceViewModel(application: Application) : AndroidViewModel(application
             // Read saved connection details on startup
             val wsUrl = storage.wsUrlFlow.first()
             val token = storage.tokenFlow.first()
-            if (!wsUrl.isNullOrEmpty() && !token.isNullOrEmpty()) {
+            if (!wsUrl.isNullOrEmpty() && !token.isNullOrEmpty() && _currentScreen.value == Screen.ONBOARDING) {
                 _currentScreen.value = Screen.HOME
                 connectionManager.connect(wsUrl, token)
             }
@@ -64,8 +64,6 @@ class AirvoiceViewModel(application: Application) : AndroidViewModel(application
                         val current = _inputText.value
                         if (current.startsWith(sentText)) {
                             _inputText.value = current.removePrefix(sentText)
-                        } else {
-                            _inputText.value = ""
                         }
                     } else {
                         _toastEvents.emit("发送失败，请检查连接")
