@@ -2,6 +2,9 @@
 bin/airvoice
 .build/
 
+# deps
+node_modules
+
 # mise
 .mise/
 
