@@ -12,3 +12,7 @@ DerivedData/
 ios/Signing.xcconfig
 
 tmp
+
+# Desktop frontend
+desktop/frontend/node_modules
+desktop/frontend/dist
