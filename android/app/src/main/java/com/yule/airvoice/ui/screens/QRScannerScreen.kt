@@ -47,11 +47,13 @@ fun QRScannerScreen(
     val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
     val barcodeScanner = remember { BarcodeScanning.getClient() }
     var cameraProviderState by remember { mutableStateOf<ProcessCameraProvider?>(null) }
+    val isActive = remember { mutableStateOf(true) }
     val textColor = primaryTextColor()
     val bgColor = backgroundColor()
 
     DisposableEffect(Unit) {
         onDispose {
+            isActive.value = false
             cameraProviderState?.unbindAll()
             barcodeScanner.close()
             cameraExecutor.shutdown()
@@ -83,6 +85,7 @@ fun QRScannerScreen(
                     val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
                     
                     cameraProviderFuture.addListener({
+                        if (!isActive.value) return@addListener
                         val provider = cameraProviderFuture.get()
                         cameraProviderState = provider
 

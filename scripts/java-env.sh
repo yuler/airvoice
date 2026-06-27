@@ -32,7 +32,7 @@ fi
 
 if [ -z "$JAVA_HOME" ] || [ ! -x "$JAVA_HOME/bin/java" ]; then
   echo "ERROR: Could not detect JAVA_HOME. Install JDK 17 first." >&2
-  exit 1
+  return 1 2>/dev/null || exit 1
 fi
 
 export JAVA_HOME

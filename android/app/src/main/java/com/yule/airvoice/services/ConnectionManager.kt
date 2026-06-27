@@ -26,6 +26,7 @@ sealed interface ConnectionStatus {
 }
 
 class ConnectionManager(private val client: OkHttpClient) {
+    private val lenientJson = Json { ignoreUnknownKeys = true }
     private val _status = MutableStateFlow<ConnectionStatus>(ConnectionStatus.Disconnected)
     val status: StateFlow<ConnectionStatus> = _status
 
@@ -47,6 +48,8 @@ class ConnectionManager(private val client: OkHttpClient) {
         currentUrl = wsUrl
         currentToken = token
         reconnectJob?.cancel()
+        webSocket?.close(1000, "Reconnecting")
+        webSocket = null
 
         val requestUrl = "$wsUrl?token=$token"
         val request = try {
@@ -60,6 +63,7 @@ class ConnectionManager(private val client: OkHttpClient) {
         webSocket = client.newWebSocket(request, object : WebSocketListener() {
             override fun onOpen(webSocket: WebSocket, response: Response) {
                 synchronized(this@ConnectionManager) {
+                    if (webSocket !== this@ConnectionManager.webSocket) return
                     backoffMs = 2000L
                 }
                 val helloMsg = ProtocolMessage(type = "hello", device = "Android Phone", app = "0.1.0")
@@ -67,8 +71,9 @@ class ConnectionManager(private val client: OkHttpClient) {
             }
 
             override fun onMessage(webSocket: WebSocket, text: String) {
+                if (webSocket !== this@ConnectionManager.webSocket) return
                 try {
-                    val msg = Json.decodeFromString<ProtocolMessage>(text)
+                    val msg = lenientJson.decodeFromString<ProtocolMessage>(text)
                     if (msg.type == "hello") {
                         _status.value = ConnectionStatus.Connected(msg.host ?: "Computer")
                     }
@@ -79,6 +84,7 @@ class ConnectionManager(private val client: OkHttpClient) {
             }
 
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+                if (webSocket !== this@ConnectionManager.webSocket) return
                 _status.value = ConnectionStatus.Error(t.message ?: "Connection Failure")
                 synchronized(this@ConnectionManager) {
                     triggerReconnect()
@@ -86,6 +92,7 @@ class ConnectionManager(private val client: OkHttpClient) {
             }
 
             override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
+                if (webSocket !== this@ConnectionManager.webSocket) return
                 _status.value = ConnectionStatus.Disconnected
             }
         })

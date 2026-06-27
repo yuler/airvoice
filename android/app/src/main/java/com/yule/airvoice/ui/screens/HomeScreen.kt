@@ -98,7 +98,7 @@ fun HomeScreen(viewModel: AirvoiceViewModel) {
                             val dotColor = when (status) {
                                 is ConnectionStatus.Connected -> AppColors.statusBarConnected
                                 is ConnectionStatus.Connecting -> AppColors.statusBarConnecting
-                                is ConnectionStatus.Error -> AppColors.statusBarConnecting
+                                is ConnectionStatus.Error -> AppColors.statusBarError
                                 ConnectionStatus.Disconnected -> AppColors.statusBarDisconnected
                             }
                             val label = when (status) {
