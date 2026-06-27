@@ -2,7 +2,26 @@
 
 > **For agents:** Implement the full MVP from this document in one pass.  
 > Context: [background.md](../background.md) · Structure & protocol: [architecture.md](../architecture.md)  
-> Status: **approved**
+> Status: **in-progress**
+
+## Progress
+
+| Task | Status |
+|------|--------|
+| A1. `go.mod` | ✅ completed |
+| A2. `cli/protocol/messages.go` | ✅ completed |
+| A3. `cli/pairing/` | ✅ completed |
+| A4. `cli/paste/` | ✅ completed |
+| A5. `cli/server/` | ✅ completed |
+| A6. `cli/main.go` | ✅ completed |
+| A7. Go verify (`go test ./cli/... && go build`) | ✅ completed |
+| B1. iOS project shell | ✅ completed |
+| B2. iOS models | ✅ completed |
+| B3. `ConnectionManager.swift` | ✅ completed |
+| B4. `AutoSendController.swift` | ✅ completed |
+| B5. iOS views | ✅ completed |
+| B6. `Info.plist` | ✅ completed |
+| C. README update | ✅ completed |
 
 ## Goal
 
@@ -36,7 +55,7 @@ Deliver a working Airvoice MVP:
 ### A1. `go.mod`
 
 ```go
-module github.com/airvoice/airvoice
+module github.com/yuler/airvoice
 
 go 1.22
 
@@ -153,7 +172,7 @@ Test: bad token → 401 on WS dial.
 // airvoice version → "airvoice 0.1.0"
 ```
 
-Imports in `cli/main.go` use `github.com/airvoice/airvoice/cli/pairing`, `cli/paste`, `cli/server`, etc.
+Imports in `cli/main.go` use `github.com/yuler/airvoice/cli/pairing`, `cli/paste`, `cli/server`, etc.
 
 Log paste backend + ws URL to **stderr**. QR to stderr.
 

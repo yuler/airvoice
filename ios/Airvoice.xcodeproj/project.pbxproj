@@ -1,0 +1,511 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 63;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		05BBA615A645E734A9CD09DD /* PairingPayload.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A584E32977C8F174260E0D /* PairingPayload.swift */; };
+		1FA8494FD6388E50C4EFF1AD /* AppTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AD89AC3F8FD910DD0E66AA7 /* AppTheme.swift */; };
+		2B8245D83E1577AF85A97C20 /* HomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEB2C3ABFB2275E616CE1BF6 /* HomeViewModel.swift */; };
+		38E216AC2FF6CCC44797F882 /* PreferredKeyboardResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 058EB2747E389B6AF2CDD0DC /* PreferredKeyboardResolver.swift */; };
+		4F22931C33FC4BCA7F44275F /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B1269C9C141659D0AB341DB /* HomeView.swift */; };
+		5A92E466C095F7B5CFACB0F0 /* AutoSendControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B53681D4DAB6E5CCD7A16F3C /* AutoSendControllerTests.swift */; };
+
+		6F6274C1DA308E1986F13E93 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C653CDEEA8D67BDEFB5DBCE7 /* OnboardingView.swift */; };
+		765A1E3A3433F8204B3A5AF6 /* ConnectionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B13F4D18F23A1D46E83C066 /* ConnectionManager.swift */; };
+		8DCA813CAC193A8348BEF4A0 /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 668B6023156A450CBA8B8CCD /* AppSettings.swift */; };
+		90E2D6410B57143A810A4795 /* ProtocolMessageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 158A2C02AF8F8C9857E49BF1 /* ProtocolMessageTests.swift */; };
+		94C019DDD752E4A996B637D6 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E343930354171783B6F3B910 /* ContentView.swift */; };
+		9531D0866EB99D244B59A4F8 /* ProtocolMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA75A67ED0F3AAB6BEEF9BE9 /* ProtocolMessage.swift */; };
+		A96EC93930A3EC4F6B81ACF0 /* Toast.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB13C031D7E7C10845E70A68 /* Toast.swift */; };
+		AA549E67ABB54A47CA59AD11 /* QRScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DAFDCBFA2414B50BE5CE99F /* QRScannerView.swift */; };
+		E055D164A6F955084B8F9494 /* InputMethodTipsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D14894FD9051DCD12BEC498E /* InputMethodTipsView.swift */; };
+		EBF41FCAC681664042ABE3A9 /* AutoSendController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8925B067B467783539CEB0AF /* AutoSendController.swift */; };
+		EE4D5384CA48FCEECD76C54E /* AirvoiceApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC00C5EBB20C533AAEB997FC /* AirvoiceApp.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		EDD82F2650CD37B68EDE3069 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 6FEAE42A8018511DF8677EC4 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3900B38F3FE125E5516BC843;
+			remoteInfo = Airvoice;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		058EB2747E389B6AF2CDD0DC /* PreferredKeyboardResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferredKeyboardResolver.swift; sourceTree = "<group>"; };
+		158A2C02AF8F8C9857E49BF1 /* ProtocolMessageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProtocolMessageTests.swift; sourceTree = "<group>"; };
+
+		385B9808F8B2C23F4373B8E7 /* Airvoice.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Airvoice.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		668B6023156A450CBA8B8CCD /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
+		6B13F4D18F23A1D46E83C066 /* ConnectionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionManager.swift; sourceTree = "<group>"; };
+		7B1269C9C141659D0AB341DB /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		8925B067B467783539CEB0AF /* AutoSendController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoSendController.swift; sourceTree = "<group>"; };
+		9AD89AC3F8FD910DD0E66AA7 /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTheme.swift; sourceTree = "<group>"; };
+		9D1FB5B90043B86517CBE438 /* AirvoiceTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AirvoiceTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		9DAFDCBFA2414B50BE5CE99F /* QRScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRScannerView.swift; sourceTree = "<group>"; };
+		A080A13C65BD8D11D4D9010C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		B53681D4DAB6E5CCD7A16F3C /* AutoSendControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoSendControllerTests.swift; sourceTree = "<group>"; };
+		C653CDEEA8D67BDEFB5DBCE7 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		CA75A67ED0F3AAB6BEEF9BE9 /* ProtocolMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProtocolMessage.swift; sourceTree = "<group>"; };
+		D14894FD9051DCD12BEC498E /* InputMethodTipsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputMethodTipsView.swift; sourceTree = "<group>"; };
+		DB13C031D7E7C10845E70A68 /* Toast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Toast.swift; sourceTree = "<group>"; };
+		E1A584E32977C8F174260E0D /* PairingPayload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairingPayload.swift; sourceTree = "<group>"; };
+		E343930354171783B6F3B910 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		EEB2C3ABFB2275E616CE1BF6 /* HomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModel.swift; sourceTree = "<group>"; };
+		FC00C5EBB20C533AAEB997FC /* AirvoiceApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AirvoiceApp.swift; sourceTree = "<group>"; };
+		"TEMP_AE851291-FF8B-479A-B72B-B0437A26FD5B" /* Signing.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Signing.xcconfig; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		39AFFCF1CDA615AA52FDFCD7 /* AirvoiceTests */ = {
+			isa = PBXGroup;
+			children = (
+				B53681D4DAB6E5CCD7A16F3C /* AutoSendControllerTests.swift */,
+				158A2C02AF8F8C9857E49BF1 /* ProtocolMessageTests.swift */,
+			);
+			path = AirvoiceTests;
+			sourceTree = "<group>";
+		};
+		4C91F47B10DD39C2095CC6EC = {
+			isa = PBXGroup;
+			children = (
+				674F6DC7187A5EB59C04FEA9 /* Airvoice */,
+				39AFFCF1CDA615AA52FDFCD7 /* AirvoiceTests */,
+				7B798D00A6B7ADA273C349A9 /* Products */,
+				B446FE492FEE4DA60018210A /* Recovered References */,
+			);
+			sourceTree = "<group>";
+		};
+		674F6DC7187A5EB59C04FEA9 /* Airvoice */ = {
+			isa = PBXGroup;
+			children = (
+				FC00C5EBB20C533AAEB997FC /* AirvoiceApp.swift */,
+				A080A13C65BD8D11D4D9010C /* Info.plist */,
+				9386D7EEA472CDFB2A2C453B /* Models */,
+				E6E2CF43193D1C23502BB56A /* Services */,
+				C25138567F97495EBC6DC9E5 /* Utilities */,
+				7D3431AFCA3E84616505D33B /* Views */,
+			);
+			path = Airvoice;
+			sourceTree = "<group>";
+		};
+		7B798D00A6B7ADA273C349A9 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				385B9808F8B2C23F4373B8E7 /* Airvoice.app */,
+				9D1FB5B90043B86517CBE438 /* AirvoiceTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		7D3431AFCA3E84616505D33B /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				E343930354171783B6F3B910 /* ContentView.swift */,
+				7B1269C9C141659D0AB341DB /* HomeView.swift */,
+				D14894FD9051DCD12BEC498E /* InputMethodTipsView.swift */,
+				C653CDEEA8D67BDEFB5DBCE7 /* OnboardingView.swift */,
+				9DAFDCBFA2414B50BE5CE99F /* QRScannerView.swift */,
+
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		9386D7EEA472CDFB2A2C453B /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				E1A584E32977C8F174260E0D /* PairingPayload.swift */,
+				CA75A67ED0F3AAB6BEEF9BE9 /* ProtocolMessage.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		B446FE492FEE4DA60018210A /* Recovered References */ = {
+			isa = PBXGroup;
+			children = (
+				"TEMP_AE851291-FF8B-479A-B72B-B0437A26FD5B" /* Signing.xcconfig */,
+			);
+			name = "Recovered References";
+			sourceTree = "<group>";
+		};
+		C25138567F97495EBC6DC9E5 /* Utilities */ = {
+			isa = PBXGroup;
+			children = (
+				668B6023156A450CBA8B8CCD /* AppSettings.swift */,
+				9AD89AC3F8FD910DD0E66AA7 /* AppTheme.swift */,
+				058EB2747E389B6AF2CDD0DC /* PreferredKeyboardResolver.swift */,
+				DB13C031D7E7C10845E70A68 /* Toast.swift */,
+			);
+			path = Utilities;
+			sourceTree = "<group>";
+		};
+		E6E2CF43193D1C23502BB56A /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				8925B067B467783539CEB0AF /* AutoSendController.swift */,
+				6B13F4D18F23A1D46E83C066 /* ConnectionManager.swift */,
+				EEB2C3ABFB2275E616CE1BF6 /* HomeViewModel.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		3900B38F3FE125E5516BC843 /* Airvoice */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 77003CF50C5B0F51BB6138F9 /* Build configuration list for PBXNativeTarget "Airvoice" */;
+			buildPhases = (
+				D425389461125438C56B15F7 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Airvoice;
+			packageProductDependencies = (
+			);
+			productName = Airvoice;
+			productReference = 385B9808F8B2C23F4373B8E7 /* Airvoice.app */;
+			productType = "com.apple.product-type.application";
+		};
+		F50B628947875EF0F4386BBF /* AirvoiceTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7F5C0804E9448BF8B64D1914 /* Build configuration list for PBXNativeTarget "AirvoiceTests" */;
+			buildPhases = (
+				4B64E34EBC2E98E345A87928 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				CF52F3D5A13BB296B18B2814 /* PBXTargetDependency */,
+			);
+			name = AirvoiceTests;
+			packageProductDependencies = (
+			);
+			productName = AirvoiceTests;
+			productReference = 9D1FB5B90043B86517CBE438 /* AirvoiceTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		6FEAE42A8018511DF8677EC4 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					3900B38F3FE125E5516BC843 = {
+						ProvisioningStyle = Automatic;
+					};
+					F50B628947875EF0F4386BBF = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 01142128941C982FD7CB7501 /* Build configuration list for PBXProject "Airvoice" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 4C91F47B10DD39C2095CC6EC;
+			minimizedProjectReferenceProxies = 1;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				3900B38F3FE125E5516BC843 /* Airvoice */,
+				F50B628947875EF0F4386BBF /* AirvoiceTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		4B64E34EBC2E98E345A87928 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5A92E466C095F7B5CFACB0F0 /* AutoSendControllerTests.swift in Sources */,
+				90E2D6410B57143A810A4795 /* ProtocolMessageTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D425389461125438C56B15F7 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				EE4D5384CA48FCEECD76C54E /* AirvoiceApp.swift in Sources */,
+				8DCA813CAC193A8348BEF4A0 /* AppSettings.swift in Sources */,
+				1FA8494FD6388E50C4EFF1AD /* AppTheme.swift in Sources */,
+				EBF41FCAC681664042ABE3A9 /* AutoSendController.swift in Sources */,
+				765A1E3A3433F8204B3A5AF6 /* ConnectionManager.swift in Sources */,
+				94C019DDD752E4A996B637D6 /* ContentView.swift in Sources */,
+				4F22931C33FC4BCA7F44275F /* HomeView.swift in Sources */,
+				2B8245D83E1577AF85A97C20 /* HomeViewModel.swift in Sources */,
+				E055D164A6F955084B8F9494 /* InputMethodTipsView.swift in Sources */,
+				6F6274C1DA308E1986F13E93 /* OnboardingView.swift in Sources */,
+				05BBA615A645E734A9CD09DD /* PairingPayload.swift in Sources */,
+				38E216AC2FF6CCC44797F882 /* PreferredKeyboardResolver.swift in Sources */,
+				9531D0866EB99D244B59A4F8 /* ProtocolMessage.swift in Sources */,
+				AA549E67ABB54A47CA59AD11 /* QRScannerView.swift in Sources */,
+				A96EC93930A3EC4F6B81ACF0 /* Toast.swift in Sources */,
+
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		CF52F3D5A13BB296B18B2814 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3900B38F3FE125E5516BC843 /* Airvoice */;
+			targetProxy = EDD82F2650CD37B68EDE3069 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		14F2D5F38A53A84EBF29DA05 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = "TEMP_AE851291-FF8B-479A-B72B-B0437A26FD5B" /* Signing.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Debug;
+		};
+		393A0BCB6682EBEA4F467A91 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 7ZXF9833LZ;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Airvoice/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = cc.yuler.airvoice;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		68319D9BE0DBB4DFBEC7722C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = cc.yuler.airvoice.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Airvoice.app/Airvoice";
+			};
+			name = Debug;
+		};
+		C23DCB0407A95F9019FADD73 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = cc.yuler.airvoice.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Airvoice.app/Airvoice";
+			};
+			name = Release;
+		};
+		EA4276959F2DF504FCA3B996 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 7ZXF9833LZ;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Airvoice/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = cc.yuler.airvoice;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		EF238D827CFF3BD6BCB532DC /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = "TEMP_AE851291-FF8B-479A-B72B-B0437A26FD5B" /* Signing.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		01142128941C982FD7CB7501 /* Build configuration list for PBXProject "Airvoice" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				14F2D5F38A53A84EBF29DA05 /* Debug */,
+				EF238D827CFF3BD6BCB532DC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		77003CF50C5B0F51BB6138F9 /* Build configuration list for PBXNativeTarget "Airvoice" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				393A0BCB6682EBEA4F467A91 /* Debug */,
+				EA4276959F2DF504FCA3B996 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		7F5C0804E9448BF8B64D1914 /* Build configuration list for PBXNativeTarget "AirvoiceTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				68319D9BE0DBB4DFBEC7722C /* Debug */,
+				C23DCB0407A95F9019FADD73 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 6FEAE42A8018511DF8677EC4 /* Project object */;
+}
