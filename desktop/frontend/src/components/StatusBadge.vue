@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useConnection } from '../composables/useConnection'
 
 const { status } = useConnection()
+const { t } = useI18n()
 
 const badgeClass = computed(() => {
   switch (status.value.state) {
@@ -20,14 +22,14 @@ const badgeClass = computed(() => {
 const statusText = computed(() => {
   switch (status.value.state) {
     case 'connected':
-      return `Connected to ${status.value.deviceName}`
+      return t('status.connected', { device: status.value.deviceName })
     case 'connecting':
-      return 'Connecting...'
+      return t('status.connecting')
     case 'waiting':
-      return 'Waiting for device'
+      return t('status.waiting')
     case 'disconnected':
     default:
-      return 'Disconnected'
+      return t('status.disconnected')
   }
 })
 </script>

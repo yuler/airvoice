@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useHistory } from '../composables/useHistory'
 
 const { entries, loading, loadHistory, clearHistory } = useHistory()
+const { t } = useI18n()
 
 onMounted(() => loadHistory())
 
@@ -15,20 +17,20 @@ function formatTime(dateStr: string): string {
 <template>
   <div class="flex flex-col h-full">
     <div class="flex items-center justify-between px-4 py-2 border-b border-border-default">
-      <h2 class="text-sm font-medium text-text-secondary">Recent</h2>
+      <h2 class="text-sm font-medium text-text-secondary">{{ t('history.title') }}</h2>
       <button
         v-if="entries.length > 0"
         @click="clearHistory"
         class="text-xs text-text-muted hover:text-status-error"
       >
-        Clear
+        {{ t('history.clear') }}
       </button>
     </div>
 
     <div class="flex-1 overflow-y-auto">
       <div v-if="loading" class="p-4 text-center text-text-muted">Loading...</div>
       <div v-else-if="entries.length === 0" class="p-4 text-center text-text-muted">
-        No history yet
+        {{ t('history.empty') }}
       </div>
       <div
         v-for="entry in entries"

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 interface Settings {
   port: number
@@ -14,6 +15,7 @@ const settings = ref<Settings>({
 })
 
 const isOpen = ref(false)
+const { t } = useI18n()
 
 async function loadSettings() {
   try {
@@ -41,7 +43,7 @@ onMounted(loadSettings)
       @click="isOpen = true"
       class="px-3 py-1.5 text-sm text-text-secondary hover:text-text-primary border border-border-default rounded-full"
     >
-      Settings
+      {{ t('settings.title') }}
     </button>
 
     <Teleport to="body">
@@ -51,11 +53,11 @@ onMounted(loadSettings)
         @click.self="isOpen = false"
       >
         <div class="bg-bg-secondary border border-border-default rounded-lg w-80 p-4">
-          <h2 class="text-lg font-semibold mb-4">Settings</h2>
+          <h2 class="text-lg font-semibold mb-4">{{ t('settings.title') }}</h2>
 
           <div class="space-y-4">
             <div>
-              <label class="block text-sm text-text-secondary mb-1">Port</label>
+              <label class="block text-sm text-text-secondary mb-1">{{ t('settings.port') }}</label>
               <input
                 v-model.number="settings.port"
                 type="number"
@@ -66,7 +68,7 @@ onMounted(loadSettings)
             </div>
 
             <div class="flex items-center justify-between">
-              <label class="text-sm text-text-secondary">Auto-start</label>
+              <label class="text-sm text-text-secondary">{{ t('settings.autoStart') }}</label>
               <button
                 @click="settings.autoStart = !settings.autoStart"
                 :class="settings.autoStart ? 'bg-accent-blue' : 'bg-border-default'"
@@ -85,13 +87,13 @@ onMounted(loadSettings)
               @click="isOpen = false"
               class="px-4 py-2 text-sm text-text-secondary hover:text-text-primary"
             >
-              Cancel
+              {{ t('settings.cancel') }}
             </button>
             <button
               @click="saveSettings"
               class="px-4 py-2 text-sm bg-accent-blue text-white rounded-full"
             >
-              Save
+              {{ t('settings.save') }}
             </button>
           </div>
         </div>

@@ -1,0 +1,28 @@
+{
+  "app": {
+    "title": "Airvoice"
+  },
+  "status": {
+    "disconnected": "未连接",
+    "connecting": "连接中...",
+    "connected": "已连接到 {device}",
+    "waiting": "等待设备连接"
+  },
+  "qr": {
+    "scan": "使用 Airvoice 应用扫描",
+    "loading": "加载二维码..."
+  },
+  "history": {
+    "title": "最近记录",
+    "empty": "暂无记录",
+    "clear": "清空"
+  },
+  "settings": {
+    "title": "设置",
+    "port": "端口",
+    "autoStart": "开机自启",
+    "language": "语言",
+    "save": "保存",
+    "cancel": "取消"
+  }
+}
