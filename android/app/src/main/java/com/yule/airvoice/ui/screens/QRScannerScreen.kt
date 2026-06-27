@@ -2,6 +2,7 @@ package com.yule.airvoice.ui.screens
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.OptIn
@@ -43,6 +44,7 @@ fun QRScannerScreen(
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val currentOnQrCodeScanned by rememberUpdatedState(onQrCodeScanned)
     val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
     val barcodeScanner = remember { BarcodeScanning.getClient() }
     var cameraProviderState by remember { mutableStateOf<ProcessCameraProvider?>(null) }
@@ -88,7 +90,7 @@ fun QRScannerScreen(
                         val provider = try {
                             cameraProviderFuture.get()
                         } catch (e: Exception) {
-                            e.printStackTrace()
+                            Log.e("QRScannerScreen", "Camera error", e)
                             return@addListener
                         }
                         cameraProviderState = provider
@@ -117,8 +119,8 @@ fun QRScannerScreen(
                                             val rawValue = barcode.rawValue ?: continue
                                             try {
                                                 val payload = Json.decodeFromString<PairingPayload>(rawValue)
-                                                if (isScanned.compareAndSet(false, true)) {
-                                                    onQrCodeScanned(payload)
+                                                if (isActive.value && isScanned.compareAndSet(false, true)) {
+                                                    currentOnQrCodeScanned(payload)
                                                 }
                                                 break
                                             } catch (e: Exception) {
@@ -143,7 +145,7 @@ fun QRScannerScreen(
                                 imageAnalysis
                             )
                         } catch (e: Exception) {
-                            e.printStackTrace()
+                            Log.e("QRScannerScreen", "Camera error", e)
                         }
                     }, ContextCompat.getMainExecutor(ctx))
 

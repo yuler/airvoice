@@ -54,14 +54,17 @@ fun HomeScreen(viewModel: AirvoiceViewModel) {
     val placeholderClr = placeholderTextColor()
     val sendBtnBg = sendButtonBackgroundColor()
 
-    val isImeVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
-    var prevImeVisible by remember { mutableStateOf(false) }
-
-    LaunchedEffect(isImeVisible) {
-        if (prevImeVisible && !isImeVisible) {
-            viewModel.triggerImmediateSend()
-        }
-        prevImeVisible = isImeVisible
+    val density = LocalDensity.current
+    val imeInsets = WindowInsets.ime
+    LaunchedEffect(Unit) {
+        var prevImeVisible = false
+        snapshotFlow { imeInsets.getBottom(density) > 0 }
+            .collect { isImeVisible ->
+                if (prevImeVisible && !isImeVisible) {
+                    viewModel.triggerImmediateSend()
+                }
+                prevImeVisible = isImeVisible
+            }
     }
 
     val isConnected = status is ConnectionStatus.Connected
@@ -168,7 +171,7 @@ fun HomeScreen(viewModel: AirvoiceViewModel) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .background(editorBg, RoundedCornerShape(16.dp))
+                    .background(borderClr, RoundedCornerShape(16.dp))
                     .padding(1.dp)
                     .background(editorBg, RoundedCornerShape(16.dp))
             ) {

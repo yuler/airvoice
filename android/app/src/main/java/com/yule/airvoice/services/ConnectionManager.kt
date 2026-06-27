@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import android.util.Log
 import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -79,7 +80,7 @@ class ConnectionManager(private val client: OkHttpClient) {
                     }
                     _incomingMessages.tryEmit(msg)
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.e("ConnectionManager", "Failed to decode message", e)
                 }
             }
 
