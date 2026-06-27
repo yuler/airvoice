@@ -28,8 +28,10 @@ interface Settings {
 
 interface WailsApp {
   GetQRCode(): Promise<string>
+  GetPairingLink(): Promise<string>
   GetConnectionStatus(): Promise<ConnectionStatus>
   GetHistory(limit: number): Promise<HistoryEntry[]>
+  SearchHistory(query: string, limit: number): Promise<HistoryEntry[]>
   ClearHistory(): Promise<void>
   GetSettings(): Promise<Settings>
   SaveSettings(settings: Settings): Promise<void>

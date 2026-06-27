@@ -22,6 +22,17 @@ export function useHistory() {
     }
   }
 
+  async function searchHistory(query: string, limit = 50) {
+    loading.value = true
+    try {
+      entries.value = await window.go.main.App.SearchHistory(query, limit)
+    } catch (e) {
+      console.error('Failed to search history:', e)
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function clearHistory() {
     try {
       await window.go.main.App.ClearHistory()
@@ -31,5 +42,5 @@ export function useHistory() {
     }
   }
 
-  return { entries, loading, loadHistory, clearHistory }
+  return { entries, loading, loadHistory, searchHistory, clearHistory }
 }

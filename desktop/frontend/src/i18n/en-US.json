@@ -10,12 +10,15 @@
   },
   "qr": {
     "scan": "Scan with Airvoice app",
-    "loading": "Loading QR code..."
+    "loading": "Loading QR code...",
+    "copyLink": "Copy pairing link",
+    "copied": "Copied!"
   },
   "history": {
     "title": "Recent",
     "empty": "No history yet",
-    "clear": "Clear"
+    "clear": "Clear",
+    "search": "Search history..."
   },
   "settings": {
     "title": "Settings",

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"image/png"
 	"os"
@@ -30,13 +31,15 @@ type Settings struct {
 }
 
 type App struct {
-	ctx     context.Context
-	server  *server.Server
-	history *HistoryStore
-	token   string
-	port    int
-	mu      sync.RWMutex
-	status  ConnectionStatus
+	ctx          context.Context
+	server       *server.Server
+	history      *HistoryStore
+	token        string
+	port         int
+	settingsPath string
+	settings     Settings
+	mu           sync.RWMutex
+	status       ConnectionStatus
 }
 
 func NewApp() (*App, error) {
@@ -54,16 +57,44 @@ func NewApp() (*App, error) {
 		return nil, fmt.Errorf("failed to initialize history store: %w", err)
 	}
 
-	return &App{
-		history: history,
-		token:   uuid.New().String(),
-		port:    7383,
-		status:  ConnectionStatus{State: "disconnected"},
-	}, nil
+	settingsPath := filepath.Join(homeDir, ".airvoice", "settings.json")
+
+	app := &App{
+		history:      history,
+		token:        uuid.New().String(),
+		port:         7383,
+		settingsPath: settingsPath,
+		settings:     Settings{Port: 7383, Language: "zh-CN"},
+		status:       ConnectionStatus{State: "disconnected"},
+	}
+
+	app.loadSettings()
+
+	return app, nil
 }
 
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+}
+
+func (a *App) GetPairingLink() (string, error) {
+	ip, err := pairing.LocalIPv4()
+	if err != nil {
+		return "", fmt.Errorf("failed to get LAN IP: %w", err)
+	}
+
+	payload := pairing.Payload{
+		Version: 1,
+		WS:      fmt.Sprintf("ws://%s:%d/ws", ip, a.port),
+		Token:   a.token,
+	}
+
+	payloadBytes, err := payload.Marshal()
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal payload: %w", err)
+	}
+
+	return string(payloadBytes), nil
 }
 
 func (a *App) GetQRCode() (string, error) {
@@ -107,6 +138,10 @@ func (a *App) GetConnectionStatus() ConnectionStatus {
 func (a *App) StartServer(port int) error {
 	a.mu.Lock()
 	a.port = port
+	a.status = ConnectionStatus{
+		State: "waiting",
+		Port:  port,
+	}
 	a.mu.Unlock()
 
 	srv := server.New(server.Config{
@@ -118,41 +153,82 @@ func (a *App) StartServer(port int) error {
 				a.history.Add(content, device)
 			}
 		},
+		OnConnect: func(device string) {
+			a.mu.Lock()
+			a.status = ConnectionStatus{
+				State:      "connected",
+				DeviceName: device,
+				Port:       a.port,
+			}
+			a.mu.Unlock()
+		},
+		OnDisconnect: func() {
+			a.mu.Lock()
+			a.status = ConnectionStatus{
+				State: "waiting",
+				Port:  a.port,
+			}
+			a.mu.Unlock()
+		},
 	})
 
 	srv.SetToken(a.token)
-	a.server = srv
-
-	go srv.ListenAndServe()
 
 	a.mu.Lock()
-	a.status = ConnectionStatus{
-		State: "waiting",
-		Port:  a.port,
-	}
+	a.server = srv
 	a.mu.Unlock()
+
+	go srv.ListenAndServe()
 
 	return nil
 }
 
 func (a *App) StopServer() error {
-	a.server = nil
 	a.mu.Lock()
+	srv := a.server
+	a.server = nil
 	a.status = ConnectionStatus{State: "disconnected"}
 	a.mu.Unlock()
+
+	if srv != nil {
+		return srv.Close()
+	}
 	return nil
+}
+
+func (a *App) loadSettings() {
+	data, err := os.ReadFile(a.settingsPath)
+	if err != nil {
+		return
+	}
+	var s Settings
+	if err := json.Unmarshal(data, &s); err != nil {
+		return
+	}
+	a.settings = s
+	a.port = s.Port
 }
 
 func (a *App) GetSettings() Settings {
-	return Settings{
-		Port:     a.port,
-		Language: "zh-CN",
-	}
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+	return a.settings
 }
 
 func (a *App) SaveSettings(s Settings) error {
+	a.mu.Lock()
+	a.settings = s
 	a.port = s.Port
-	return nil
+	a.mu.Unlock()
+
+	data, err := json.MarshalIndent(s, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal settings: %w", err)
+	}
+	if err := os.MkdirAll(filepath.Dir(a.settingsPath), 0755); err != nil {
+		return fmt.Errorf("failed to create settings dir: %w", err)
+	}
+	return os.WriteFile(a.settingsPath, data, 0644)
 }
 
 func (a *App) GetHistory(limit int) ([]HistoryEntry, error) {
@@ -167,6 +243,13 @@ func (a *App) ClearHistory() error {
 		return fmt.Errorf("history store not initialized")
 	}
 	return a.history.Clear()
+}
+
+func (a *App) SearchHistory(query string, limit int) ([]HistoryEntry, error) {
+	if a.history == nil {
+		return nil, fmt.Errorf("history store not initialized")
+	}
+	return a.history.Search(query, limit)
 }
 
 func getLocalHostname() string {

@@ -73,6 +73,27 @@ func (h *HistoryStore) Clear() error {
 	return err
 }
 
+func (h *HistoryStore) Search(query string, limit int) ([]HistoryEntry, error) {
+	rows, err := h.db.Query(
+		"SELECT id, content, device, created_at FROM history WHERE content LIKE ? ORDER BY id DESC LIMIT ?",
+		"%"+query+"%", limit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var entries []HistoryEntry
+	for rows.Next() {
+		var e HistoryEntry
+		if err := rows.Scan(&e.ID, &e.Content, &e.Device, &e.CreatedAt); err != nil {
+			return nil, err
+		}
+		entries = append(entries, e)
+	}
+	return entries, rows.Err()
+}
+
 func (h *HistoryStore) Close() error {
 	return h.db.Close()
 }

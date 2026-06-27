@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"net/http"
 	"sync"
 	"time"
@@ -15,16 +16,20 @@ type Config struct {
 	Port                     int
 	Paster                   paste.Paster
 	OnTextReceived           func(content, device string)
+	OnConnect               func(device string)
+	OnDisconnect            func()
 }
 
 // Server handles health checks and upgrades/coordinates websocket connections.
 type Server struct {
-	cfg      Config
-	hub      *Hub
-	upgrader websocket.Upgrader
-	tokenMu  sync.RWMutex
-	token    string
-	pasteMu  sync.Mutex
+	cfg        Config
+	hub        *Hub
+	upgrader   websocket.Upgrader
+	tokenMu    sync.RWMutex
+	token      string
+	pasteMu    sync.Mutex
+	httpServer *http.Server
+	mu         sync.Mutex
 }
 
 // New returns a newly configured Server instance.
@@ -59,7 +64,21 @@ func (s *Server) ListenAndServe() error {
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  120 * time.Second,
 	}
+	s.mu.Lock()
+	s.httpServer = srv
+	s.mu.Unlock()
 	return srv.ListenAndServe()
+}
+
+// Close gracefully shuts down the server and closes all connections.
+func (s *Server) Close() error {
+	s.mu.Lock()
+	srv := s.httpServer
+	s.mu.Unlock()
+	if srv != nil {
+		return srv.Shutdown(context.Background())
+	}
+	return nil
 }
 
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
@@ -82,6 +101,9 @@ func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
 	}
 
 	logStatus("client connected from %s (active: %d)", r.RemoteAddr, s.hub.Count()+1)
+	if s.cfg.OnConnect != nil {
+		s.cfg.OnConnect(r.RemoteAddr)
+	}
 	s.handleConnection(conn)
 }
 

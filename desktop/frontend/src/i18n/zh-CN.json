@@ -10,12 +10,15 @@
   },
   "qr": {
     "scan": "使用 Airvoice 应用扫描",
-    "loading": "加载二维码..."
+    "loading": "加载二维码...",
+    "copyLink": "复制配对链接",
+    "copied": "已复制!"
   },
   "history": {
     "title": "最近记录",
     "empty": "暂无记录",
-    "clear": "清空"
+    "clear": "清空",
+    "search": "搜索记录..."
   },
   "settings": {
     "title": "设置",

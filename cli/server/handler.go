@@ -16,6 +16,9 @@ func (s *Server) handleConnection(conn *websocket.Conn) {
 			logStatus("client disconnected (active: %d)", s.hub.Count())
 			if s.hub.Count() == 0 {
 				logStatus("all clients disconnected — waiting for reconnection...")
+				if s.cfg.OnDisconnect != nil {
+					s.cfg.OnDisconnect()
+				}
 			}
 		}
 	}()
@@ -67,14 +70,14 @@ func (s *Server) handleConnection(conn *websocket.Conn) {
 			if s.cfg.OnTextReceived != nil {
 				s.cfg.OnTextReceived(inbound.Content, inbound.Device)
 			}
-		go func(inbound protocol.Inbound) {
-			var outbound protocol.Outbound
-			var err error
-			if s.cfg.Paster != nil {
-				err = s.cfg.Paster.Paste(inbound.Content)
-			} else {
-				err = errors.New("paster not initialized")
-			}
+			go func(inbound protocol.Inbound) {
+				var outbound protocol.Outbound
+				var err error
+				if s.cfg.Paster != nil {
+					err = s.cfg.Paster.Paste(inbound.Content)
+				} else {
+					err = errors.New("paster not initialized")
+				}
 				if err != nil {
 					logStatus("paste failed id=%s: %v", inbound.ID, err)
 					outbound = protocol.Outbound{
