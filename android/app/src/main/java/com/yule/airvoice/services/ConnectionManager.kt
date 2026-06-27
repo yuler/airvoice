@@ -42,19 +42,26 @@ class ConnectionManager(private val client: OkHttpClient) {
     private var reconnectJob: kotlinx.coroutines.Job? = null
     private var backoffMs = 2000L
 
+    @Synchronized
     fun connect(wsUrl: String, token: String) {
         currentUrl = wsUrl
         currentToken = token
         reconnectJob?.cancel()
-        
+
         val requestUrl = "$wsUrl?token=$token"
-        val request = Request.Builder().url(requestUrl).build()
-        
+        val request = try {
+            Request.Builder().url(requestUrl).build()
+        } catch (e: IllegalArgumentException) {
+            _status.value = ConnectionStatus.Error("Invalid URL: $wsUrl")
+            return
+        }
+
         _status.value = ConnectionStatus.Connecting
         webSocket = client.newWebSocket(request, object : WebSocketListener() {
             override fun onOpen(webSocket: WebSocket, response: Response) {
-                backoffMs = 2000L
-                // Send hello handshake
+                synchronized(this@ConnectionManager) {
+                    backoffMs = 2000L
+                }
                 val helloMsg = ProtocolMessage(type = "hello", device = "Android Phone", app = "0.1.0")
                 webSocket.send(Json.encodeToString(ProtocolMessage.serializer(), helloMsg))
             }
@@ -73,7 +80,9 @@ class ConnectionManager(private val client: OkHttpClient) {
 
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
                 _status.value = ConnectionStatus.Error(t.message ?: "Connection Failure")
-                triggerReconnect()
+                synchronized(this@ConnectionManager) {
+                    triggerReconnect()
+                }
             }
 
             override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
@@ -82,6 +91,7 @@ class ConnectionManager(private val client: OkHttpClient) {
         })
     }
 
+    @Synchronized
     fun disconnect() {
         reconnectJob?.cancel()
         currentUrl = null
@@ -91,6 +101,7 @@ class ConnectionManager(private val client: OkHttpClient) {
         _status.value = ConnectionStatus.Disconnected
     }
 
+    @Synchronized
     fun send(message: ProtocolMessage): Boolean {
         val ws = webSocket ?: return false
         val jsonStr = Json.encodeToString(ProtocolMessage.serializer(), message)
@@ -101,9 +112,10 @@ class ConnectionManager(private val client: OkHttpClient) {
         reconnectJob?.cancel()
         reconnectJob = scope.launch {
             delay(backoffMs)
-            backoffMs = (backoffMs * 2).coerceAtMost(30000L)
-            val url = currentUrl
-            val token = currentToken
+            val (url, token) = synchronized(this@ConnectionManager) {
+                backoffMs = (backoffMs * 2).coerceAtMost(30000L)
+                currentUrl to currentToken
+            }
             if (url != null && token != null) {
                 connect(url, token)
             }

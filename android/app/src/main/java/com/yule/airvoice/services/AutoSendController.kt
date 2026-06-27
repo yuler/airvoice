@@ -15,7 +15,7 @@ import kotlinx.coroutines.launch
 class AutoSendController(
     private val textFlow: StateFlow<String>,
     private val connectionManager: ConnectionManager,
-    private val onSentAck: (Boolean) -> Unit
+    private val onSentAck: (Boolean, String) -> Unit
 ) {
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var debounceJob: kotlinx.coroutines.Job? = null
@@ -52,7 +52,7 @@ class AutoSendController(
                     if (success) {
                         lastAckedText = sendingText
                     }
-                    onSentAck(success)
+                    onSentAck(success, sendingText)
                 }
             }
         }
@@ -87,12 +87,12 @@ class AutoSendController(
                 delay(5000L)
                 if (isSending && pendingMessageId == msgId) {
                     isSending = false
-                    onSentAck(false)
+                    onSentAck(false, sendingText)
                 }
             }
         } else {
             isSending = false
-            onSentAck(false)
+            onSentAck(false, text)
         }
     }
 

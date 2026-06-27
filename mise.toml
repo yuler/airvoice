@@ -46,20 +46,20 @@ run = "./bin/airvoice serve"
 
 [tasks."android:build"]
 description = "Build Android debug APK"
-run = "cd android && ./gradlew assembleDebug --no-daemon"
+run = "bash -c 'source ./scripts/java-env.sh && cd android && ./gradlew assembleDebug --no-daemon'"
 
 [tasks."android:release"]
 description = "Build Android release APK"
-run = "cd android && ./gradlew assembleRelease --no-daemon"
+run = "bash -c 'source ./scripts/java-env.sh && cd android && ./gradlew assembleRelease --no-daemon'"
 
 [tasks."android:test"]
 description = "Run Android unit tests"
-run = "cd android && ./gradlew testDebugUnitTest --no-daemon"
+run = "bash -c 'source ./scripts/java-env.sh && cd android && ./gradlew testDebugUnitTest --no-daemon'"
 
 [tasks."android:clean"]
 description = "Clean Android build outputs"
-run = "cd android && ./gradlew clean --no-daemon"
+run = "bash -c 'source ./scripts/java-env.sh && cd android && ./gradlew clean --no-daemon'"
 
 [tasks."android:install"]
 description = "Build and install debug APK on connected device"
-run = "cd android && ./gradlew installDebug --no-daemon"
+run = "bash -c 'source ./scripts/java-env.sh && cd android && ./gradlew installDebug --no-daemon'"

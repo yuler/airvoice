@@ -45,11 +45,13 @@ fun QRScannerScreen(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
+    val barcodeScanner = remember { BarcodeScanning.getClient() }
     val textColor = primaryTextColor()
     val bgColor = backgroundColor()
 
     DisposableEffect(Unit) {
         onDispose {
+            barcodeScanner.close()
             cameraExecutor.shutdown()
         }
     }
@@ -90,7 +92,6 @@ fun QRScannerScreen(
                             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                             .build()
 
-                        val barcodeScanner = BarcodeScanning.getClient()
                         val isScanned = AtomicBoolean(false)
 
                         imageAnalysis.setAnalyzer(cameraExecutor) { imageProxy ->
