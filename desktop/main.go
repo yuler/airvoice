@@ -2,6 +2,7 @@ package main
 
 import (
 	"embed"
+	"log"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -12,10 +13,15 @@ import (
 var assets embed.FS
 
 func main() {
-	app := NewApp()
+	app, err := NewApp()
+	if err != nil {
+		log.Fatal("Failed to initialize app: ", err)
+	}
+	defer app.history.Close()
+
 	trayManager := NewTrayManager(app)
 
-	err := wails.Run(&options.App{
+	err = wails.Run(&options.App{
 		Title:  "Airvoice",
 		Width:  400,
 		Height: 600,
@@ -31,6 +37,6 @@ func main() {
 	})
 
 	if err != nil {
-		println("Error:", err.Error())
+		log.Fatal("Error: ", err)
 	}
 }

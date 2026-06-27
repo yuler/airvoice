@@ -14,6 +14,7 @@ type Config struct {
 	Addr, Hostname, Version string
 	Port                     int
 	Paster                   paste.Paster
+	OnTextReceived           func(content, device string)
 }
 
 // Server handles health checks and upgrades/coordinates websocket connections.

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"image/png"
 	"os"
+	"path/filepath"
 	"sync"
 
 	"github.com/google/uuid"
@@ -38,17 +39,27 @@ type App struct {
 	status  ConnectionStatus
 }
 
-func NewApp() *App {
-	history, err := NewHistoryStore("airvoice.db")
+func NewApp() (*App, error) {
+	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to initialize history store: %v\n", err)
+		return nil, fmt.Errorf("failed to get home dir: %w", err)
 	}
+	dbPath := filepath.Join(homeDir, ".airvoice", "history.db")
+	if err := os.MkdirAll(filepath.Dir(dbPath), 0755); err != nil {
+		return nil, fmt.Errorf("failed to create data dir: %w", err)
+	}
+
+	history, err := NewHistoryStore(dbPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize history store: %w", err)
+	}
+
 	return &App{
+		history: history,
 		token:   uuid.New().String(),
 		port:    7383,
-		history: history,
 		status:  ConnectionStatus{State: "disconnected"},
-	}
+	}, nil
 }
 
 func (a *App) startup(ctx context.Context) {
@@ -102,6 +113,11 @@ func (a *App) StartServer(port int) error {
 		Addr:     fmt.Sprintf(":%d", port),
 		Port:     port,
 		Hostname: getLocalHostname(),
+		OnTextReceived: func(content, device string) {
+			if a.history != nil {
+				a.history.Add(content, device)
+			}
+		},
 	})
 
 	srv.SetToken(a.token)
