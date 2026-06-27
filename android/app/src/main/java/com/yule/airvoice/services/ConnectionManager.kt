@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import android.net.Uri
 import android.util.Log
 import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
@@ -52,11 +53,19 @@ class ConnectionManager(private val client: OkHttpClient) {
         webSocket?.close(1000, "Reconnecting")
         webSocket = null
 
-        val requestUrl = "$wsUrl?token=$token"
+        val requestUrl = try {
+            Uri.parse(wsUrl).buildUpon()
+                .appendQueryParameter("token", token)
+                .build()
+                .toString()
+        } catch (e: Exception) {
+            _status.value = ConnectionStatus.Error("Invalid URL: $wsUrl")
+            return
+        }
         val request = try {
             Request.Builder().url(requestUrl).build()
         } catch (e: IllegalArgumentException) {
-            _status.value = ConnectionStatus.Error("Invalid URL: $wsUrl")
+            _status.value = ConnectionStatus.Error("Invalid URL: $requestUrl")
             return
         }
 

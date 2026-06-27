@@ -59,6 +59,10 @@ fun HomeScreen(
     val density = LocalDensity.current
     val imeInsets = WindowInsets.ime
     LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(350)
+        focusRequester.requestFocus()
+    }
+    LaunchedEffect(Unit) {
         var prevImeVisible = false
         snapshotFlow { imeInsets.getBottom(density) > 0 }
             .collect { isImeVisible ->
