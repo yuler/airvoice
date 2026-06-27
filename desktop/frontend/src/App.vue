@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import QRCode from './components/QRCode.vue'
 import StatusBadge from './components/StatusBadge.vue'
+import HistoryList from './components/HistoryList.vue'
 </script>
 
 <template>
@@ -13,5 +14,9 @@ import StatusBadge from './components/StatusBadge.vue'
       <QRCode />
       <StatusBadge class="mt-4" />
     </main>
+
+    <footer class="flex-1 border-t border-border-default">
+      <HistoryList />
+    </footer>
   </div>
 </template>

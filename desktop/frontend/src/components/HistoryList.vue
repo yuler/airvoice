@@ -1,0 +1,46 @@
+<script setup lang="ts">
+import { onMounted } from 'vue'
+import { useHistory } from '../composables/useHistory'
+
+const { entries, loading, loadHistory, clearHistory } = useHistory()
+
+onMounted(() => loadHistory())
+
+function formatTime(dateStr: string): string {
+  const date = new Date(dateStr)
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+}
+</script>
+
+<template>
+  <div class="flex flex-col h-full">
+    <div class="flex items-center justify-between px-4 py-2 border-b border-border-default">
+      <h2 class="text-sm font-medium text-text-secondary">Recent</h2>
+      <button
+        v-if="entries.length > 0"
+        @click="clearHistory"
+        class="text-xs text-text-muted hover:text-status-error"
+      >
+        Clear
+      </button>
+    </div>
+
+    <div class="flex-1 overflow-y-auto">
+      <div v-if="loading" class="p-4 text-center text-text-muted">Loading...</div>
+      <div v-else-if="entries.length === 0" class="p-4 text-center text-text-muted">
+        No history yet
+      </div>
+      <div
+        v-for="entry in entries"
+        :key="entry.id"
+        class="px-4 py-3 border-b border-border-default hover:bg-bg-secondary"
+      >
+        <p class="text-sm text-text-primary truncate">{{ entry.content }}</p>
+        <div class="flex items-center gap-2 mt-1">
+          <span class="text-xs text-text-muted">{{ entry.device }}</span>
+          <span class="text-xs text-text-muted">{{ formatTime(entry.createdAt) }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>

@@ -13,9 +13,18 @@ interface ConnectionStatus {
   port: number
 }
 
+interface HistoryEntry {
+  id: number
+  content: string
+  device: string
+  createdAt: string
+}
+
 interface WailsApp {
   GetQRCode(): Promise<string>
   GetConnectionStatus(): Promise<ConnectionStatus>
+  GetHistory(limit: number): Promise<HistoryEntry[]>
+  ClearHistory(): Promise<void>
 }
 
 interface Window {

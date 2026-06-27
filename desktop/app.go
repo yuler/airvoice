@@ -29,19 +29,25 @@ type Settings struct {
 }
 
 type App struct {
-	ctx    context.Context
-	server *server.Server
-	token  string
-	port   int
-	mu     sync.RWMutex
-	status ConnectionStatus
+	ctx     context.Context
+	server  *server.Server
+	history *HistoryStore
+	token   string
+	port    int
+	mu      sync.RWMutex
+	status  ConnectionStatus
 }
 
 func NewApp() *App {
+	history, err := NewHistoryStore("airvoice.db")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to initialize history store: %v\n", err)
+	}
 	return &App{
-		token:  uuid.New().String(),
-		port:   7383,
-		status: ConnectionStatus{State: "disconnected"},
+		token:   uuid.New().String(),
+		port:    7383,
+		history: history,
+		status:  ConnectionStatus{State: "disconnected"},
 	}
 }
 
@@ -131,6 +137,20 @@ func (a *App) GetSettings() Settings {
 func (a *App) SaveSettings(s Settings) error {
 	a.port = s.Port
 	return nil
+}
+
+func (a *App) GetHistory(limit int) ([]HistoryEntry, error) {
+	if a.history == nil {
+		return nil, fmt.Errorf("history store not initialized")
+	}
+	return a.history.List(limit)
+}
+
+func (a *App) ClearHistory() error {
+	if a.history == nil {
+		return fmt.Errorf("history store not initialized")
+	}
+	return a.history.Clear()
 }
 
 func getLocalHostname() string {
