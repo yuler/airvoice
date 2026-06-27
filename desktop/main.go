@@ -13,6 +13,7 @@ var assets embed.FS
 
 func main() {
 	app := NewApp()
+	trayManager := NewTrayManager(app)
 
 	err := wails.Run(&options.App{
 		Title:  "Airvoice",
@@ -25,6 +26,7 @@ func main() {
 		Bind: []interface{}{
 			app,
 		},
+		Mac: trayManager.GetMacOptions(),
 	})
 
 	if err != nil {
