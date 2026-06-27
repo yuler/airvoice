@@ -26,7 +26,6 @@ class AutoSendController(
     private var sendingText = ""
     private var pendingMessageId: String? = null
     private var timeoutJob: kotlinx.coroutines.Job? = null
-    private var pendingText: String? = null
 
     init {
         startListening()
@@ -39,7 +38,9 @@ class AutoSendController(
             textFlow
                 .debounce(1500L)
                 .collectLatest { text ->
-                    if (text.isNotEmpty() && text != lastAckedText) {
+                    if (text.isEmpty()) {
+                        lastAckedText = ""
+                    } else if (text != lastAckedText) {
                         sendText(text)
                     }
                 }
@@ -82,10 +83,7 @@ class AutoSendController(
     }
 
     private fun sendText(text: String) {
-        if (isSending) {
-            pendingText = text
-            return
-        }
+        if (isSending) return
         isSending = true
         sendingText = text
         
@@ -116,12 +114,9 @@ class AutoSendController(
     }
 
     private fun sendPendingText() {
-        val pending = pendingText
-        if (pending != null && pending.isNotEmpty() && pending != lastAckedText) {
-            pendingText = null
-            sendText(pending)
-        } else {
-            pendingText = null
+        val current = textFlow.value
+        if (current.isNotEmpty() && current != lastAckedText) {
+            sendText(current)
         }
     }
 

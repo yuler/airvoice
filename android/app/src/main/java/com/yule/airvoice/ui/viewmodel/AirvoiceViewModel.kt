@@ -57,15 +57,17 @@ class AirvoiceViewModel(application: Application) : AndroidViewModel(application
             textFlow = _inputText,
             connectionManager = connectionManager,
             onSentAck = { success, sentText ->
-                viewModelScope.launch {
-                    if (success) {
+                if (success) {
+                    val current = _inputText.value
+                    if (current.startsWith(sentText)) {
+                        _inputText.value = current.removePrefix(sentText)
+                    }
+                    viewModelScope.launch {
                         vibratorHelper.triggerHapticClick()
                         _toastEvents.emit("已发送到电脑")
-                        val current = _inputText.value
-                        if (current.startsWith(sentText)) {
-                            _inputText.value = current.removePrefix(sentText)
-                        }
-                    } else {
+                    }
+                } else {
+                    viewModelScope.launch {
                         _toastEvents.emit("发送失败，请检查连接")
                     }
                 }

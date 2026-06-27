@@ -21,6 +21,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -37,7 +38,7 @@ import com.yule.airvoice.ui.theme.secondaryTextColor
 import com.yule.airvoice.ui.theme.sendButtonBackgroundColor
 import com.yule.airvoice.ui.viewmodel.AirvoiceViewModel
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(viewModel: AirvoiceViewModel) {
     val text by viewModel.inputText.collectAsState()
@@ -53,7 +54,7 @@ fun HomeScreen(viewModel: AirvoiceViewModel) {
     val placeholderClr = placeholderTextColor()
     val sendBtnBg = sendButtonBackgroundColor()
 
-    val isImeVisible = WindowInsets.isImeVisible
+    val isImeVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
     var prevImeVisible by remember { mutableStateOf(false) }
 
     LaunchedEffect(isImeVisible) {

@@ -36,9 +36,9 @@ class ConnectionManager(private val client: OkHttpClient) {
     )
     val incomingMessages: SharedFlow<ProtocolMessage> = _incomingMessages
 
-    private var webSocket: WebSocket? = null
-    private var currentUrl: String? = null
-    private var currentToken: String? = null
+    @Volatile private var webSocket: WebSocket? = null
+    @Volatile private var currentUrl: String? = null
+    @Volatile private var currentToken: String? = null
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private var reconnectJob: kotlinx.coroutines.Job? = null
     private var backoffMs = 2000L
