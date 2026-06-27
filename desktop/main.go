@@ -23,6 +23,7 @@ func main() {
 			Assets: assets,
 		},
 		OnStartup: app.startup,
+		Menu:      trayManager.GetApplicationMenu(),
 		Bind: []interface{}{
 			app,
 		},
