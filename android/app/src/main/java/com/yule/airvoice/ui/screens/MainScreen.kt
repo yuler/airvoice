@@ -28,6 +28,9 @@ fun MainScreen(viewModel: AirvoiceViewModel) {
             onQrCodeScanned = { payload -> viewModel.pairAndConnect(payload) },
             onCancel = { viewModel.navigateTo(Screen.ONBOARDING) }
         )
-        Screen.HOME -> HomeScreen(viewModel = viewModel)
+        Screen.HOME -> HomeScreen(
+            viewModel = viewModel,
+            onScanQr = { viewModel.navigateTo(Screen.SCANNER) }
+        )
     }
 }

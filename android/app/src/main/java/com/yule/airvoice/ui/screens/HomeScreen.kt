@@ -6,12 +6,14 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,7 +24,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -38,13 +39,14 @@ import com.yule.airvoice.ui.theme.secondaryTextColor
 import com.yule.airvoice.ui.theme.sendButtonBackgroundColor
 import com.yule.airvoice.ui.viewmodel.AirvoiceViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(viewModel: AirvoiceViewModel) {
+fun HomeScreen(
+    viewModel: AirvoiceViewModel,
+    onScanQr: () -> Unit = {}
+) {
     val text by viewModel.inputText.collectAsState()
     val status by viewModel.connectionManager.status.collectAsState()
     val focusRequester = remember { FocusRequester() }
-    val keyboardController = LocalSoftwareKeyboardController.current
 
     val bgColor = backgroundColor()
     val textColor = primaryTextColor()
@@ -89,90 +91,92 @@ fun HomeScreen(viewModel: AirvoiceViewModel) {
         label = "breathScale"
     )
 
-    Scaffold(
-        containerColor = bgColor,
-        topBar = {
-            Column {
-                TopAppBar(
-                    title = {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            val dotColor = when (status) {
-                                is ConnectionStatus.Connected -> AppColors.statusBarConnected
-                                is ConnectionStatus.Connecting -> AppColors.statusBarConnecting
-                                is ConnectionStatus.Error -> AppColors.statusBarError
-                                ConnectionStatus.Disconnected -> AppColors.statusBarDisconnected
-                            }
-                            val label = when (status) {
-                                is ConnectionStatus.Connected -> "已连接: ${(status as ConnectionStatus.Connected).host}"
-                                is ConnectionStatus.Connecting -> "连接中..."
-                                is ConnectionStatus.Error -> "连接失败，正在重试"
-                                ConnectionStatus.Disconnected -> "未连接"
-                            }
+    Box(modifier = Modifier.fillMaxSize().background(bgColor)) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            // Status bar
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                val dotColor = when (status) {
+                    is ConnectionStatus.Connected -> AppColors.statusBarConnected
+                    is ConnectionStatus.Connecting -> AppColors.statusBarConnecting
+                    is ConnectionStatus.Error -> AppColors.statusBarError
+                    ConnectionStatus.Disconnected -> AppColors.statusBarDisconnected
+                }
+                val label = when (status) {
+                    is ConnectionStatus.Connected -> "已连接: ${(status as ConnectionStatus.Connected).host}"
+                    is ConnectionStatus.Connecting -> "连接中..."
+                    is ConnectionStatus.Error -> "连接失败，正在重试"
+                    ConnectionStatus.Disconnected -> "未连接"
+                }
 
-                            if (isConnected) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(8.dp)
-                                        .scale(breathScale)
-                                        .clip(CircleShape)
-                                        .background(dotColor.copy(alpha = breathAlpha))
-                                )
-                            } else {
-                                Box(
-                                    modifier = Modifier
-                                        .size(8.dp)
-                                        .clip(CircleShape)
-                                        .background(dotColor)
-                                )
-                            }
-                            Text(
-                                text = label,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = textColor.copy(alpha = 0.8f)
-                            )
-                        }
-                    },
-                    actions = {
-                        IconButton(
-                            onClick = { viewModel.disconnectAndClear() },
-                            modifier = Modifier
-                                .size(28.dp)
-                                .background(chipBackgroundColor(), CircleShape)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Refresh,
-                                contentDescription = "重新配对",
-                                tint = textColor,
-                                modifier = Modifier.size(14.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(8.dp))
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = bgColor
+                if (isConnected) {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .scale(breathScale)
+                            .clip(CircleShape)
+                            .background(dotColor.copy(alpha = breathAlpha))
                     )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .clip(CircleShape)
+                            .background(dotColor)
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = label,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = textColor.copy(alpha = 0.8f)
                 )
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                // QR scanner button
+                IconButton(
+                    onClick = onScanQr,
+                    modifier = Modifier
+                        .size(28.dp)
+                        .background(chipBackgroundColor(), CircleShape)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = "扫码",
+                        tint = textColor,
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                // Re-pair button
+                IconButton(
+                    onClick = { viewModel.disconnectAndClear() },
+                    modifier = Modifier
+                        .size(28.dp)
+                        .background(chipBackgroundColor(), CircleShape)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = "重新配对",
+                        tint = textColor,
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
             }
-        }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 20.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.SpaceBetween
-        ) {
+
             // Editor
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .background(borderClr, RoundedCornerShape(16.dp))
-                    .padding(1.dp)
+                    .padding(horizontal = 20.dp)
+                    .border(1.dp, borderClr, RoundedCornerShape(16.dp))
                     .background(editorBg, RoundedCornerShape(16.dp))
             ) {
                 TextField(
@@ -196,55 +200,51 @@ fun HomeScreen(viewModel: AirvoiceViewModel) {
                     ),
                     textStyle = LocalTextStyle.current.copy(color = textColor)
                 )
-                if (text.isNotEmpty()) {
-                    IconButton(
-                        onClick = { viewModel.updateInputText("") },
-                        modifier = Modifier.align(Alignment.TopEnd)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Clear,
-                            contentDescription = "清除",
-                            tint = subTextColor
-                        )
-                    }
-                }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Status chips
-            if (!isConnected) {
-                Text(
-                    text = "请先扫码连接电脑",
-                    fontSize = 12.sp,
-                    color = subTextColor,
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-            }
-
-            // Send button
-            Button(
-                onClick = {
-                    focusRequester.requestFocus()
-                    keyboardController?.show()
-                },
+            // Bottom controls
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(44.dp),
-                shape = RoundedCornerShape(22.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = sendBtnBg,
-                    disabledContainerColor = sendBtnBg.copy(alpha = 0.5f)
-                ),
-                enabled = isConnected
+                    .padding(horizontal = 20.dp)
+                    .padding(bottom = 20.dp, top = 12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(
-                    "说话 / 唤起键盘",
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = textColor
-                )
+                if (!isConnected) {
+                    Text(
+                        text = "请先扫码连接电脑",
+                        fontSize = 12.sp,
+                        color = subTextColor
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
+
+                Button(
+                    onClick = {
+                        viewModel.triggerImmediateSend()
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(44.dp),
+                    shape = RoundedCornerShape(22.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = sendBtnBg,
+                        disabledContainerColor = sendBtnBg.copy(alpha = 0.5f)
+                    ),
+                    enabled = isConnected
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.Send,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        "发送到电脑",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
             }
         }
     }
