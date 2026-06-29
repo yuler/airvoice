@@ -28,6 +28,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -49,6 +50,7 @@ fun HomeScreen(
     val appTheme by viewModel.appTheme.collectAsState()
 
     val focusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     val bgColor = backgroundColor()
     val textColor = primaryTextColor()
@@ -63,6 +65,7 @@ fun HomeScreen(
     LaunchedEffect(Unit) {
         kotlinx.coroutines.delay(350)
         focusRequester.requestFocus()
+        keyboardController?.show()
     }
     LaunchedEffect(Unit) {
         var prevImeVisible = false
