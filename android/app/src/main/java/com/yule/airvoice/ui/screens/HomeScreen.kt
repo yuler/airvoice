@@ -99,7 +99,12 @@ fun HomeScreen(
     )
 
     Box(modifier = Modifier.fillMaxSize().background(bgColor)) {
-        Column(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding()
+        ) {
             // Status bar
             Row(
                 modifier = Modifier
