@@ -31,6 +31,7 @@ class AutoSendController(
     private var sendingText = ""
     private var pendingMessageId: String? = null
     private var timeoutJob: kotlinx.coroutines.Job? = null
+    private val sentMessages = mutableMapOf<String, String>()
 
     private val _inFlight = MutableStateFlow(false)
     val inFlight: StateFlow<Boolean> = _inFlight.asStateFlow()
@@ -71,16 +72,24 @@ class AutoSendController(
         scope.launch {
             connectionManager.incomingMessages.collect { msg ->
                 Log.d("AutoSendController", "Collector received msg: type=${msg.type}, id=${msg.id}, pendingMessageId=$pendingMessageId, success=${msg.ok}")
-                if (msg.type == "ack" && msg.id == pendingMessageId) {
-                    timeoutJob?.cancel()
-                    pendingMessageId = null
-                    _inFlight.value = false
-                    val success = msg.ok == true
-                    if (success) {
-                        lastAckedText = sendingText
+                if (msg.type == "ack") {
+                    val msgId = msg.id ?: return@collect
+                    val sentText = sentMessages.remove(msgId)
+
+                    if (msgId == pendingMessageId) {
+                        timeoutJob?.cancel()
+                        pendingMessageId = null
+                        _inFlight.value = false
                     }
-                    onSentAck(success, sendingText, if (sendingText == textFlow.value) SendTrigger.MANUAL else SendTrigger.AUTO)
-                    sendPendingText()
+
+                    if (sentText != null) {
+                        val success = msg.ok == true
+                        if (success) {
+                            lastAckedText = sentText
+                        }
+                        onSentAck(success, sentText, if (sentText == textFlow.value) SendTrigger.MANUAL else SendTrigger.AUTO)
+                        sendPendingText()
+                    }
                 }
             }
         }
@@ -93,6 +102,7 @@ class AutoSendController(
                         timeoutJob?.cancel()
                         pendingMessageId = null
                         _inFlight.value = false
+                        sentMessages.clear()
                         onSentAck(false, sendingText, SendTrigger.AUTO)
                     }
                 }
@@ -135,6 +145,9 @@ class AutoSendController(
 
     fun clearInFlight() {
         _inFlight.value = false
+        timeoutJob?.cancel()
+        pendingMessageId = null
+        sentMessages.clear()
     }
 
     fun attemptSend(text: String, trigger: SendTrigger): Boolean {
@@ -156,9 +169,10 @@ class AutoSendController(
             ts = System.currentTimeMillis() / 1000
         )
         
+        sentMessages[msgId] = text
         val sent = connectionManager.send(textMessage)
         if (sent) {
-            // Start 5 second fallback timeout
+            // Start 5 second fallback timeout, keep in sentMessages for 30s to handle late ACKs
             timeoutJob = scope.launch {
                 delay(5000L)
                 if (_inFlight.value && pendingMessageId == msgId) {
@@ -166,9 +180,12 @@ class AutoSendController(
                     _inFlight.value = false
                     onSentAck(false, sendingText, trigger)
                 }
+                delay(25000L)
+                sentMessages.remove(msgId)
             }
             return true
         } else {
+            sentMessages.remove(msgId)
             _inFlight.value = false
             onSentAck(false, text, trigger)
             return false

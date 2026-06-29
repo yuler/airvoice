@@ -47,12 +47,12 @@ class AirvoiceViewModel(application: Application) : AndroidViewModel(application
     private val _sendTimedOut = MutableStateFlow(false)
     val sendTimedOut: StateFlow<Boolean> = _sendTimedOut.asStateFlow()
 
-    var autoSendController: AutoSendController? = null
-        private set
+    val autoSendController: AutoSendController
 
     private var lastSentContent: String? = null
     private var lastSentTrigger: SendTrigger? = null
     private var isRetry = false
+    private var toastJob: kotlinx.coroutines.Job? = null
 
     init {
         viewModelScope.launch {
@@ -77,11 +77,11 @@ class AirvoiceViewModel(application: Application) : AndroidViewModel(application
 
     fun updateInputText(text: String) {
         _inputText.value = text
-        autoSendController?.textDidChange(text)
+        autoSendController.textDidChange(text)
     }
 
     fun triggerImmediateSend() {
-        autoSendController?.triggerImmediateSend()
+        autoSendController.triggerImmediateSend()
     }
 
     fun completeOnboarding() {
@@ -102,11 +102,10 @@ class AirvoiceViewModel(application: Application) : AndroidViewModel(application
     fun showToast(message: String, isError: Boolean = false) {
         _isToastError.value = isError
         _toastMessage.value = message
-        viewModelScope.launch {
+        toastJob?.cancel()
+        toastJob = viewModelScope.launch {
             delay(2000)
-            if (_toastMessage.value == message) {
-                _toastMessage.value = null
-            }
+            _toastMessage.value = null
         }
     }
 
@@ -120,7 +119,7 @@ class AirvoiceViewModel(application: Application) : AndroidViewModel(application
             showToast("请先连接电脑", isError = true)
             return
         }
-        if (autoSendController?.inFlight?.value == true) {
+        if (autoSendController.inFlight.value) {
             showToast("上一条仍在发送中", isError = true)
             return
         }
@@ -128,19 +127,21 @@ class AirvoiceViewModel(application: Application) : AndroidViewModel(application
         lastSentTrigger = SendTrigger.MANUAL
         isRetry = false
         _sendTimedOut.value = false
-        autoSendController?.attemptSend(currentText, SendTrigger.MANUAL)
+        autoSendController.attemptSend(currentText, SendTrigger.MANUAL)
     }
 
     fun cancelSend() {
-        if (autoSendController?.inFlight?.value == true) {
-            autoSendController?.clearInFlight()
+        if (autoSendController.inFlight.value) {
+            autoSendController.clearInFlight()
             showToast("已取消发送", isError = false)
         }
     }
 
     private fun handleSentAck(success: Boolean, sentText: String, trigger: SendTrigger) {
         if (success) {
-            _inputText.value = "" // Align with iOS: clear editor completely on success
+            if (_inputText.value.trim() == sentText.trim()) {
+                _inputText.value = "" // Align with iOS: clear editor completely on success
+            }
             _sendTimedOut.value = false
             vibratorHelper.triggerHapticClick()
             showToast("已发送到电脑", isError = false)
@@ -150,8 +151,8 @@ class AirvoiceViewModel(application: Application) : AndroidViewModel(application
                 isRetry = true
                 viewModelScope.launch {
                     delay(400)
-                    if (connectionManager.status.value is ConnectionStatus.Connected && autoSendController?.inFlight?.value == false) {
-                        autoSendController?.attemptSend(sentText, SendTrigger.AUTO)
+                    if (connectionManager.status.value is ConnectionStatus.Connected && !autoSendController.inFlight.value) {
+                        autoSendController.attemptSend(sentText, SendTrigger.AUTO)
                     }
                 }
             } else {
@@ -164,7 +165,7 @@ class AirvoiceViewModel(application: Application) : AndroidViewModel(application
     fun pairAndConnect(payload: PairingPayload) {
         viewModelScope.launch {
             storage.saveConnection(payload.ws, payload.token)
-            autoSendController?.resetLastAcked()
+            autoSendController.resetLastAcked()
             connectionManager.connect(payload.ws, payload.token)
         }
     }
@@ -180,6 +181,6 @@ class AirvoiceViewModel(application: Application) : AndroidViewModel(application
     override fun onCleared() {
         super.onCleared()
         connectionManager.disconnect()
-        autoSendController?.cleanup()
+        autoSendController.cleanup()
     }
 }

@@ -47,9 +47,9 @@ fun HomeScreen(
 ) {
     val text by viewModel.inputText.collectAsState()
     val status by viewModel.connectionManager.status.collectAsState()
-    val countdownActive by viewModel.autoSendController?.countdownActive?.collectAsState() ?: remember { mutableStateOf(false) }
-    val countdownToken by viewModel.autoSendController?.countdownToken?.collectAsState() ?: remember { mutableStateOf(0) }
-    val inFlight by viewModel.autoSendController?.inFlight?.collectAsState() ?: remember { mutableStateOf(false) }
+    val countdownActive by viewModel.autoSendController.countdownActive.collectAsState()
+    val countdownToken by viewModel.autoSendController.countdownToken.collectAsState()
+    val inFlight by viewModel.autoSendController.inFlight.collectAsState()
     val sendTimedOut by viewModel.sendTimedOut.collectAsState()
     val appTheme by viewModel.appTheme.collectAsState()
 

@@ -36,6 +36,8 @@ import kotlinx.serialization.json.Json
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 
+private val lenientJson = Json { ignoreUnknownKeys = true }
+
 @OptIn(ExperimentalGetImage::class)
 @Composable
 fun QRScannerScreen(
@@ -118,7 +120,6 @@ fun QRScannerScreen(
                                         for (barcode in barcodes) {
                                             val rawValue = barcode.rawValue ?: continue
                                             try {
-                                                val lenientJson = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
                                                 val payload = lenientJson.decodeFromString<PairingPayload>(rawValue)
                                                 if (isActive.value && isScanned.compareAndSet(false, true)) {
                                                     currentOnQrCodeScanned(payload)
