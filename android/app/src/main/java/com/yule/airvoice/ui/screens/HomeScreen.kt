@@ -288,7 +288,9 @@ fun HomeScreen(
                           shape = RoundedCornerShape(22.dp),
                           colors = ButtonDefaults.buttonColors(
                               containerColor = sendBtnBg,
-                              disabledContainerColor = sendBtnBg.copy(alpha = 0.5f)
+                              contentColor = primaryTextColor(),
+                              disabledContainerColor = sendBtnBg.copy(alpha = 0.5f),
+                              disabledContentColor = secondaryTextColor().copy(alpha = 0.5f)
                           ),
                           enabled = isConnected && !inFlight
                       ) {
