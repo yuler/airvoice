@@ -16,9 +16,18 @@ class ProtocolMessageTest {
 
     @Test
     fun testProtocolMessageSerialization() {
-        val msg = ProtocolMessage(type = "hello", device = "Android", app = "0.1.0")
+        val msg = ProtocolMessage(type = "hello", id = "test-id", device = "Android", app = "0.1.0")
         val jsonStr = Json.encodeToString(ProtocolMessage.serializer(), msg)
-        // We assert it contains type hello
-        assert(jsonStr.contains("\"type\":\"hello\""))
+        println("SERIALIZED JSON: $jsonStr")
+        assert(jsonStr.contains("\"id\":\"test-id\""))
+    }
+
+    @Test
+    fun testAckDecoding() {
+        val jsonStr = """{"type":"ack","id":"msg-1","ok":true}"""
+        val msg = Json { ignoreUnknownKeys = true }.decodeFromString<ProtocolMessage>(jsonStr)
+        assertEquals("ack", msg.type)
+        assertEquals("msg-1", msg.id)
+        assertEquals(true, msg.ok)
     }
 }

@@ -279,13 +279,15 @@ fun HomeScreen(
                         )
                     }
 
+                      val btnEnabled = isConnected && !inFlight
+                      val contentColor = if (btnEnabled) primaryTextColor() else secondaryTextColor().copy(alpha = 0.4f)
                       Box(
                           modifier = Modifier
                               .fillMaxWidth()
                               .height(44.dp)
                               .clip(RoundedCornerShape(22.dp))
-                              .background(if (isConnected && !inFlight) sendBtnBg else sendBtnBg.copy(alpha = 0.5f))
-                              .clickable(enabled = isConnected && !inFlight) { viewModel.manualSend() },
+                              .background(sendBtnBg)
+                              .clickable(enabled = btnEnabled) { viewModel.manualSend() },
                           contentAlignment = Alignment.Center
                       ) {
                           Row(
@@ -296,14 +298,14 @@ fun HomeScreen(
                                   imageVector = Icons.AutoMirrored.Filled.Send,
                                   contentDescription = null,
                                   modifier = Modifier.size(16.dp),
-                                  tint = if (isConnected && !inFlight) primaryTextColor() else secondaryTextColor().copy(alpha = 0.5f)
+                                  tint = contentColor
                               )
                               Spacer(modifier = Modifier.width(8.dp))
                               Text(
                                   "发送到电脑",
                                   fontSize = 15.sp,
                                   fontWeight = FontWeight.SemiBold,
-                                  color = if (isConnected && !inFlight) primaryTextColor() else secondaryTextColor().copy(alpha = 0.5f)
+                                  color = contentColor
                               )
                           }
                       }
