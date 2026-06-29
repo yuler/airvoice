@@ -82,6 +82,7 @@ class ConnectionManager(private val client: OkHttpClient) {
 
             override fun onMessage(webSocket: WebSocket, text: String) {
                 if (webSocket !== this@ConnectionManager.webSocket) return
+                Log.d("ConnectionManager", "Received WebSocket message: $text")
                 try {
                     val msg = lenientJson.decodeFromString<ProtocolMessage>(text)
                     if (msg.type == "hello") {
