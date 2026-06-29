@@ -1,23 +1,57 @@
 package com.yule.airvoice.services
 
+import android.content.Context
+import androidx.test.core.app.ApplicationProvider
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
+@RunWith(RobolectricTestRunner::class)
 class StorageManagerTest {
-    @Test
-    fun testStorageMock() {
-        // Simply verify storage contract mock
-        var testUrl: String? = null
-        var testToken: String? = null
-        
-        fun save(url: String, token: String) {
-            testUrl = url
-            testToken = token
-        }
+    private lateinit var context: Context
+    private lateinit var storageManager: StorageManager
 
-        save("ws://test", "tok")
-        assertEquals("ws://test", testUrl)
-        assertEquals("tok", testToken)
+    @Before
+    fun setUp() {
+        context = ApplicationProvider.getApplicationContext()
+        storageManager = StorageManager(context)
+    }
+
+    @Test
+    fun testSaveAndClearConnection() = runBlocking {
+        var info = storageManager.connectionInfoFlow.first()
+        assertNull(info.wsUrl)
+        assertNull(info.token)
+
+        storageManager.saveConnection("ws://test", "tok")
+        info = storageManager.connectionInfoFlow.first()
+        assertEquals("ws://test", info.wsUrl)
+        assertEquals("tok", info.token)
+
+        storageManager.clearConnection()
+        info = storageManager.connectionInfoFlow.first()
+        assertNull(info.wsUrl)
+        assertNull(info.token)
+    }
+
+    @Test
+    fun testSaveTheme() = runBlocking {
+        assertEquals("light", storageManager.themeFlow.first())
+        storageManager.saveTheme("dark")
+        assertEquals("dark", storageManager.themeFlow.first())
+    }
+
+    @Test
+    fun testSaveOnboarding() = runBlocking {
+        assertFalse(storageManager.hasSeenOnboardingFlow.first())
+        storageManager.saveHasSeenOnboarding(true)
+        assertTrue(storageManager.hasSeenOnboardingFlow.first())
     }
 }

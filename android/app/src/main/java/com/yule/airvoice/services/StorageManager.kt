@@ -1,6 +1,7 @@
 package com.yule.airvoice.services
 
 import android.content.Context
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -12,13 +13,17 @@ import kotlinx.coroutines.flow.map
 
 private val Context.dataStore by preferencesDataStore(name = "airvoice_prefs")
 
+data class ConnectionInfo(val wsUrl: String?, val token: String?)
+
 class StorageManager(private val context: Context) {
     companion object {
         private val KEY_WS = stringPreferencesKey("ws_url")
         private val KEY_TOKEN = stringPreferencesKey("token")
+        private val KEY_THEME = stringPreferencesKey("app_theme")
+        private val KEY_HAS_SEEN_ONBOARDING = booleanPreferencesKey("has_seen_onboarding")
     }
 
-    val wsUrlFlow: Flow<String?> = context.dataStore.data
+    val connectionInfoFlow: Flow<ConnectionInfo> = context.dataStore.data
         .catch { exception ->
             if (exception is IOException) {
                 emit(emptyPreferences())
@@ -26,9 +31,14 @@ class StorageManager(private val context: Context) {
                 throw exception
             }
         }
-        .map { prefs -> prefs[KEY_WS] }
+        .map { prefs ->
+            ConnectionInfo(prefs[KEY_WS], prefs[KEY_TOKEN])
+        }
 
-    val tokenFlow: Flow<String?> = context.dataStore.data
+    val wsUrlFlow: Flow<String?> = connectionInfoFlow.map { it.wsUrl }
+    val tokenFlow: Flow<String?> = connectionInfoFlow.map { it.token }
+
+    val themeFlow: Flow<String> = context.dataStore.data
         .catch { exception ->
             if (exception is IOException) {
                 emit(emptyPreferences())
@@ -36,7 +46,17 @@ class StorageManager(private val context: Context) {
                 throw exception
             }
         }
-        .map { prefs -> prefs[KEY_TOKEN] }
+        .map { prefs -> prefs[KEY_THEME] ?: "light" }
+
+    val hasSeenOnboardingFlow: Flow<Boolean> = context.dataStore.data
+        .catch { exception ->
+            if (exception is IOException) {
+                emit(emptyPreferences())
+            } else {
+                throw exception
+            }
+        }
+        .map { prefs -> prefs[KEY_HAS_SEEN_ONBOARDING] ?: false }
 
     suspend fun saveConnection(wsUrl: String, token: String) {
         context.dataStore.edit { prefs ->
@@ -49,6 +69,18 @@ class StorageManager(private val context: Context) {
         context.dataStore.edit { prefs ->
             prefs.remove(KEY_WS)
             prefs.remove(KEY_TOKEN)
+        }
+    }
+
+    suspend fun saveTheme(theme: String) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_THEME] = theme
+        }
+    }
+
+    suspend fun saveHasSeenOnboarding(completed: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_HAS_SEEN_ONBOARDING] = completed
         }
     }
 }
