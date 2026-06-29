@@ -11,6 +11,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -278,33 +279,33 @@ fun HomeScreen(
                         )
                     }
 
-                      Button(
-                          onClick = {
-                              viewModel.manualSend()
-                          },
+                      Box(
                           modifier = Modifier
                               .fillMaxWidth()
-                              .height(44.dp),
-                          shape = RoundedCornerShape(22.dp),
-                          colors = ButtonDefaults.buttonColors(
-                              containerColor = sendBtnBg,
-                              contentColor = primaryTextColor(),
-                              disabledContainerColor = sendBtnBg.copy(alpha = 0.5f),
-                              disabledContentColor = secondaryTextColor().copy(alpha = 0.5f)
-                          ),
-                          enabled = isConnected && !inFlight
+                              .height(44.dp)
+                              .clip(RoundedCornerShape(22.dp))
+                              .background(if (isConnected && !inFlight) sendBtnBg else sendBtnBg.copy(alpha = 0.5f))
+                              .clickable(enabled = isConnected && !inFlight) { viewModel.manualSend() },
+                          contentAlignment = Alignment.Center
                       ) {
-                          Icon(
-                              imageVector = Icons.AutoMirrored.Filled.Send,
-                              contentDescription = null,
-                              modifier = Modifier.size(16.dp)
-                          )
-                          Spacer(modifier = Modifier.width(8.dp))
-                          Text(
-                              "发送到电脑",
-                              fontSize = 15.sp,
-                              fontWeight = FontWeight.SemiBold
-                          )
+                          Row(
+                              verticalAlignment = Alignment.CenterVertically,
+                              horizontalArrangement = Arrangement.Center
+                          ) {
+                              Icon(
+                                  imageVector = Icons.AutoMirrored.Filled.Send,
+                                  contentDescription = null,
+                                  modifier = Modifier.size(16.dp),
+                                  tint = if (isConnected && !inFlight) primaryTextColor() else secondaryTextColor().copy(alpha = 0.5f)
+                              )
+                              Spacer(modifier = Modifier.width(8.dp))
+                              Text(
+                                  "发送到电脑",
+                                  fontSize = 15.sp,
+                                  fontWeight = FontWeight.SemiBold,
+                                  color = if (isConnected && !inFlight) primaryTextColor() else secondaryTextColor().copy(alpha = 0.5f)
+                              )
+                          }
                       }
 
                       InputMethodTipsView()
