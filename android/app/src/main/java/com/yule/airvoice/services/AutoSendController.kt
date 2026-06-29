@@ -14,6 +14,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.TimeoutCancellationException
+import java.util.concurrent.ConcurrentHashMap
 
 enum class SendTrigger {
     AUTO,
@@ -28,10 +32,7 @@ class AutoSendController(
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var debounceJob: kotlinx.coroutines.Job? = null
     private var lastAckedText = ""
-    private var sendingText = ""
-    private var pendingMessageId: String? = null
-    private var timeoutJob: kotlinx.coroutines.Job? = null
-    private val sentMessages = mutableMapOf<String, String>()
+    private val pendingAcks = ConcurrentHashMap<String, CompletableDeferred<Boolean>>()
 
     private val _inFlight = MutableStateFlow(false)
     val inFlight: StateFlow<Boolean> = _inFlight.asStateFlow()
@@ -71,25 +72,10 @@ class AutoSendController(
         // Listen to incoming acks
         scope.launch {
             connectionManager.incomingMessages.collect { msg ->
-                Log.d("AutoSendController", "Collector received msg: type=${msg.type}, id=${msg.id}, pendingMessageId=$pendingMessageId, success=${msg.ok}")
+                Log.d("AutoSendController", "Collector received msg: type=${msg.type}, id=${msg.id}, success=${msg.ok}")
                 if (msg.type == "ack") {
                     val msgId = msg.id ?: return@collect
-                    val sentText = sentMessages.remove(msgId)
-
-                    if (msgId == pendingMessageId) {
-                        timeoutJob?.cancel()
-                        pendingMessageId = null
-                        _inFlight.value = false
-                    }
-
-                    if (sentText != null) {
-                        val success = msg.ok == true
-                        if (success) {
-                            lastAckedText = sentText
-                        }
-                        onSentAck(success, sentText, if (sentText == textFlow.value) SendTrigger.MANUAL else SendTrigger.AUTO)
-                        sendPendingText()
-                    }
+                    pendingAcks.remove(msgId)?.complete(msg.ok == true)
                 }
             }
         }
@@ -98,12 +84,12 @@ class AutoSendController(
         connectionManager.status
             .onEach { status ->
                 if (status is ConnectionStatus.Disconnected || status is ConnectionStatus.Error) {
-                    if (_inFlight.value) {
-                        timeoutJob?.cancel()
-                        pendingMessageId = null
+                    val acksToFail = pendingAcks.keys.toList()
+                    if (acksToFail.isNotEmpty()) {
+                        for (msgId in acksToFail) {
+                            pendingAcks.remove(msgId)?.complete(false)
+                        }
                         _inFlight.value = false
-                        sentMessages.clear()
-                        onSentAck(false, sendingText, SendTrigger.AUTO)
                     }
                 }
             }
@@ -129,7 +115,9 @@ class AutoSendController(
     fun triggerImmediateSend() {
         val text = textFlow.value
         if (text.isNotEmpty() && text != lastAckedText) {
-            attemptSend(text, SendTrigger.MANUAL)
+            scope.launch {
+                attemptSend(text, SendTrigger.MANUAL)
+            }
         }
     }
 
@@ -145,22 +133,23 @@ class AutoSendController(
 
     fun clearInFlight() {
         _inFlight.value = false
-        timeoutJob?.cancel()
-        pendingMessageId = null
-        sentMessages.clear()
+        val keys = pendingAcks.keys.toList()
+        for (key in keys) {
+            pendingAcks.remove(key)?.complete(false)
+        }
     }
 
-    fun attemptSend(text: String, trigger: SendTrigger): Boolean {
+    suspend fun attemptSend(text: String, trigger: SendTrigger): Boolean {
         if (_inFlight.value) return false
         val trimmed = text.trim()
         if (trimmed.isEmpty()) return false
         if (trimmed == lastAckedText.trim()) return false
 
         beginSend()
-        sendingText = text
         
         val msgId = UUID.randomUUID().toString()
-        pendingMessageId = msgId
+        val deferred = CompletableDeferred<Boolean>()
+        pendingAcks[msgId] = deferred
         
         val textMessage = ProtocolMessage(
             type = "text",
@@ -169,30 +158,34 @@ class AutoSendController(
             ts = System.currentTimeMillis() / 1000
         )
         
-        sentMessages[msgId] = text
         val sent = connectionManager.send(textMessage)
-        if (sent) {
-            // Start 5 second fallback timeout, keep in sentMessages for 30s to handle late ACKs
-            timeoutJob = scope.launch {
-                delay(5000L)
-                if (_inFlight.value && pendingMessageId == msgId) {
-                    pendingMessageId = null
-                    _inFlight.value = false
-                    onSentAck(false, sendingText, trigger)
-                }
-                delay(25000L)
-                sentMessages.remove(msgId)
-            }
-            return true
-        } else {
-            sentMessages.remove(msgId)
+        if (!sent) {
+            pendingAcks.remove(msgId)
             _inFlight.value = false
             onSentAck(false, text, trigger)
             return false
         }
+
+        val success = try {
+            withTimeout(5000L) {
+                deferred.await()
+            }
+        } catch (e: TimeoutCancellationException) {
+            false
+        } finally {
+            pendingAcks.remove(msgId)
+            _inFlight.value = false
+        }
+
+        if (success) {
+            lastAckedText = text
+        }
+        onSentAck(success, text, trigger)
+        sendPendingText()
+        return success
     }
 
-    private fun sendPendingText() {
+    private suspend fun sendPendingText() {
         val current = textFlow.value
         if (current.isNotEmpty() && current != lastAckedText) {
             attemptSend(current, SendTrigger.AUTO)

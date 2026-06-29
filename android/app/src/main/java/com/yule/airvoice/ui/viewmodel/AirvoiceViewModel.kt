@@ -127,7 +127,9 @@ class AirvoiceViewModel(application: Application) : AndroidViewModel(application
         lastSentTrigger = SendTrigger.MANUAL
         isRetry = false
         _sendTimedOut.value = false
-        autoSendController.attemptSend(currentText, SendTrigger.MANUAL)
+        viewModelScope.launch {
+            autoSendController.attemptSend(currentText, SendTrigger.MANUAL)
+        }
     }
 
     fun cancelSend() {
