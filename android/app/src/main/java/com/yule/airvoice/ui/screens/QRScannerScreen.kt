@@ -118,7 +118,8 @@ fun QRScannerScreen(
                                         for (barcode in barcodes) {
                                             val rawValue = barcode.rawValue ?: continue
                                             try {
-                                                val payload = Json.decodeFromString<PairingPayload>(rawValue)
+                                                val lenientJson = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
+                                                val payload = lenientJson.decodeFromString<PairingPayload>(rawValue)
                                                 if (isActive.value && isScanned.compareAndSet(false, true)) {
                                                     currentOnQrCodeScanned(payload)
                                                 }

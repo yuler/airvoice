@@ -13,17 +13,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.yule.airvoice.ui.theme.AppColors
-import com.yule.airvoice.ui.theme.backgroundColor
-import com.yule.airvoice.ui.theme.borderColor
-import com.yule.airvoice.ui.theme.primaryTextColor
-import com.yule.airvoice.ui.theme.secondaryBackgroundColor
-import com.yule.airvoice.ui.theme.secondaryTextColor
+import com.yule.airvoice.ui.theme.*
 
 @Composable
 fun OnboardingScreen(
     onStartScanning: () -> Unit,
-    onToggleTheme: () -> Unit = {}
+    onToggleTheme: () -> Unit
 ) {
     val bgColor = backgroundColor()
     val textColor = primaryTextColor()
@@ -41,6 +36,26 @@ fun OnboardingScreen(
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // Header Theme Toggle
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                horizontalArrangement = Arrangement.End
+            ) {
+                IconButton(
+                    onClick = onToggleTheme,
+                    modifier = Modifier
+                        .size(36.dp)
+                        .background(chipBackgroundColor(), CircleShape)
+                ) {
+                    Text(
+                        text = if (LocalIsDarkTheme.current) "☀️" else "🌙",
+                        fontSize = 16.sp
+                    )
+                }
+            }
+
             Spacer(modifier = Modifier.weight(1f))
 
             // Icon
@@ -51,7 +66,7 @@ fun OnboardingScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "\uD83C\uDFA4",
+                    text = "🎙️",
                     fontSize = 36.sp
                 )
             }
@@ -107,51 +122,51 @@ fun OnboardingScreen(
                     .height(56.dp),
                 shape = RoundedCornerShape(28.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = AppColors.accent)
-            ) {
-                Text(text = "开始使用", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
-            }
-        }
-    }
-}
+              ) {
+                  Text(text = "开始使用", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+              }
+          }
+      }
+  }
 
-@Composable
-private fun GuideStep(
-    number: String,
-    title: String,
-    desc: String,
-    titleColor: Color,
-    descColor: Color
-) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Box(
-            modifier = Modifier
-                .size(24.dp)
-                .background(AppColors.accent.copy(alpha = 0.2f), CircleShape)
-                .border(1.dp, AppColors.accent.copy(alpha = 0.5f), CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = number,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                color = titleColor
-            )
-        }
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = titleColor
-            )
-            Text(
-                text = desc,
-                fontSize = 12.sp,
-                color = descColor
-            )
-        }
-    }
-}
+  @Composable
+  private fun GuideStep(
+      number: String,
+      title: String,
+      desc: String,
+      titleColor: Color,
+      descColor: Color
+  ) {
+      Row(
+          horizontalArrangement = Arrangement.spacedBy(12.dp),
+          modifier = Modifier.fillMaxWidth()
+      ) {
+          Box(
+              modifier = Modifier
+                  .size(24.dp)
+                  .background(AppColors.accent.copy(alpha = 0.2f), CircleShape)
+                  .border(1.dp, AppColors.accent.copy(alpha = 0.5f), CircleShape),
+              contentAlignment = Alignment.Center
+          ) {
+              Text(
+                  text = number,
+                  fontSize = 12.sp,
+                  fontWeight = FontWeight.Bold,
+                  color = titleColor
+              )
+          }
+          Column(modifier = Modifier.weight(1f)) {
+              Text(
+                  text = title,
+                  fontSize = 14.sp,
+                  fontWeight = FontWeight.SemiBold,
+                  color = titleColor
+              )
+              Text(
+                  text = desc,
+                  fontSize = 12.sp,
+                  color = descColor
+              )
+          }
+      }
+  }

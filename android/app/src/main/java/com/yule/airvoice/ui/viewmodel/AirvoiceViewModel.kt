@@ -182,11 +182,4 @@ class AirvoiceViewModel(application: Application) : AndroidViewModel(application
         connectionManager.disconnect()
         autoSendController?.cleanup()
     }
-
-    // Temporary compatibility stubs
-    val currentScreen = MutableStateFlow(Screen.ONBOARDING)
-    val toastEvents = kotlinx.coroutines.flow.MutableSharedFlow<String>()
-    fun navigateTo(screen: Screen) {
-        currentScreen.value = screen
-    }
 }
