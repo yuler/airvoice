@@ -30,9 +30,28 @@ if [ -z "$JAVA_HOME" ] || [ ! -x "$JAVA_HOME/bin/java" ]; then
   fi
 fi
 
+# Android Studio JBR fallback
+if [ -z "$JAVA_HOME" ] || [ ! -x "$JAVA_HOME/bin/java" ]; then
+  if [ -d "/opt/android-studio/jbr" ] && [ -x "/opt/android-studio/jbr/bin/java" ]; then
+    JAVA_HOME="/opt/android-studio/jbr"
+  elif [ -d "$HOME/android-studio/jbr" ] && [ -x "$HOME/android-studio/jbr/bin/java" ]; then
+    JAVA_HOME="$HOME/android-studio/jbr"
+  fi
+fi
+
 if [ -z "$JAVA_HOME" ] || [ ! -x "$JAVA_HOME/bin/java" ]; then
   echo "ERROR: Could not detect JAVA_HOME. Install JDK 17 first." >&2
   return 1 2>/dev/null || exit 1
 fi
 
 export JAVA_HOME
+
+# Android SDK fallback detection
+if [ -z "$ANDROID_HOME" ]; then
+  if [ -d "$HOME/Android/Sdk" ]; then
+    export ANDROID_HOME="$HOME/Android/Sdk"
+  elif [ -d "/home/yule/Android/Sdk" ]; then
+    export ANDROID_HOME="/home/yule/Android/Sdk"
+  fi
+fi
+export ANDROID_HOME

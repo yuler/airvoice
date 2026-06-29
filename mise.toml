@@ -93,4 +93,4 @@ run = "bash -c 'source ./scripts/java-env.sh && cd android && ./gradlew installD
 
 [tasks."android:serve"]
 description = "Serve debug APK over LAN for phone download"
-run = "bash -c 'APK=android/app/build/outputs/apk/debug/app-debug.apk; if [ ! -f \"$APK\" ]; then echo \"APK not found. Run: mise android:build first\"; exit 1; fi; IP=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || echo localhost); echo \"\"; echo \"  Download on your phone:  http://${IP}:8888/app-debug.apk\"; echo \"\"; cd android/app/build/outputs/apk/debug && python3 -m http.server 8888 --bind 0.0.0.0'"
+run = "bash -c 'APK=android/app/build/outputs/apk/debug/app-debug.apk; if [ ! -f \"$APK\" ]; then echo \"APK not found. Run: mise android:build first\"; exit 1; fi; IP=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || hostname -I 2>/dev/null | awk \"{print \\$1}\" || ip route get 1 2>/dev/null | awk \"{print \\$(NF-2);exit}\" || echo localhost); echo \"\"; echo \"  Download on your phone:  http://${IP}:8888/app-debug.apk\"; echo \"\"; cd android/app/build/outputs/apk/debug && python3 -m http.server 8888 --bind 0.0.0.0'"
