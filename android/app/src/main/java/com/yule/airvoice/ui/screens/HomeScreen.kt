@@ -157,7 +157,7 @@ fun HomeScreen(
 
                 Spacer(modifier = Modifier.weight(1f))
 
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     // Theme toggle button
                     IconButton(
                         onClick = { viewModel.toggleTheme() },
