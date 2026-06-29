@@ -27,7 +27,7 @@ enum class Screen {
 
 class AirvoiceViewModel(application: Application) : AndroidViewModel(application) {
     private val storage = StorageManager(application)
-    private val client = OkHttpClient()
+    private val client = (application as com.yule.airvoice.AirvoiceApplication).okHttpClient
     val connectionManager = ConnectionManager(client)
     private val vibratorHelper = VibratorHelper(application)
 
