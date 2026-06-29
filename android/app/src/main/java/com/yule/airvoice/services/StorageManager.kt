@@ -35,8 +35,7 @@ class StorageManager(private val context: Context) {
             ConnectionInfo(prefs[KEY_WS], prefs[KEY_TOKEN])
         }
 
-    val wsUrlFlow: Flow<String?> = connectionInfoFlow.map { it.wsUrl }
-    val tokenFlow: Flow<String?> = connectionInfoFlow.map { it.token }
+
 
     val themeFlow: Flow<String> = context.dataStore.data
         .catch { exception ->
