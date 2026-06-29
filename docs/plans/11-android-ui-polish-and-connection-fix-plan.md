@@ -373,3 +373,175 @@
   git commit -m "debug: add log statement for incoming WebSocket messages on Android"
   ```
 
+---
+
+### Task 8: Spacing Between Top-Right Header Icons
+
+**Files:**
+- Modify: `android/app/src/main/java/com/yule/airvoice/ui/screens/HomeScreen.kt`
+
+- [ ] **Step 1: Increase spacing to 12.dp for header icons**
+  Modify [HomeScreen.kt](file:///home/yule/Sides/airvoice/android/app/src/main/java/com/yule/airvoice/ui/screens/HomeScreen.kt) (around line 149) to change `Arrangement.spacedBy(8.dp)` to `Arrangement.spacedBy(12.dp)`.
+  
+  Target Content (around line 147-151):
+  ```kotlin
+                  Spacer(modifier = Modifier.weight(1f))
+  
+                  Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                      // Theme toggle button
+  ```
+  
+  Replacement Content:
+  ```kotlin
+                  Spacer(modifier = Modifier.weight(1f))
+  
+                  Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                      // Theme toggle button
+  ```
+
+- [ ] **Step 2: Verify Android code builds**
+  Run: `mise run android:test`
+  Expected: BUILD SUCCESSFUL.
+
+- [ ] **Step 3: Commit spacing changes**
+  Run:
+  ```bash
+  git add android/app/src/main/java/com/yule/airvoice/ui/screens/HomeScreen.kt
+  git commit -m "style: increase horizontal spacing between top-right header icons to 12.dp"
+  ```
+
+---
+
+### Task 9: Refactor Send Button to Custom Box Layout
+
+**Files:**
+- Modify: `android/app/src/main/java/com/yule/airvoice/ui/screens/HomeScreen.kt`
+
+- [ ] **Step 1: Refactor Button to Box in HomeScreen.kt**
+  Modify [HomeScreen.kt](file:///home/yule/Sides/airvoice/android/app/src/main/java/com/yule/airvoice/ui/screens/HomeScreen.kt) to replace `Button` with a custom flat `Box` using `clickable`.
+  
+  Target Content (around line 266-291):
+  ```kotlin
+                        Button(
+                            onClick = {
+                                viewModel.manualSend()
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(44.dp),
+                            shape = RoundedCornerShape(22.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = sendBtnBg,
+                                contentColor = primaryTextColor(),
+                                disabledContainerColor = sendBtnBg.copy(alpha = 0.5f),
+                                disabledContentColor = secondaryTextColor().copy(alpha = 0.5f)
+                            ),
+                            enabled = isConnected && !inFlight
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.Send,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                "发送到电脑",
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+  ```
+  
+  Replacement Content:
+  ```kotlin
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(44.dp)
+                                .clip(RoundedCornerShape(22.dp))
+                                .background(if (isConnected && !inFlight) sendBtnBg else sendBtnBg.copy(alpha = 0.5f))
+                                .clickable(enabled = isConnected && !inFlight) { viewModel.manualSend() },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.Send,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp),
+                                    tint = if (isConnected && !inFlight) primaryTextColor() else secondaryTextColor().copy(alpha = 0.5f)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    "发送到电脑",
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = if (isConnected && !inFlight) primaryTextColor() else secondaryTextColor().copy(alpha = 0.5f)
+                                )
+                            }
+                        }
+  ```
+
+- [ ] **Step 2: Verify Android code builds**
+  Run: `mise run android:test`
+  Expected: BUILD SUCCESSFUL.
+
+- [ ] **Step 3: Commit custom button changes**
+  Run:
+  ```bash
+  git add android/app/src/main/java/com/yule/airvoice/ui/screens/HomeScreen.kt
+  git commit -m "style: replace material Button with custom flat Box pill button for iOS parity"
+  ```
+
+---
+
+### Task 10: Add Collector Debug Logging in AutoSendController
+
+**Files:**
+- Modify: `android/app/src/main/java/com/yule/airvoice/services/AutoSendController.kt`
+
+- [ ] **Step 1: Import Log and add print statement inside incomingMessages collector**
+  Modify [AutoSendController.kt](file:///home/yule/Sides/airvoice/android/app/src/main/java/com/yule/airvoice/services/AutoSendController.kt) to log all messages passing through the collector flow.
+  
+  Target Content (around line 3-4):
+  ```kotlin
+  import com.yule.airvoice.models.ProtocolMessage
+  import java.util.UUID
+  ```
+  
+  Replacement Content:
+  ```kotlin
+  import com.yule.airvoice.models.ProtocolMessage
+  import java.util.UUID
+  import android.util.Log
+  ```
+  
+  Target Content (around line 70-74):
+  ```kotlin
+          scope.launch {
+              connectionManager.incomingMessages.collect { msg ->
+                  if (msg.type == "ack" && msg.id == pendingMessageId) {
+  ```
+  
+  Replacement Content:
+  ```kotlin
+          scope.launch {
+              connectionManager.incomingMessages.collect { msg ->
+                  Log.d("AutoSendController", "Collector received msg: type=${msg.type}, id=${msg.id}, pendingMessageId=$pendingMessageId, success=${msg.ok}")
+                  if (msg.type == "ack" && msg.id == pendingMessageId) {
+  ```
+
+- [ ] **Step 2: Verify Android code builds and tests pass**
+  Run: `mise run android:test`
+  Expected: BUILD SUCCESSFUL.
+
+- [ ] **Step 3: Commit collector logging changes**
+  Run:
+  ```bash
+  git add android/app/src/main/java/com/yule/airvoice/services/AutoSendController.kt
+  git commit -m "debug: log WebSocket messages inside AutoSendController collector"
+  ```
+
+

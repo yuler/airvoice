@@ -34,25 +34,27 @@ We will add `android:usesCleartextTraffic="true"` to the `<application>` tag in 
 
 ## 4. UI Icons & Button Polish
 
-### 4.1 SVG Vector Icons
+### 4.1 SVG Vector Icons & Header Spacing
 We will replace the raw emojis in the top right corner with Compose Vector Icons:
-- **Theme Toggle**: Use `Icons.Default.Brightness4` (moon representation) and `Icons.Default.Brightness7` (sun representation).
+- **Theme Toggle**: Use `Icons.Default.Brightness4` and `Icons.Default.Brightness7`.
 - **QR Scanner**: Use `Icons.Default.PhotoCamera`.
 These icons will be styled using standard Compose `Icon` components and tinted with `primaryTextColor()`.
+To ensure they are visually distinct, the horizontal spacing between the two icons will be increased to `12.dp` using `Arrangement.spacedBy(12.dp)`.
 
-### 4.2 Button States (Enabled/Disabled) Contrast
-To clearly differentiate the "发送到电脑" (Send to computer) button's clickable and disabled states:
-- Use `ButtonDefaults.buttonColors()` to explicitly define the text (`contentColor`) and background (`containerColor`) colors.
-- Use `primaryTextColor()` as the active content color, matching the iOS design.
-- Use `secondaryTextColor().copy(alpha = 0.5f)` as the disabled content color.
-- Use `sendButtonBackgroundColor()` as the container color, and `sendButtonBackgroundColor().copy(alpha = 0.5f)` as the disabled container color.
+### 4.2 Custom Send Button (iOS Parity)
+Instead of using the default Material3 `Button` (which introduces Android-specific elevation, paddings, and styles), we will implement a custom `Box` with `clickable` layout:
+- **Shape**: Rounded corner clip of `22.dp` (pill-shape).
+- **Background**: `sendButtonBackgroundColor()` (active) or `sendButtonBackgroundColor().copy(alpha = 0.5f)` (disabled).
+- **Content**: Row containing the Send icon and text, colored with `primaryTextColor()` (active) or `secondaryTextColor().copy(alpha = 0.5f)` (disabled).
+- **Elevation**: Flat layout with no shadows, matching the iOS design.
 
 ---
 
-## 5. WebSocket Message Debug Logging
+## 5. WebSocket Message & Collector Debug Logging
 
 To help debug connection issues and ensure ACKs are being received:
-- Add a debug log statement `Log.d("ConnectionManager", "Received: $text")` inside the `onMessage` callback of `ConnectionManager.kt` to inspect raw WebSocket messages received on the phone.
+- Add a debug log statement `Log.d("ConnectionManager", "Received: $text")` inside the `onMessage` callback of `ConnectionManager.kt`.
+- Add a debug log statement `Log.d("AutoSendController", "Collector received msg: type=${msg.type}, id=${msg.id}, pendingMessageId=$pendingMessageId")` inside the `incomingMessages.collect` block of `AutoSendController.kt` to inspect if the ACK message reaches the controller and if the ID matches.
 
 ---
 
