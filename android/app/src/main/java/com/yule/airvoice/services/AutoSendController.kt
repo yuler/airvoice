@@ -2,6 +2,7 @@ package com.yule.airvoice.services
 
 import com.yule.airvoice.models.ProtocolMessage
 import java.util.UUID
+import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -69,6 +70,7 @@ class AutoSendController(
         // Listen to incoming acks
         scope.launch {
             connectionManager.incomingMessages.collect { msg ->
+                Log.d("AutoSendController", "Collector received msg: type=${msg.type}, id=${msg.id}, pendingMessageId=$pendingMessageId, success=${msg.ok}")
                 if (msg.type == "ack" && msg.id == pendingMessageId) {
                     timeoutJob?.cancel()
                     pendingMessageId = null
