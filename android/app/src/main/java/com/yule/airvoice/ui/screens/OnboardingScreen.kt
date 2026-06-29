@@ -21,7 +21,10 @@ import com.yule.airvoice.ui.theme.secondaryBackgroundColor
 import com.yule.airvoice.ui.theme.secondaryTextColor
 
 @Composable
-fun OnboardingScreen(onStartScanning: () -> Unit) {
+fun OnboardingScreen(
+    onStartScanning: () -> Unit,
+    onToggleTheme: () -> Unit = {}
+) {
     val bgColor = backgroundColor()
     val textColor = primaryTextColor()
     val subTextColor = secondaryTextColor()
