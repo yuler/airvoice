@@ -198,3 +198,178 @@
   git add android/app/src/main/java/com/yule/airvoice/ui/screens/HomeScreen.kt
   git commit -m "feat: show keyboard automatically on startup using LocalSoftwareKeyboardController"
   ```
+
+---
+
+### Task 5: Replace Emojis with Vector Icons in HomeScreen
+
+**Files:**
+- Modify: `android/app/src/main/java/com/yule/airvoice/ui/screens/HomeScreen.kt`
+
+- [ ] **Step 1: Import vector icons**
+  Modify [HomeScreen.kt](file:///home/yule/Sides/airvoice/android/app/src/main/java/com/yule/airvoice/ui/screens/HomeScreen.kt) to import the required icons.
+  
+  Target Content:
+  ```kotlin
+  import androidx.compose.material.icons.filled.Info
+  ```
+  
+  Replacement Content:
+  ```kotlin
+  import androidx.compose.material.icons.filled.Info
+  import androidx.compose.material.icons.filled.Brightness4
+  import androidx.compose.material.icons.filled.Brightness7
+  import androidx.compose.material.icons.filled.PhotoCamera
+  ```
+
+- [ ] **Step 2: Replace emojis with Icon components**
+  Modify the theme toggle and QR scanner icon buttons to render standard Material icons.
+  
+  Target Content (around line 150-176):
+  ```kotlin
+                     // Theme toggle button
+                     IconButton(
+                         onClick = { viewModel.toggleTheme() },
+                         modifier = Modifier
+                             .size(28.dp)
+                             .background(chipBackgroundColor(), CircleShape)
+                     ) {
+                         Text(
+                             text = if (appTheme == "light") "🌙" else "☀️",
+                             fontSize = 13.sp
+                         )
+                     }
+
+                     // QR scanner button
+                     IconButton(
+                         onClick = onScanQr,
+                         modifier = Modifier
+                             .size(28.dp)
+                             .background(chipBackgroundColor(), CircleShape)
+                     ) {
+                         Text(
+                             text = "📷",
+                             fontSize = 13.sp
+                         )
+                     }
+  ```
+  
+  Replacement Content:
+  ```kotlin
+                     // Theme toggle button
+                     IconButton(
+                         onClick = { viewModel.toggleTheme() },
+                         modifier = Modifier
+                             .size(28.dp)
+                             .background(chipBackgroundColor(), CircleShape)
+                     ) {
+                         Icon(
+                             imageVector = if (appTheme == "light") Icons.Default.Brightness4 else Icons.Default.Brightness7,
+                             contentDescription = "Toggle Theme",
+                             tint = textColor,
+                             modifier = Modifier.size(16.dp)
+                         )
+                     }
+
+                     // QR scanner button
+                     IconButton(
+                         onClick = onScanQr,
+                         modifier = Modifier
+                             .size(28.dp)
+                             .background(chipBackgroundColor(), CircleShape)
+                     ) {
+                         Icon(
+                             imageVector = Icons.Default.PhotoCamera,
+                             contentDescription = "Scan QR",
+                             tint = textColor,
+                             modifier = Modifier.size(16.dp)
+                         )
+                     }
+  ```
+
+- [ ] **Step 3: Verify Android code builds**
+  Run: `mise run android:test`
+  Expected: BUILD SUCCESSFUL.
+
+- [ ] **Step 4: Commit vector icon changes**
+  Run:
+  ```bash
+  git add android/app/src/main/java/com/yule/airvoice/ui/screens/HomeScreen.kt
+  git commit -m "style: replace home screen header emojis with Compose vector icons"
+  ```
+
+---
+
+### Task 6: Improve Send Button Enabled/Disabled Colors
+
+**Files:**
+- Modify: `android/app/src/main/java/com/yule/airvoice/ui/screens/HomeScreen.kt`
+
+- [ ] **Step 1: Set contentColor and disabledContentColor on Send Button**
+  Modify [HomeScreen.kt](file:///home/yule/Sides/airvoice/android/app/src/main/java/com/yule/airvoice/ui/screens/HomeScreen.kt) to style button content and disabled state colors.
+  
+  Target Content (around line 266-279):
+  ```kotlin
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = sendBtnBg,
+                            disabledContainerColor = sendBtnBg.copy(alpha = 0.5f)
+                        ),
+  ```
+  
+  Replacement Content:
+  ```kotlin
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = sendBtnBg,
+                            contentColor = primaryTextColor(),
+                            disabledContainerColor = sendBtnBg.copy(alpha = 0.5f),
+                            disabledContentColor = secondaryTextColor().copy(alpha = 0.5f)
+                        ),
+  ```
+
+- [ ] **Step 2: Verify Android code builds**
+  Run: `mise run android:test`
+  Expected: BUILD SUCCESSFUL.
+
+- [ ] **Step 3: Commit button color changes**
+  Run:
+  ```bash
+  git add android/app/src/main/java/com/yule/airvoice/ui/screens/HomeScreen.kt
+  git commit -m "style: distinguish enabled and disabled button colors on Send Button"
+  ```
+
+---
+
+### Task 7: Add WebSocket Message Debug Logging on Android
+
+**Files:**
+- Modify: `android/app/src/main/java/com/yule/airvoice/services/ConnectionManager.kt`
+
+- [ ] **Step 1: Add log statement inside onMessage**
+  Modify [ConnectionManager.kt](file:///home/yule/Sides/airvoice/android/app/src/main/java/com/yule/airvoice/services/ConnectionManager.kt) to log all incoming WebSocket messages.
+  
+  Target Content (around line 83-86):
+  ```kotlin
+              override fun onMessage(webSocket: WebSocket, text: String) {
+                  if (webSocket !== this@ConnectionManager.webSocket) return
+                  try {
+  ```
+  
+  Replacement Content:
+  ```kotlin
+              override fun onMessage(webSocket: WebSocket, text: String) {
+                  if (webSocket !== this@ConnectionManager.webSocket) return
+                  Log.d("ConnectionManager", "Received WebSocket message: $text")
+                  try {
+  ```
+
+- [ ] **Step 2: Verify Android code builds**
+  Run: `mise run android:test`
+  Expected: BUILD SUCCESSFUL.
+
+- [ ] **Step 3: Commit debug logging changes**
+  Run:
+  ```bash
+  git add android/app/src/main/java/com/yule/airvoice/services/ConnectionManager.kt
+  git commit -m "debug: add log statement for incoming WebSocket messages on Android"
+  ```
+

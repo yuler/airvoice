@@ -32,9 +32,34 @@ We will add `android:usesCleartextTraffic="true"` to the `<application>` tag in 
 
 ---
 
-## 4. Verification & Network Debugging Address
+## 4. UI Icons & Button Polish
+
+### 4.1 SVG Vector Icons
+We will replace the raw emojis in the top right corner with Compose Vector Icons:
+- **Theme Toggle**: Use `Icons.Default.Brightness4` (moon representation) and `Icons.Default.Brightness7` (sun representation).
+- **QR Scanner**: Use `Icons.Default.PhotoCamera`.
+These icons will be styled using standard Compose `Icon` components and tinted with `primaryTextColor()`.
+
+### 4.2 Button States (Enabled/Disabled) Contrast
+To clearly differentiate the "发送到电脑" (Send to computer) button's clickable and disabled states:
+- Use `ButtonDefaults.buttonColors()` to explicitly define the text (`contentColor`) and background (`containerColor`) colors.
+- Use `primaryTextColor()` as the active content color, matching the iOS design.
+- Use `secondaryTextColor().copy(alpha = 0.5f)` as the disabled content color.
+- Use `sendButtonBackgroundColor()` as the container color, and `sendButtonBackgroundColor().copy(alpha = 0.5f)` as the disabled container color.
+
+---
+
+## 5. WebSocket Message Debug Logging
+
+To help debug connection issues and ensure ACKs are being received:
+- Add a debug log statement `Log.d("ConnectionManager", "Received: $text")` inside the `onMessage` callback of `ConnectionManager.kt` to inspect raw WebSocket messages received on the phone.
+
+---
+
+## 6. Verification & Network Debugging Address
 
 We will provide a manual test URL for the user to test intranet network reachability between the phone and the PC:
 `http://192.168.20.189:7383/health`
 
 Visiting this URL on the phone's browser should return `ok` if the phone and PC are on the same Wi-Fi and there is no firewall blocking port `7383`.
+
