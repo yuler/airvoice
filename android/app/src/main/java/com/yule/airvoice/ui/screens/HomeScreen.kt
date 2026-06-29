@@ -17,6 +17,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Brightness4
+import androidx.compose.material.icons.filled.Brightness7
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -162,9 +165,11 @@ fun HomeScreen(
                             .size(28.dp)
                             .background(chipBackgroundColor(), CircleShape)
                     ) {
-                        Text(
-                            text = if (appTheme == "light") "🌙" else "☀️",
-                            fontSize = 13.sp
+                        Icon(
+                            imageVector = if (appTheme == "light") Icons.Default.Brightness4 else Icons.Default.Brightness7,
+                            contentDescription = "Toggle Theme",
+                            tint = textColor,
+                            modifier = Modifier.size(16.dp)
                         )
                     }
 
@@ -175,9 +180,11 @@ fun HomeScreen(
                             .size(28.dp)
                             .background(chipBackgroundColor(), CircleShape)
                     ) {
-                        Text(
-                            text = "📷",
-                            fontSize = 13.sp
+                        Icon(
+                            imageVector = Icons.Default.PhotoCamera,
+                            contentDescription = "Scan QR",
+                            tint = textColor,
+                            modifier = Modifier.size(16.dp)
                         )
                     }
                 }
