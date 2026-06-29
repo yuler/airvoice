@@ -77,7 +77,7 @@ class ConnectionManager(private val client: OkHttpClient) {
                     backoffMs = 2000L
                 }
                 val helloMsg = ProtocolMessage(type = "hello", device = "Android Phone", app = "0.1.0")
-                webSocket.send(Json.encodeToString(ProtocolMessage.serializer(), helloMsg))
+                webSocket.send(lenientJson.encodeToString(ProtocolMessage.serializer(), helloMsg))
             }
 
             override fun onMessage(webSocket: WebSocket, text: String) {
@@ -121,7 +121,7 @@ class ConnectionManager(private val client: OkHttpClient) {
     @Synchronized
     fun send(message: ProtocolMessage): Boolean {
         val ws = webSocket ?: return false
-        val jsonStr = Json.encodeToString(ProtocolMessage.serializer(), message)
+        val jsonStr = lenientJson.encodeToString(ProtocolMessage.serializer(), message)
         return ws.send(jsonStr)
     }
 
