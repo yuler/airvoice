@@ -194,10 +194,10 @@ func (a *App) StartServer(port int) error {
 		State: "waiting",
 		Port:  port,
 	}
+	a.mu.Unlock()
 	if a.tray != nil {
 		a.tray.UpdateStatus()
 	}
-	a.mu.Unlock()
 
 	if a.ctx != nil {
 		runtime.EventsEmit(a.ctx, "log_added", fmt.Sprintf(" [airvoice] listening on :%d (health: /health, ws: /ws)", port))
