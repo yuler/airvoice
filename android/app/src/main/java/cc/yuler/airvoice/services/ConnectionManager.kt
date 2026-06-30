@@ -15,6 +15,7 @@ import kotlinx.coroutines.launch
 import android.net.Uri
 import android.util.Log
 import kotlinx.serialization.json.Json
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -55,7 +56,7 @@ class ConnectionManager(private val client: OkHttpClient) {
         webSocket = null
 
         val requestUrl = try {
-            okhttp3.HttpUrl.get(wsUrl).newBuilder()
+            wsUrl.toHttpUrl().newBuilder()
                 .addQueryParameter("token", token)
                 .build()
                 .toString()
