@@ -2,6 +2,7 @@ min_version = "2024.11.0"
 
 [tools]
 go = "1.22"
+node = "24"
 gum = "0.17"
 swift = { version = "6.3", os = ["macos"] }
 xcodegen = { version = "2.44.1", os = ["macos"] }
@@ -14,32 +15,82 @@ description = "Install mise tools and platform dependencies"
 run = "./scripts/setup.sh"
 
 [tasks.dev]
-description = "Build and run airvoice server (default dev workflow)"
-depends = ["build"]
+description = "Alias for cli:dev"
+depends = ["cli:build"]
 run = "./bin/airvoice serve"
 
 [tasks.menu]
 description = "Interactive development menu (gum)"
 run = "./scripts/dev.sh"
 
+# -- CLI (Go) --
+
+[tasks."cli:dev"]
+description = "Build and run airvoice server (default dev workflow)"
+depends = ["cli:build"]
+run = "./bin/airvoice serve"
+
+[tasks."cli:build"]
+description = "Build Go CLI to bin/airvoice"
+run = "go build -o bin/airvoice ./cli"
+
+[tasks."cli:test"]
+description = "Run Go unit tests"
+run = "go test ./cli/..."
+
+[tasks.doctor]
+description = "Check macOS paste permissions"
+depends = ["cli:build"]
+run = "./bin/airvoice doctor"
+
+# -- WWW (Astro) --
+
+[tasks."www:dev"]
+description = "Start www dev server (Astro)"
+run = "npm run dev"
+dir = "./www"
+
+[tasks."www:build"]
+description = "Build www static site"
+run = "npm run build"
+dir = "./www"
+
+# -- iOS --
+
+[tasks."ios:dev"]
+description = "Build and run iOS app in simulator"
+run = "xcodegen generate && xcodebuild -project ios/Airvoice.xcodeproj -scheme Airvoice -destination 'platform=iOS Simulator,name=iPhone 16' build"
+
+[tasks."ios:build"]
+description = "Build iOS app for device"
+run = "xcodegen generate && xcodebuild -project ios/Airvoice.xcodeproj -scheme Airvoice -sdk iphoneos build"
+
 [tasks."ios:device"]
 description = "Build and install on a physical iOS device (macOS + Xcode)"
 run = "./scripts/ios-device.sh"
 
-[tasks.build]
-description = "Build Go CLI to bin/airvoice"
-run = "go build -o bin/airvoice ./cli"
+# -- Android --
 
-[tasks.doctor]
-description = "Check macOS paste permissions"
-depends = ["build"]
-run = "./bin/airvoice doctor"
+[tasks."android:build"]
+description = "Build Android debug APK"
+run = "bash -c 'source ./scripts/java-env.sh && cd android && ./gradlew assembleDebug'"
 
-[tasks.test]
-description = "Run Go unit tests"
-run = "go test ./cli/..."
+[tasks."android:release"]
+description = "Build Android release APK"
+run = "bash -c 'source ./scripts/java-env.sh && cd android && ./gradlew assembleRelease'"
 
-[tasks.serve]
-description = "Alias for dev — build and run airvoice server"
-depends = ["build"]
-run = "./bin/airvoice serve"
+[tasks."android:test"]
+description = "Run Android unit tests"
+run = "bash -c 'source ./scripts/java-env.sh && cd android && ./gradlew testDebugUnitTest'"
+
+[tasks."android:clean"]
+description = "Clean Android build outputs"
+run = "bash -c 'source ./scripts/java-env.sh && cd android && ./gradlew clean'"
+
+[tasks."android:install"]
+description = "Build and install debug APK on connected device"
+run = "bash -c 'source ./scripts/java-env.sh && cd android && ./gradlew installDebug'"
+
+[tasks."android:serve"]
+description = "Serve debug APK over LAN for phone download"
+run = "bash -c 'APK=android/app/build/outputs/apk/debug/app-debug.apk; if [ ! -f \"$APK\" ]; then echo \"APK not found. Run: mise android:build first\"; exit 1; fi; IP=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || hostname -I 2>/dev/null | awk \"{print \\$1}\" || ip route get 1 2>/dev/null | awk \"{print \\$(NF-2);exit}\" || echo localhost); echo \"\"; echo \"  Download on your phone:  http://${IP}:8888/app-debug.apk\"; echo \"\"; cd android/app/build/outputs/apk/debug && python3 -m http.server 8888 --bind 0.0.0.0'"

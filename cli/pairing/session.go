@@ -35,7 +35,7 @@ func PrintPairing(port int, banner string) (token, wsURL string, err error) {
 	fmt.Fprintf(os.Stderr, "\n")
 	fmt.Fprintf(os.Stderr, "  Token: %s\n", token)
 	fmt.Fprintf(os.Stderr, "  WebSocket URL: %s\n\n", wsURL)
-	fmt.Fprintf(os.Stderr, "  [airvoice] waiting for iPhone connection...\n\n")
+	fmt.Fprintf(os.Stderr, "  [airvoice] waiting for phone connection...\n\n")
 	return token, wsURL, nil
 }
 
@@ -66,6 +66,6 @@ func PrintPairingWithToken(port int, token string, banner string) (wsURL string,
 	fmt.Fprintf(os.Stderr, "\n")
 	fmt.Fprintf(os.Stderr, "  Token: %s\n", token)
 	fmt.Fprintf(os.Stderr, "  WebSocket URL: %s\n\n", wsURL)
-	fmt.Fprintf(os.Stderr, "  [airvoice] waiting for iPhone connection...\n\n")
+	fmt.Fprintf(os.Stderr, "  [airvoice] waiting for phone connection...\n\n")
 	return wsURL, nil
 }
