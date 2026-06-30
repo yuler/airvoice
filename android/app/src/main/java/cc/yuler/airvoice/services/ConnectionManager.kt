@@ -96,9 +96,9 @@ class ConnectionManager(private val client: OkHttpClient) {
             }
 
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-                if (webSocket !== this@ConnectionManager.webSocket) return
-                _status.value = ConnectionStatus.Error(t.message ?: "Connection Failure")
                 synchronized(this@ConnectionManager) {
+                    if (webSocket !== this@ConnectionManager.webSocket) return
+                    _status.value = ConnectionStatus.Error(t.message ?: "Connection Failure")
                     triggerReconnect()
                 }
             }
