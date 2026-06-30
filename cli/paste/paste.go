@@ -30,14 +30,19 @@ func runCommandCapture(name string, stdin string, args ...string) (string, error
 		cmd.Stdin = strings.NewReader(stdin)
 	}
 	var stderr strings.Builder
-	cmd.Stderr = &stderr
+	isClipboardCmd := name == "wl-copy" || name == "xclip" || name == "xsel"
+	if !isClipboardCmd {
+		cmd.Stderr = &stderr
+	}
 
 	if err := cmd.Run(); err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
 			return "", context.DeadlineExceeded
 		}
-		if msg := strings.TrimSpace(stderr.String()); msg != "" {
-			return msg, fmt.Errorf("%s: %w", msg, err)
+		if !isClipboardCmd {
+			if msg := strings.TrimSpace(stderr.String()); msg != "" {
+				return msg, fmt.Errorf("%s: %w", msg, err)
+			}
 		}
 		return "", err
 	}

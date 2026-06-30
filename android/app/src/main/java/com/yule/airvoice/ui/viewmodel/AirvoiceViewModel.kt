@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.yule.airvoice.models.PairingPayload
+import android.util.Log
 import com.yule.airvoice.services.AutoSendController
 import com.yule.airvoice.services.ConnectionManager
 import com.yule.airvoice.services.ConnectionStatus
@@ -49,8 +50,6 @@ class AirvoiceViewModel(application: Application) : AndroidViewModel(application
 
     val autoSendController: AutoSendController
 
-    private var lastSentContent: String? = null
-    private var lastSentTrigger: SendTrigger? = null
     private var isRetry = false
     private var toastJob: kotlinx.coroutines.Job? = null
 
@@ -123,8 +122,6 @@ class AirvoiceViewModel(application: Application) : AndroidViewModel(application
             showToast("上一条仍在发送中", isError = true)
             return
         }
-        lastSentContent = currentText
-        lastSentTrigger = SendTrigger.MANUAL
         isRetry = false
         _sendTimedOut.value = false
         viewModelScope.launch {
@@ -140,8 +137,11 @@ class AirvoiceViewModel(application: Application) : AndroidViewModel(application
     }
 
     private fun handleSentAck(success: Boolean, sentText: String, trigger: SendTrigger) {
+        Log.d("AirvoiceViewModel", "handleSentAck called: success=$success, sentText=\"$sentText\", currentText=\"${_inputText.value}\"")
         if (success) {
-            if (_inputText.value.trim() == sentText.trim()) {
+            val textMatches = _inputText.value.trim() == sentText.trim()
+            Log.d("AirvoiceViewModel", "handleSentAck success: textMatches=$textMatches")
+            if (textMatches) {
                 _inputText.value = "" // Align with iOS: clear editor completely on success
             }
             _sendTimedOut.value = false
@@ -149,6 +149,7 @@ class AirvoiceViewModel(application: Application) : AndroidViewModel(application
             showToast("已发送到电脑", isError = false)
         } else {
             val shouldRetry = (trigger == SendTrigger.AUTO) && !isRetry
+            Log.d("AirvoiceViewModel", "handleSentAck failure: shouldRetry=$shouldRetry")
             if (shouldRetry && !sentText.trim().isEmpty()) {
                 isRetry = true
                 viewModelScope.launch {

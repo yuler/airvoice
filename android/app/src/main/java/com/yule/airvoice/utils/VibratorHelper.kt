@@ -5,6 +5,7 @@ import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import android.util.Log
 
 class VibratorHelper(private val context: Context) {
     fun triggerHapticClick() {
@@ -19,7 +20,7 @@ class VibratorHelper(private val context: Context) {
                 vibrator?.vibrate(VibrationEffect.createOneShot(50, VibrationEffect.DEFAULT_AMPLITUDE))
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("VibratorHelper", "Haptic feedback failed", e)
         }
     }
 }

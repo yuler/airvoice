@@ -1,6 +1,7 @@
 package com.yule.airvoice.services
 
 import android.content.Context
+import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
@@ -13,6 +14,9 @@ import kotlinx.coroutines.flow.map
 
 private val Context.dataStore by preferencesDataStore(name = "airvoice_prefs")
 
+private fun Flow<Preferences>.handleIOException(): Flow<Preferences> =
+    catch { e -> if (e is IOException) emit(emptyPreferences()) else throw e }
+
 data class ConnectionInfo(val wsUrl: String?, val token: String?)
 
 class StorageManager(private val context: Context) {
@@ -24,37 +28,15 @@ class StorageManager(private val context: Context) {
     }
 
     val connectionInfoFlow: Flow<ConnectionInfo> = context.dataStore.data
-        .catch { exception ->
-            if (exception is IOException) {
-                emit(emptyPreferences())
-            } else {
-                throw exception
-            }
-        }
-        .map { prefs ->
-            ConnectionInfo(prefs[KEY_WS], prefs[KEY_TOKEN])
-        }
-
-
+        .handleIOException()
+        .map { prefs -> ConnectionInfo(prefs[KEY_WS], prefs[KEY_TOKEN]) }
 
     val themeFlow: Flow<String> = context.dataStore.data
-        .catch { exception ->
-            if (exception is IOException) {
-                emit(emptyPreferences())
-            } else {
-                throw exception
-            }
-        }
+        .handleIOException()
         .map { prefs -> prefs[KEY_THEME] ?: "light" }
 
     val hasSeenOnboardingFlow: Flow<Boolean> = context.dataStore.data
-        .catch { exception ->
-            if (exception is IOException) {
-                emit(emptyPreferences())
-            } else {
-                throw exception
-            }
-        }
+        .handleIOException()
         .map { prefs -> prefs[KEY_HAS_SEEN_ONBOARDING] ?: false }
 
     suspend fun saveConnection(wsUrl: String, token: String) {

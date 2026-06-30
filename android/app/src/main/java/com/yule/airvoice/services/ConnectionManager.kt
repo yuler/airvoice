@@ -42,7 +42,7 @@ class ConnectionManager(private val client: OkHttpClient) {
     @Volatile private var currentUrl: String? = null
     @Volatile private var currentToken: String? = null
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-    private var reconnectJob: kotlinx.coroutines.Job? = null
+    @Volatile private var reconnectJob: kotlinx.coroutines.Job? = null
     private var backoffMs = 2000L
 
     @Synchronized

@@ -43,27 +43,6 @@ class AutoSendController(
     private val _countdownToken = MutableStateFlow(0)
     val countdownToken: StateFlow<Int> = _countdownToken.asStateFlow()
 
-    // Secondary constructors for backwards compatibility during transition
-    constructor(
-        textFlow: StateFlow<String>,
-        connectionManager: ConnectionManager,
-        onSentAck: (Boolean) -> Unit
-    ) : this(
-        textFlow = textFlow,
-        connectionManager = connectionManager,
-        onSentAck = { success, _, _ -> onSentAck(success) }
-    )
-
-    constructor(
-        textFlow: StateFlow<String>,
-        connectionManager: ConnectionManager,
-        onSentAck: (Boolean, String) -> Unit
-    ) : this(
-        textFlow = textFlow,
-        connectionManager = connectionManager,
-        onSentAck = { success, sentText, _ -> onSentAck(success, sentText) }
-    )
-
     init {
         startListening()
     }
@@ -108,7 +87,9 @@ class AutoSendController(
         debounceJob = scope.launch {
             delay(1500L)
             _countdownActive.value = false
-            attemptSend(text, SendTrigger.AUTO)
+            scope.launch {
+                attemptSend(text, SendTrigger.AUTO)
+            }
         }
     }
 
@@ -121,16 +102,6 @@ class AutoSendController(
         }
     }
 
-    fun beginSend() {
-        stopCountdown()
-        _inFlight.value = true
-    }
-
-    fun markAcked(content: String) {
-        lastAckedText = content
-        _inFlight.value = false
-    }
-
     fun clearInFlight() {
         _inFlight.value = false
         val keys = pendingAcks.keys.toList()
@@ -140,16 +111,28 @@ class AutoSendController(
     }
 
     suspend fun attemptSend(text: String, trigger: SendTrigger): Boolean {
-        if (_inFlight.value) return false
+        Log.d("AutoSendController", "attemptSend called: text=\"$text\", trigger=$trigger, inFlight=${_inFlight.value}")
+        if (_inFlight.value) {
+            Log.d("AutoSendController", "attemptSend returned early: inFlight is true")
+            return false
+        }
         val trimmed = text.trim()
-        if (trimmed.isEmpty()) return false
-        if (trimmed == lastAckedText.trim()) return false
+        if (trimmed.isEmpty()) {
+            Log.d("AutoSendController", "attemptSend returned early: text is empty")
+            return false
+        }
+        if (trimmed == lastAckedText.trim()) {
+            Log.d("AutoSendController", "attemptSend returned early: text matches lastAckedText")
+            return false
+        }
 
-        beginSend()
+        stopCountdown()
+        _inFlight.value = true
         
         val msgId = UUID.randomUUID().toString()
         val deferred = CompletableDeferred<Boolean>()
         pendingAcks[msgId] = deferred
+        Log.d("AutoSendController", "Created pending ack for msgId=$msgId")
         
         val textMessage = ProtocolMessage(
             type = "text",
@@ -160,6 +143,7 @@ class AutoSendController(
         
         val sent = connectionManager.send(textMessage)
         if (!sent) {
+            Log.d("AutoSendController", "Failed to send message over ConnectionManager: msgId=$msgId")
             pendingAcks.remove(msgId)
             _inFlight.value = false
             onSentAck(false, text, trigger)
@@ -167,21 +151,27 @@ class AutoSendController(
         }
 
         val success = try {
+            Log.d("AutoSendController", "Awaiting deferred for msgId=$msgId")
             withTimeout(5000L) {
                 deferred.await()
             }
         } catch (e: TimeoutCancellationException) {
+            Log.d("AutoSendController", "Timeout awaiting ack for msgId=$msgId")
             false
         } finally {
             pendingAcks.remove(msgId)
             _inFlight.value = false
+            Log.d("AutoSendController", "Cleaned up msgId=$msgId, set inFlight to false")
         }
 
+        Log.d("AutoSendController", "attemptSend finished: success=$success")
         if (success) {
             lastAckedText = text
+            onSentAck(true, text, trigger)
+            sendPendingText()
+        } else {
+            onSentAck(false, text, trigger)
         }
-        onSentAck(success, text, trigger)
-        sendPendingText()
         return success
     }
 
