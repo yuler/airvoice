@@ -1,6 +1,29 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+  --color-bg-primary: var(--color-bg-primary);
+  --color-bg-secondary: var(--color-bg-secondary);
+  --color-border-default: var(--color-border-default);
+  --color-accent-blue: var(--color-accent-blue);
+  
+  --color-text-primary: var(--color-primary-text);
+  --color-text-secondary: var(--color-secondary-text);
+  --color-text-muted: var(--color-muted-text);
+  
+  --color-primary-text: var(--color-primary-text);
+  --color-secondary-text: var(--color-secondary-text);
+  --color-muted-text: var(--color-muted-text);
+  
+  --color-status-success: var(--color-status-success);
+  --color-status-warning: var(--color-status-warning);
+  --color-status-error: var(--color-status-error);
+  --color-status-neutral: var(--color-status-neutral);
+  
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+}
 
 :root {
   --color-primary-text: #171717;
