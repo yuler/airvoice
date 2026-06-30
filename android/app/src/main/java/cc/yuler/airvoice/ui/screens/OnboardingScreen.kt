@@ -1,4 +1,4 @@
-package com.yule.airvoice.ui.screens
+package cc.yuler.airvoice.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -13,7 +13,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.yule.airvoice.ui.theme.*
+import cc.yuler.airvoice.ui.theme.*
 
 @Composable
 fun OnboardingScreen(

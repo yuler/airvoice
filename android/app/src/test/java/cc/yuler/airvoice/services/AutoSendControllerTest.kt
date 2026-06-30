@@ -1,4 +1,4 @@
-package com.yule.airvoice.services
+package cc.yuler.airvoice.services
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking

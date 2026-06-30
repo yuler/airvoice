@@ -1,4 +1,4 @@
-package com.yule.airvoice.ui.viewmodel
+package cc.yuler.airvoice.ui.viewmodel
 
 import org.junit.Assert.assertNotNull
 import org.junit.Test

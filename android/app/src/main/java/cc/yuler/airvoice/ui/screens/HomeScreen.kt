@@ -1,4 +1,4 @@
-package com.yule.airvoice.ui.screens
+package cc.yuler.airvoice.ui.screens
 
 import android.content.Intent
 import android.net.Uri
@@ -36,9 +36,9 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.yule.airvoice.services.ConnectionStatus
-import com.yule.airvoice.ui.theme.*
-import com.yule.airvoice.ui.viewmodel.AirvoiceViewModel
+import cc.yuler.airvoice.services.ConnectionStatus
+import cc.yuler.airvoice.ui.theme.*
+import cc.yuler.airvoice.ui.viewmodel.AirvoiceViewModel
 
 @Composable
 fun HomeScreen(

@@ -1,4 +1,4 @@
-package com.yule.airvoice.ui.screens
+package cc.yuler.airvoice.ui.screens
 
 import android.Manifest
 import android.content.pm.PackageManager
@@ -28,10 +28,10 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
-import com.yule.airvoice.models.PairingPayload
-import com.yule.airvoice.ui.theme.AppColors
-import com.yule.airvoice.ui.theme.backgroundColor
-import com.yule.airvoice.ui.theme.primaryTextColor
+import cc.yuler.airvoice.models.PairingPayload
+import cc.yuler.airvoice.ui.theme.AppColors
+import cc.yuler.airvoice.ui.theme.backgroundColor
+import cc.yuler.airvoice.ui.theme.primaryTextColor
 import kotlinx.serialization.json.Json
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean

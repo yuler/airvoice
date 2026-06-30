@@ -1,6 +1,6 @@
-package com.yule.airvoice.services
+package cc.yuler.airvoice.services
 
-import com.yule.airvoice.models.ProtocolMessage
+import cc.yuler.airvoice.models.ProtocolMessage
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json

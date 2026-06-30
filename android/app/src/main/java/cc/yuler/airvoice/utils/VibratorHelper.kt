@@ -1,4 +1,4 @@
-package com.yule.airvoice.utils
+package cc.yuler.airvoice.utils
 
 import android.content.Context
 import android.os.Build

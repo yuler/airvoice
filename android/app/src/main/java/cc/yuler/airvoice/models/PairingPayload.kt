@@ -1,4 +1,4 @@
-package com.yule.airvoice.models
+package cc.yuler.airvoice.models
 
 import kotlinx.serialization.Serializable
 

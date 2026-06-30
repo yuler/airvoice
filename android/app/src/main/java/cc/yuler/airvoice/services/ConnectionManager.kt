@@ -1,6 +1,6 @@
-package com.yule.airvoice.services
+package cc.yuler.airvoice.services
 
-import com.yule.airvoice.models.ProtocolMessage
+import cc.yuler.airvoice.models.ProtocolMessage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob

@@ -32,6 +32,9 @@ func runCommandCapture(name string, stdin string, args ...string) (string, error
 	var stderr strings.Builder
 	isClipboardCmd := name == "wl-copy" || name == "xclip" || name == "xsel"
 	if !isClipboardCmd {
+		// Capture stderr for non-clipboard commands.
+		// We avoid capturing stderr for clipboard commands because tools like xclip/xsel
+		// may daemonize and keep the stderr pipe open, causing cmd.Run() to hang indefinitely.
 		cmd.Stderr = &stderr
 	}
 

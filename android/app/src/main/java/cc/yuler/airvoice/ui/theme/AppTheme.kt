@@ -1,4 +1,4 @@
-package com.yule.airvoice.ui.theme
+package cc.yuler.airvoice.ui.theme
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.staticCompositionLocalOf

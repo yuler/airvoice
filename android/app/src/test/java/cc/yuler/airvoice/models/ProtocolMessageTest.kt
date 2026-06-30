@@ -1,4 +1,4 @@
-package com.yule.airvoice.models
+package cc.yuler.airvoice.models
 
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals

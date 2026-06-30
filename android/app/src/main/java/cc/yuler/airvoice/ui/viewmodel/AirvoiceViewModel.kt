@@ -1,16 +1,16 @@
-package com.yule.airvoice.ui.viewmodel
+package cc.yuler.airvoice.ui.viewmodel
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.yule.airvoice.models.PairingPayload
+import cc.yuler.airvoice.models.PairingPayload
 import android.util.Log
-import com.yule.airvoice.services.AutoSendController
-import com.yule.airvoice.services.ConnectionManager
-import com.yule.airvoice.services.ConnectionStatus
-import com.yule.airvoice.services.SendTrigger
-import com.yule.airvoice.services.StorageManager
-import com.yule.airvoice.utils.VibratorHelper
+import cc.yuler.airvoice.services.AutoSendController
+import cc.yuler.airvoice.services.ConnectionManager
+import cc.yuler.airvoice.services.ConnectionStatus
+import cc.yuler.airvoice.services.SendTrigger
+import cc.yuler.airvoice.services.StorageManager
+import cc.yuler.airvoice.utils.VibratorHelper
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,7 +26,7 @@ enum class Screen {
 
 class AirvoiceViewModel(application: Application) : AndroidViewModel(application) {
     private val storage = StorageManager(application)
-    private val client = (application as com.yule.airvoice.AirvoiceApplication).okHttpClient
+    private val client = (application as cc.yuler.airvoice.AirvoiceApplication).okHttpClient
     val connectionManager = ConnectionManager(client)
     private val vibratorHelper = VibratorHelper(application)
 

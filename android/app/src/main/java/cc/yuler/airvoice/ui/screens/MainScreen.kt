@@ -1,4 +1,4 @@
-package com.yule.airvoice.ui.screens
+package cc.yuler.airvoice.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -21,10 +21,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.yule.airvoice.ui.theme.LocalIsDarkTheme
-import com.yule.airvoice.ui.theme.toastBackgroundColor
-import com.yule.airvoice.ui.viewmodel.AirvoiceViewModel
-import com.yule.airvoice.ui.viewmodel.Screen
+import cc.yuler.airvoice.ui.theme.LocalIsDarkTheme
+import cc.yuler.airvoice.ui.theme.toastBackgroundColor
+import cc.yuler.airvoice.ui.viewmodel.AirvoiceViewModel
+import cc.yuler.airvoice.ui.viewmodel.Screen
 
 @Composable
 fun MainScreen(viewModel: AirvoiceViewModel) {
