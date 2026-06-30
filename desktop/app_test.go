@@ -30,8 +30,8 @@ func TestNewApp(t *testing.T) {
 	if app.token == "" {
 		t.Error("token should not be empty")
 	}
-	if app.port != 7383 {
-		t.Errorf("port = %d, want 7383", app.port)
+	if app.port != 7655 {
+		t.Errorf("port = %d, want 7655", app.port)
 	}
 }
 
@@ -53,8 +53,8 @@ func TestGetSettings(t *testing.T) {
 	app, _ := NewApp()
 	settings := app.GetSettings()
 
-	if settings.Port != 7383 {
-		t.Errorf("settings.Port = %d, want 7383", settings.Port)
+	if settings.Port != 7655 {
+		t.Errorf("settings.Port = %d, want 7655", settings.Port)
 	}
 	if settings.Language != "zh-CN" {
 		t.Errorf("settings.Language = %s, want zh-CN", settings.Language)

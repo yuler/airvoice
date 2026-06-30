@@ -66,9 +66,9 @@ func NewApp() (*App, error) {
 	app := &App{
 		history:      history,
 		token:        uuid.New().String(),
-		port:         7383,
+		port:         7655,
 		settingsPath: settingsPath,
-		settings:     Settings{Port: 7383, Language: "zh-CN"},
+		settings:     Settings{Port: 7655, Language: "zh-CN"},
 		status:       ConnectionStatus{State: "disconnected"},
 	}
 
@@ -87,6 +87,11 @@ func (a *App) startup(ctx context.Context) {
 	}
 	if err := a.StartServer(a.port); err != nil {
 		log.Printf("Failed to start server: %v", err)
+		runtime.MessageDialog(a.ctx, runtime.MessageDialogOptions{
+			Type:    runtime.ErrorDialog,
+			Title:   "Server Error",
+			Message: fmt.Sprintf("Failed to start server: %v\n\nPlease check your settings and port occupancy.", err),
+		})
 	}
 }
 
@@ -173,6 +178,10 @@ func (a *App) GetConnectionStatus() ConnectionStatus {
 }
 
 func (a *App) StartServer(port int) error {
+	if err := server.CheckPortAvailable(port); err != nil {
+		return err
+	}
+
 	a.mu.Lock()
 	if a.server != nil {
 		a.mu.Unlock()
@@ -212,9 +221,14 @@ func (a *App) StartServer(port int) error {
 		},
 		OnConnect: func(device string) {
 			a.mu.Lock()
+			host := ""
+			if ip, err := pairing.LocalIPv4(); err == nil {
+				host = ip
+			}
 			a.status = ConnectionStatus{
 				State:      "connected",
 				DeviceName: device,
+				Host:       host,
 				Port:       a.port,
 			}
 			status := a.status
@@ -298,7 +312,7 @@ func (a *App) loadSettings() {
 		return
 	}
 	if s.Port < 1024 || s.Port > 65535 {
-		s.Port = 7383
+		s.Port = 7655
 	}
 	a.settings = s
 	a.port = s.Port
@@ -315,8 +329,17 @@ func (a *App) SaveSettings(s Settings) error {
 		return fmt.Errorf("invalid port: must be between 1024 and 65535")
 	}
 
-	a.mu.Lock()
+	a.mu.RLock()
 	portChanged := a.port != s.Port
+	a.mu.RUnlock()
+
+	if portChanged {
+		if err := server.CheckPortAvailable(s.Port); err != nil {
+			return fmt.Errorf("port %d is already in use: %w", s.Port, err)
+		}
+	}
+
+	a.mu.Lock()
 	a.settings = s
 	a.port = s.Port
 	a.mu.Unlock()
