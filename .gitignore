@@ -31,6 +31,7 @@ tmp
 
 # Desktop frontend
 desktop/desktop
+desktop/build/
 desktop/frontend/node_modules
 desktop/frontend/dist
 desktop/frontend/wailsjs/
