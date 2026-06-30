@@ -59,9 +59,9 @@ func TestDetectSession(t *testing.T) {
 			want:     SessionUnknown,
 		},
 		{
-			name:     "windows unknown",
+			name:     "windows session",
 			targetOS: "windows",
-			want:     SessionUnknown,
+			want:     SessionWindows,
 		},
 	}
 
