@@ -259,7 +259,10 @@ func (a *App) StartServer(port int) error {
 		},
 	})
 
-	srv.SetToken(a.token)
+	a.mu.RLock()
+	token := a.token
+	a.mu.RUnlock()
+	srv.SetToken(token)
 
 	a.mu.Lock()
 	a.server = srv
