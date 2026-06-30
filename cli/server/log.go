@@ -7,8 +7,14 @@ import (
 	"unicode/utf8"
 )
 
+var LogHook func(string)
+
 func logStatus(format string, args ...any) {
-	fmt.Fprintf(os.Stderr, " [airvoice] "+format+"\n", args...)
+	msg := fmt.Sprintf(format, args...)
+	fmt.Fprintf(os.Stderr, " [airvoice] %s\n", msg)
+	if LogHook != nil {
+		LogHook(" [airvoice] " + msg)
+	}
 }
 
 func previewText(s string, maxRunes int) string {

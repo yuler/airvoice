@@ -9,19 +9,11 @@ xcodegen = { version = "2.44.1", os = ["macos"] }
 
 [env]
 _.path = ["./bin"]
+PKG_CONFIG_PATH = "./.mise/pkgconfig"
 
 [tasks.setup]
 description = "Install mise tools and platform dependencies"
 run = "./scripts/setup.sh"
-
-[tasks.dev]
-description = "Alias for cli:dev"
-depends = ["cli:build"]
-run = "./bin/airvoice serve"
-
-[tasks.menu]
-description = "Interactive development menu (gum)"
-run = "./scripts/dev.sh"
 
 # -- CLI (Go) --
 
@@ -33,6 +25,10 @@ run = "./bin/airvoice serve"
 [tasks."cli:build"]
 description = "Build Go CLI to bin/airvoice"
 run = "go build -o bin/airvoice ./cli"
+
+[tasks."cli:clean"]
+description = "Remove built CLI binary"
+run = "rm -f bin/airvoice"
 
 [tasks."cli:test"]
 description = "Run Go unit tests"
@@ -55,6 +51,11 @@ description = "Build www static site"
 run = "npm run build"
 dir = "./www"
 
+[tasks."www:clean"]
+description = "Clean www build output"
+run = "rm -rf .astro dist"
+dir = "./www"
+
 # -- iOS --
 
 [tasks."ios:dev"]
@@ -65,9 +66,43 @@ run = "xcodegen generate && xcodebuild -project ios/Airvoice.xcodeproj -scheme A
 description = "Build iOS app for device"
 run = "xcodegen generate && xcodebuild -project ios/Airvoice.xcodeproj -scheme Airvoice -sdk iphoneos build"
 
+[tasks."ios:clean"]
+description = "Clean iOS build outputs"
+run = "rm -rf .build/ios build"
+
 [tasks."ios:device"]
 description = "Build and install on a physical iOS device (macOS + Xcode)"
 run = "./scripts/ios-device.sh"
+
+# -- Desktop (Wails) --
+
+[tasks."desktop:install"]
+description = "Install Wails CLI"
+run = "go install github.com/wailsapp/wails/v2/cmd/wails@latest"
+
+[tasks."desktop:dev"]
+description = "Run desktop app in dev mode"
+run = "wails dev"
+dir = "./desktop"
+
+[tasks."desktop:build"]
+description = "Build desktop app"
+run = "wails build"
+dir = "./desktop"
+
+[tasks."desktop:build:prod"]
+description = "Build desktop app (production)"
+run = "wails build -production"
+dir = "./desktop"
+
+[tasks."desktop:clean"]
+description = "Clean desktop build outputs"
+run = "rm -rf build bin/dist"
+dir = "./desktop"
+
+[tasks."desktop:test"]
+description = "Run desktop Go unit tests"
+run = "go test ./desktop/..."
 
 # -- Android --
 

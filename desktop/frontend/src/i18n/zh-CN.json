@@ -1,0 +1,18 @@
+{
+  "pair.title": "配对设备",
+  "pair.subtitle": "使用手机扫描二维码",
+  "status.connected": "已连接到 {device}",
+  "status.connectedShort": "已连接",
+  "status.connecting": "连接中...",
+  "status.waiting": "等待设备连接",
+  "status.disconnected": "未连接",
+  "status.connectedTitle": "已连接",
+  "status.waitingTitle": "配对设备",
+  "log.connected": "已连接到设备",
+  "log.handshake": "WebSocket 握手完成",
+  "log.listening": "监听音频流...",
+  "qr.loading": "加载二维码...",
+  "qr.error": "生成二维码失败",
+  "qr.refreshed": "配对码已更新",
+  "qr.refreshError": "刷新配对码失败"
+}
