@@ -23,13 +23,13 @@ func main() {
 
 	err = wails.Run(&options.App{
 		Title:  "Airvoice",
-		Width:  400,
-		Height: 600,
+		Width:  320,
+		Height: 480,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
 		OnStartup: app.startup,
-		Menu:      trayManager.GetApplicationMenu(),
+		Menu:      trayManager.GetTrayMenu(),
 		Bind: []interface{}{
 			app,
 		},

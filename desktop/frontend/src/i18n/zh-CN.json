@@ -1,34 +1,15 @@
 {
-  "app": {
-    "title": "Airvoice"
-  },
-  "status": {
-    "disconnected": "未连接",
-    "connecting": "连接中...",
-    "connected": "已连接到 {device}",
-    "waiting": "等待设备连接"
-  },
-  "qr": {
-    "scan": "使用 Airvoice 应用扫描",
-    "loading": "加载二维码...",
-    "copyLink": "复制配对链接",
-    "copied": "已复制!",
-    "error": "生成二维码失败"
-  },
-  "history": {
-    "title": "最近记录",
-    "empty": "暂无记录",
-    "clear": "清空",
-    "search": "搜索记录...",
-    "loading": "加载中..."
-  },
-  "settings": {
-    "title": "设置",
-    "port": "端口",
-    "autoStart": "开机自启",
-    "language": "语言",
-    "save": "保存",
-    "cancel": "取消",
-    "saveError": "保存设置失败"
-  }
+  "pair.title": "配对设备",
+  "pair.subtitle": "使用手机扫描二维码",
+  "status.connected": "已连接到 {device}",
+  "status.connecting": "连接中...",
+  "status.waiting": "等待设备连接",
+  "status.disconnected": "未连接",
+  "status.connectedTitle": "已连接",
+  "status.waitingTitle": "配对设备",
+  "log.connected": "已连接到设备",
+  "log.handshake": "WebSocket 握手完成",
+  "log.listening": "监听音频流...",
+  "qr.loading": "加载二维码...",
+  "qr.error": "生成二维码失败"
 }

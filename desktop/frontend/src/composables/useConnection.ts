@@ -50,5 +50,13 @@ export function useConnection() {
     }
   })
 
-  return { status }
+  async function disconnect() {
+    try {
+      await (window as any).go.main.App.StopServer()
+    } catch (e) {
+      console.error('Failed to disconnect:', e)
+    }
+  }
+
+  return { status, disconnect }
 }

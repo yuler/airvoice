@@ -1,34 +1,15 @@
 {
-  "app": {
-    "title": "Airvoice"
-  },
-  "status": {
-    "disconnected": "Disconnected",
-    "connecting": "Connecting...",
-    "connected": "Connected to {device}",
-    "waiting": "Waiting for device"
-  },
-  "qr": {
-    "scan": "Scan with Airvoice app",
-    "loading": "Loading QR code...",
-    "copyLink": "Copy pairing link",
-    "copied": "Copied!",
-    "error": "Failed to generate QR code"
-  },
-  "history": {
-    "title": "Recent",
-    "empty": "No history yet",
-    "clear": "Clear",
-    "search": "Search history...",
-    "loading": "Loading..."
-  },
-  "settings": {
-    "title": "Settings",
-    "port": "Port",
-    "autoStart": "Auto-start",
-    "language": "Language",
-    "save": "Save",
-    "cancel": "Cancel",
-    "saveError": "Failed to save settings"
-  }
+  "pair.title": "Pair Device",
+  "pair.subtitle": "Scan QR code with your phone",
+  "status.connected": "Connected to {device}",
+  "status.connecting": "Connecting...",
+  "status.waiting": "Waiting for device",
+  "status.disconnected": "Disconnected",
+  "status.connectedTitle": "Connected",
+  "status.waitingTitle": "Pair Device",
+  "log.connected": "Connected to device",
+  "log.handshake": "WebSocket handshake complete",
+  "log.listening": "Listening for audio stream...",
+  "qr.loading": "Loading QR code...",
+  "qr.error": "Failed to generate QR code"
 }

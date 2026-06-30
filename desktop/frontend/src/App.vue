@@ -1,13 +1,17 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useConnection } from './composables/useConnection'
+import Header from './components/Header.vue'
 import QRCode from './components/QRCode.vue'
 import StatusBadge from './components/StatusBadge.vue'
-import HistoryList from './components/HistoryList.vue'
-import SettingsPanel from './components/SettingsPanel.vue'
-import LanguageSwitch from './components/LanguageSwitch.vue'
+import LogPanel from './components/LogPanel.vue'
+import DisconnectButton from './components/DisconnectButton.vue'
 
 const { locale } = useI18n()
+const { status } = useConnection()
+
+const isConnected = computed(() => status.value.state === 'connected')
 
 onMounted(async () => {
   try {
@@ -22,22 +26,21 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-bg-primary text-text-primary flex flex-col">
-    <header class="p-4 border-b border-border-default flex items-center justify-between">
-      <h1 class="text-xl font-semibold">Airvoice</h1>
-      <div class="flex items-center gap-2">
-        <LanguageSwitch />
-        <SettingsPanel />
-      </div>
-    </header>
-
-    <main class="flex-1 flex flex-col items-center justify-center p-4">
-      <QRCode />
-      <StatusBadge class="mt-4" />
+  <div class="w-full h-full flex flex-col bg-bg-primary">
+    <Header />
+    
+    <main class="flex-1 flex flex-col items-center justify-center px-6">
+      <template v-if="isConnected">
+        <StatusBadge class="mb-6" />
+        <LogPanel class="mb-6" />
+      </template>
+      <template v-else>
+        <QRCode />
+      </template>
     </main>
-
-    <footer class="flex-1 border-t border-border-default">
-      <HistoryList />
+    
+    <footer class="flex justify-center pb-6">
+      <DisconnectButton v-if="isConnected" />
     </footer>
   </div>
 </template>

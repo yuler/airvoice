@@ -26,20 +26,21 @@ func (t *TrayManager) GetMacOptions() *mac.Options {
 	}
 }
 
-func (t *TrayManager) GetApplicationMenu() *menu.Menu {
+func (t *TrayManager) GetTrayMenu() *menu.Menu {
 	m := menu.NewMenu()
 
-	fileMenu := m.AddSubmenu("File")
-	fileMenu.AddText("Show Window", keys.CmdOrCtrl("0"), func(_ *menu.CallbackData) {
+	m.AddText("Show Window", keys.CmdOrCtrl("0"), func(_ *menu.CallbackData) {
 		runtime.WindowShow(t.app.ctx)
 	})
-	fileMenu.AddSeparator()
-	fileMenu.AddText("Quit", keys.CmdOrCtrl("q"), func(_ *menu.CallbackData) {
+	m.AddText("Hide Window", keys.CmdOrCtrl("h"), func(_ *menu.CallbackData) {
+		runtime.WindowHide(t.app.ctx)
+	})
+	m.AddSeparator()
+	m.AddText(t.statusLabel(), nil, nil)
+	m.AddSeparator()
+	m.AddText("Quit", keys.CmdOrCtrl("q"), func(_ *menu.CallbackData) {
 		runtime.Quit(t.app.ctx)
 	})
-
-	statusMenu := m.AddSubmenu("Status")
-	statusMenu.AddText(t.statusLabel(), nil, nil)
 
 	return m
 }

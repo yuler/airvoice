@@ -30,6 +30,7 @@ android/app/release/
 tmp
 
 # Desktop frontend
+desktop/airvoice
 desktop/desktop
 desktop/build/
 desktop/frontend/node_modules
