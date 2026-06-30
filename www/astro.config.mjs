@@ -5,8 +5,8 @@ import react from '@astrojs/react';
 const isProd = process.env.NODE_ENV === 'production';
 
 export default defineConfig({
-  site: 'https://yuler.github.io/airvoice',
-  base: isProd ? '/airvoice' : '/',
+  site: 'https://airvoice.yuler.cc',
+  base: '/',
   trailingSlash: 'always',
   i18n: {
     defaultLocale: 'en',
