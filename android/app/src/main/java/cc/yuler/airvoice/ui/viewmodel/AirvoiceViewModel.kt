@@ -157,6 +157,8 @@ class AirvoiceViewModel(application: Application) : AndroidViewModel(application
                     delay(400)
                     if (connectionManager.status.value is ConnectionStatus.Connected && !autoSendController.inFlight.value) {
                         autoSendController.attemptSend(sentText, SendTrigger.AUTO)
+                    } else {
+                        isRetry = false
                     }
                 }
             } else {

@@ -78,7 +78,7 @@ class AutoSendController(
     fun textDidChange(text: String) {
         debounceJob?.cancel()
         val trimmed = text.trim()
-        if (trimmed.isEmpty() || _inFlight.value) {
+        if (trimmed.isEmpty()) {
             stopCountdown()
             return
         }
