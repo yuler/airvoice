@@ -38,6 +38,7 @@ func NewHistoryStore(dbPath string) (*HistoryStore, error) {
 		)
 	`)
 	if err != nil {
+		db.Close()
 		return nil, err
 	}
 
