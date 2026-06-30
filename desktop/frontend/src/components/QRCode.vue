@@ -42,8 +42,8 @@ onUnmounted(() => {
     </div>
     
     <div v-if="error" class="text-status-error text-sm">{{ error }}</div>
-    <div v-else-if="qrCodeData" class="w-full rounded-xl flex items-center justify-center overflow-hidden" style="background-color: var(--color-bg-primary); border: 1px solid var(--color-border-default);">
-      <img :src="qrCodeData" alt="QR Code" class="block" />
+    <div v-else-if="qrCodeData" class="w-52 h-52 rounded-xl flex items-center justify-center p-4" style="background-color: var(--color-bg-primary); border: 1px solid var(--color-border-default);">
+      <img :src="qrCodeData" alt="QR Code" class="block w-full h-full" style="image-rendering: pixelated;" />
     </div>
     <div v-else class="text-secondary-text">{{ t('qr.loading') }}</div>
     

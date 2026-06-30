@@ -1,12 +1,10 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"image/png"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -131,14 +129,7 @@ func (a *App) GetQRCode() (string, error) {
 		return "", fmt.Errorf("failed to encode QR: %w", err)
 	}
 
-	img := code.Image()
-
-	var buf bytes.Buffer
-	if err := png.Encode(&buf, img); err != nil {
-		return "", fmt.Errorf("failed to encode PNG: %w", err)
-	}
-
-	return "data:image/png;base64," + base64.StdEncoding.EncodeToString(buf.Bytes()), nil
+	return "data:image/png;base64," + base64.StdEncoding.EncodeToString(code.PNG()), nil
 }
 
 func (a *App) GetConnectionStatus() ConnectionStatus {

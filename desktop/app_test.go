@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/base64"
-	"fmt"
 	"image/png"
 	"os"
 	"testing"
@@ -105,18 +104,30 @@ func TestGetQRCode(t *testing.T) {
 	}
 
 	bounds := img.Bounds()
-	t.Logf("Generated QR Code PNG bounds: %v (Width: %d, Height: %d)", bounds, bounds.Dx(), bounds.Dy())
 
-	// Analyze unique colors
-	colorCount := make(map[string]int)
+	// Analyze unique colors and assert correct structure.
+	var blackCount, whiteCount int
 	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
 		for x := bounds.Min.X; x < bounds.Max.X; x++ {
-			colorCount[fmt.Sprintf("%v", img.At(x, y))] = colorCount[fmt.Sprintf("%v", img.At(x, y))] + 1
+			r, g, b, _ := img.At(x, y).RGBA()
+			if r == 0 && g == 0 && b == 0 {
+				blackCount++
+			} else if r == 0xFFFF && g == 0xFFFF && b == 0xFFFF {
+				whiteCount++
+			}
 		}
 	}
-	t.Logf("Unique colors count: %d", len(colorCount))
-	for col, count := range colorCount {
-		t.Logf("Color: %s, Count: %d", col, count)
+
+	if bounds.Dx() < 100 || bounds.Dy() < 100 {
+		t.Errorf("QR code dimensions are too small: %dx%d", bounds.Dx(), bounds.Dy())
+	}
+	if blackCount == 0 || whiteCount == 0 {
+		t.Error("QR code should contain both black and white pixels")
+	}
+	// A correct QR code of scale=8 will have a substantial amount of both black and white pixels.
+	// If it was bugged (1-pixel scale), blackCount would be extremely small (e.g. < 1000).
+	if blackCount < 5000 {
+		t.Errorf("QR code black pixels count is too low (%d), indicating scaling issue", blackCount)
 	}
 }
 
