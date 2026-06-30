@@ -122,7 +122,9 @@ fun QRScannerScreen(
                                             try {
                                                 val payload = lenientJson.decodeFromString<PairingPayload>(rawValue)
                                                 if (isActive.value && isScanned.compareAndSet(false, true)) {
-                                                    currentOnQrCodeScanned(payload)
+                                                    previewView.post {
+                                                        currentOnQrCodeScanned(payload)
+                                                    }
                                                 }
                                                 break
                                             } catch (e: Exception) {

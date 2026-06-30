@@ -145,6 +145,7 @@ class AirvoiceViewModel(application: Application) : AndroidViewModel(application
                 _inputText.value = "" // Align with iOS: clear editor completely on success
             }
             _sendTimedOut.value = false
+            isRetry = false
             vibratorHelper.triggerHapticClick()
             showToast("已发送到电脑", isError = false)
         } else {
@@ -160,6 +161,7 @@ class AirvoiceViewModel(application: Application) : AndroidViewModel(application
                 }
             } else {
                 _sendTimedOut.value = true
+                isRetry = false
                 showToast("发送失败，请检查连接", isError = true)
             }
         }

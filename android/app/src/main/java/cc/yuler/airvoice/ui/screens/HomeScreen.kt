@@ -215,17 +215,15 @@ fun HomeScreen(
                         .border(1.dp, borderClr, RoundedCornerShape(16.dp))
                         .background(editorBg, RoundedCornerShape(16.dp))
                 ) {
-                    if (text.isEmpty()) {
-                        Text(
-                            text = "在此输入，或使用键盘麦克风语音输入...",
-                            color = placeholderClr,
-                            modifier = Modifier
-                                .padding(horizontal = 16.dp, vertical = 16.dp)
-                        )
-                    }
                     TextField(
                         value = text,
                         onValueChange = { viewModel.updateInputText(it) },
+                        placeholder = {
+                            Text(
+                                text = "在此输入，或使用键盘麦克风语音输入...",
+                                color = placeholderClr
+                            )
+                        },
                         modifier = Modifier
                             .fillMaxSize()
                             .focusRequester(focusRequester),
@@ -286,7 +284,7 @@ fun HomeScreen(
                               .fillMaxWidth()
                               .height(44.dp)
                               .clip(RoundedCornerShape(22.dp))
-                              .background(sendBtnBg)
+                              .background(if (btnEnabled) sendBtnBg else sendBtnBg.copy(alpha = 0.5f))
                               .clickable(enabled = btnEnabled) { viewModel.manualSend() },
                           contentAlignment = Alignment.Center
                       ) {

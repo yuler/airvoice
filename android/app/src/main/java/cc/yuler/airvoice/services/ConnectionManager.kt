@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import android.net.Uri
 import android.util.Log
@@ -135,11 +136,13 @@ class ConnectionManager(private val client: OkHttpClient) {
                 b
             }
             delay(currentBackoff)
-            val (url, token) = synchronized(this@ConnectionManager) {
-                currentUrl to currentToken
-            }
-            if (url != null && token != null) {
-                connect(url, token)
+            synchronized(this@ConnectionManager) {
+                if (!isActive) return@launch
+                val url = currentUrl
+                val token = currentToken
+                if (url != null && token != null) {
+                    connect(url, token)
+                }
             }
         }
     }

@@ -87,7 +87,7 @@ class AutoSendController(
         debounceJob = scope.launch {
             delay(1500L)
             _countdownActive.value = false
-            scope.launch {
+            kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) {
                 attemptSend(text, SendTrigger.AUTO)
             }
         }
