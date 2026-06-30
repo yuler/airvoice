@@ -38,42 +38,36 @@ func TestWindowsPaster(t *testing.T) {
 		}
 
 		encoded := base64.StdEncoding.EncodeToString([]byte(text))
-		psCmd := `$b = [Console]::In.ReadToEnd().Trim(); if ($b) { Set-Clipboard -Value ([System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($b))) }`
+		psCmd := `$b = [Console]::In.ReadToEnd().Trim(); if ($b) { Set-Clipboard -Value ([System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($b))); Start-Sleep -Milliseconds 80; (New-Object -ComObject WScript.Shell).SendKeys('^v') }`
 
 		expected := []commandCall{
 			{name: "powershell", stdin: encoded, args: []string{"-NoProfile", "-Command", psCmd}},
-			{name: "powershell", stdin: "", args: []string{"-NoProfile", "-Command", "(New-Object -ComObject WScript.Shell).SendKeys('^v')"}},
 		}
 		if !reflect.DeepEqual(calls, expected) {
 			t.Errorf("got calls %+v, expected %+v", calls, expected)
 		}
 	})
 
-	t.Run("windowsPaster clipboard failure", func(t *testing.T) {
-		runCommand = func(name string, stdin string, args ...string) error {
-			if args[len(args)-1] != "(New-Object -ComObject WScript.Shell).SendKeys('^v')" {
-				return errors.New("clipboard failed")
-			}
-			return nil
-		}
+	t.Run("windowsPaster empty text", func(t *testing.T) {
+		calls = nil
 		p := &windowsPaster{}
-		err := p.Paste("hello")
-		if err == nil || err.Error() != "failed to set clipboard via PowerShell: clipboard failed" {
-			t.Errorf("expected clipboard failed error, got: %v", err)
+		err := p.Paste("")
+		if err != nil {
+			t.Fatalf("Paste failed: %v", err)
+		}
+		if len(calls) != 0 {
+			t.Errorf("expected no commands to be run for empty text, got %d", len(calls))
 		}
 	})
 
-	t.Run("windowsPaster keystroke failure", func(t *testing.T) {
+	t.Run("windowsPaster failure", func(t *testing.T) {
 		runCommand = func(name string, stdin string, args ...string) error {
-			if args[len(args)-1] == "(New-Object -ComObject WScript.Shell).SendKeys('^v')" {
-				return errors.New("keystroke failed")
-			}
-			return nil
+			return errors.New("paste failed")
 		}
 		p := &windowsPaster{}
 		err := p.Paste("hello")
-		if err == nil || err.Error() != "failed to simulate keystroke via PowerShell: keystroke failed" {
-			t.Errorf("expected keystroke failed error, got: %v", err)
+		if err == nil || err.Error() != "failed to paste via PowerShell: paste failed" {
+			t.Errorf("expected paste failed error, got: %v", err)
 		}
 	})
 }
