@@ -127,12 +127,13 @@ func (a *App) RefreshPairing() error {
 		a.mu.Unlock()
 		return fmt.Errorf("cannot refresh pairing while connected")
 	}
-	a.token = uuid.New().String()
+	newToken := uuid.New().String()
+	a.token = newToken
 	srv := a.server
 	a.mu.Unlock()
 
 	if srv != nil {
-		srv.SetToken(a.token)
+		srv.SetToken(newToken)
 		srv.DisconnectClients()
 	}
 
