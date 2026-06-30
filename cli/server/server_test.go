@@ -249,7 +249,7 @@ func TestCheckPortAvailable(t *testing.T) {
 		t.Errorf("expected port %d to be available, got error: %v", port, err)
 	}
 
-	ln2, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
+	ln2, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
 		t.Fatal(err)
 	}
