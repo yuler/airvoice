@@ -55,8 +55,8 @@ class ConnectionManager(private val client: OkHttpClient) {
         webSocket = null
 
         val requestUrl = try {
-            Uri.parse(wsUrl).buildUpon()
-                .appendQueryParameter("token", token)
+            okhttp3.HttpUrl.get(wsUrl).newBuilder()
+                .addQueryParameter("token", token)
                 .build()
                 .toString()
         } catch (e: Exception) {
