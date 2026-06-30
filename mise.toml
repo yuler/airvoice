@@ -9,6 +9,7 @@ xcodegen = { version = "2.44.1", os = ["macos"] }
 
 [env]
 _.path = ["./bin"]
+PKG_CONFIG_PATH = "./.mise/pkgconfig"
 
 [tasks.setup]
 description = "Install mise tools and platform dependencies"

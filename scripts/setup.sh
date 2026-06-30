@@ -28,6 +28,33 @@ if [[ -d "$ROOT/desktop" ]]; then
     gum_info "Wails CLI already installed: $(wails version 2>/dev/null || echo 'unknown')"
   fi
   gum spin --spinner dot --title "Installing desktop frontend dependencies…" -- bash -c "cd desktop/frontend && npm install"
+
+  # Linux: webkit2gtk-4.0 shim for Ubuntu 24.04+ (ships 4.1 only)
+  if [[ "$(uname -s)" == "Linux" ]] && ! pkg-config --exists webkit2gtk-4.0 2>/dev/null; then
+    if pkg-config --exists webkit2gtk-4.1 2>/dev/null; then
+      _pc_dir="$ROOT/.mise/pkgconfig"
+      mkdir -p "$_pc_dir"
+      if [[ ! -f "$_pc_dir/webkit2gtk-4.0.pc" ]]; then
+        cat > "$_pc_dir/webkit2gtk-4.0.pc" << 'PCEOF'
+prefix=/usr
+exec_prefix=${prefix}
+libdir=/usr/lib/x86_64-linux-gnu
+includedir=${prefix}/include
+
+Name: WebKitGTK
+Description: Web content engine for GTK (compat shim for 4.1)
+URL: https://webkitgtk.org
+Version: 2.52.3
+Requires: glib-2.0 gtk+-3.0 libsoup-3.0 javascriptcoregtk-4.1
+Libs: -L${libdir} -lwebkit2gtk-4.1
+Cflags: -I${includedir}/webkitgtk-4.1
+PCEOF
+        gum_info "Created webkit2gtk-4.0 compat shim (mapped to 4.1)"
+      fi
+    else
+      gum_warn "webkit2gtk not found — desktop builds will fail. Install: sudo apt install libgtk-3-dev libwebkit2gtk-4.1-dev"
+    fi
+  fi
 fi
 
 # ── iOS (macOS only) ──
