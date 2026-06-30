@@ -55,11 +55,17 @@ class ConnectionManager(private val client: OkHttpClient) {
         webSocket?.close(1000, "Reconnecting")
         webSocket = null
 
+        val normalizedUrl = wsUrl
+            .replaceFirst("ws://", "http://", ignoreCase = true)
+            .replaceFirst("wss://", "https://", ignoreCase = true)
+
         val requestUrl = try {
-            wsUrl.toHttpUrl().newBuilder()
+            normalizedUrl.toHttpUrl().newBuilder()
                 .addQueryParameter("token", token)
                 .build()
                 .toString()
+                .replaceFirst("http://", "ws://", ignoreCase = true)
+                .replaceFirst("https://", "wss://", ignoreCase = true)
         } catch (e: Exception) {
             _status.value = ConnectionStatus.Error("Invalid URL: $wsUrl")
             return
@@ -105,8 +111,11 @@ class ConnectionManager(private val client: OkHttpClient) {
             }
 
             override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
-                if (webSocket !== this@ConnectionManager.webSocket) return
-                _status.value = ConnectionStatus.Disconnected
+                synchronized(this@ConnectionManager) {
+                    if (webSocket !== this@ConnectionManager.webSocket) return
+                    _status.value = ConnectionStatus.Disconnected
+                    triggerReconnect()
+                }
             }
         })
     }

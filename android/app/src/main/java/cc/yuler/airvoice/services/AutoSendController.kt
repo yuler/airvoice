@@ -112,10 +112,6 @@ class AutoSendController(
 
     suspend fun attemptSend(text: String, trigger: SendTrigger): Boolean {
         Log.d("AutoSendController", "attemptSend called: text=\"$text\", trigger=$trigger, inFlight=${_inFlight.value}")
-        if (_inFlight.value) {
-            Log.d("AutoSendController", "attemptSend returned early: inFlight is true")
-            return false
-        }
         val trimmed = text.trim()
         if (trimmed.isEmpty()) {
             Log.d("AutoSendController", "attemptSend returned early: text is empty")
@@ -125,9 +121,12 @@ class AutoSendController(
             Log.d("AutoSendController", "attemptSend returned early: text matches lastAckedText")
             return false
         }
+        if (!_inFlight.compareAndSet(expect = false, update = true)) {
+            Log.d("AutoSendController", "attemptSend returned early: inFlight is true")
+            return false
+        }
 
         stopCountdown()
-        _inFlight.value = true
         
         val msgId = UUID.randomUUID().toString()
         val deferred = CompletableDeferred<Boolean>()

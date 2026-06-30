@@ -71,7 +71,7 @@ fun HomeScreen(
         focusRequester.requestFocus()
         keyboardController?.show()
     }
-    LaunchedEffect(Unit) {
+    LaunchedEffect(density, imeInsets) {
         var prevImeVisible = false
         snapshotFlow { imeInsets.getBottom(density) > 0 }
             .collect { isImeVisible ->
