@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useConnection } from '../composables/useConnection'
+import { useTheme } from '../composables/useTheme'
 import SunIcon from './icons/SunIcon.vue'
+import MoonIcon from './icons/MoonIcon.vue'
 
 const { status } = useConnection()
+const { theme, toggle } = useTheme()
 
 const isConnected = computed(() => status.value.state === 'connected')
 </script>
@@ -17,8 +20,12 @@ const isConnected = computed(() => status.value.state === 'connected')
       />
       <span class="text-lg font-semibold text-primary-text">Airvoice</span>
     </div>
-    <button class="w-8 h-8 flex items-center justify-center text-secondary-text hover:text-primary-text transition-colors">
-      <SunIcon />
+    <button
+      @click="toggle"
+      class="w-8 h-8 flex items-center justify-center text-secondary-text hover:text-primary-text transition-colors"
+    >
+      <SunIcon v-if="theme === 'dark'" />
+      <MoonIcon v-else />
     </button>
   </header>
 </template>
