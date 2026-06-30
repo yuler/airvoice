@@ -11,7 +11,7 @@ const status = ref<ConnectionStatus>({
   state: 'disconnected',
   deviceName: '',
   host: '',
-  port: 7383,
+  port: 7655,
 })
 
 let listenerCount = 0

@@ -9,7 +9,7 @@ interface Settings {
 }
 
 const settings = ref<Settings>({
-  port: 7383,
+  port: 7655,
   autoStart: false,
   language: 'zh-CN',
 })
