@@ -2,6 +2,7 @@
   "pair.title": "Pair Device",
   "pair.subtitle": "Scan QR code with your phone",
   "status.connected": "Connected to {device}",
+  "status.connectedShort": "Connected",
   "status.connecting": "Connecting...",
   "status.waiting": "Waiting for device",
   "status.disconnected": "Disconnected",

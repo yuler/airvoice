@@ -31,10 +31,10 @@ onMounted(async () => {
     <Toast />
     <Header />
     
-    <main class="flex-1 min-h-0 overflow-y-auto flex flex-col items-center justify-center p-6">
+    <main class="flex-1 min-h-0 flex flex-col p-6" :class="isConnected ? 'gap-4' : 'items-center justify-center overflow-y-auto'">
       <template v-if="isConnected">
-        <StatusBadge class="mb-6" />
-        <LogPanel class="mb-6" />
+        <StatusBadge class="shrink-0" />
+        <LogPanel class="min-h-0" />
       </template>
       <template v-else>
         <QRCode />

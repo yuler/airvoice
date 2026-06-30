@@ -33,9 +33,9 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div 
+  <div
     ref="logContainer"
-    class="w-full h-32 p-3 bg-bg-primary border border-border-default rounded-xl overflow-y-auto font-mono text-xs leading-relaxed"
+    class="log-panel w-full min-h-48 flex-1 overflow-y-auto rounded-xl border border-border-default bg-bg-primary p-3 font-mono text-xs leading-relaxed"
   >
     <div v-for="(log, index) in logs" :key="index" class="text-text-muted">
       {{ log }}

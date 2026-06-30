@@ -2,6 +2,7 @@
   "pair.title": "配对设备",
   "pair.subtitle": "使用手机扫描二维码",
   "status.connected": "已连接到 {device}",
+  "status.connectedShort": "已连接",
   "status.connecting": "连接中...",
   "status.waiting": "等待设备连接",
   "status.disconnected": "未连接",

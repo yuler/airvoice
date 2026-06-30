@@ -15,31 +15,44 @@ const badgeClass = computed(() => {
   return 'bg-status-neutral'
 })
 
-const statusText = computed(() => {
-  if (isConnected.value) return t('status.connected', { device: status.value.deviceName })
+const statusLabel = computed(() => {
+  if (isConnected.value) return t('status.connectedShort')
   if (isConnecting.value) return t('status.connecting')
   return t('status.disconnected')
+})
+
+const connectionAddress = computed(() => {
+  if (status.value.host && status.value.port) {
+    return `${status.value.host}:${status.value.port}`
+  }
+  if (status.value.deviceName) {
+    return status.value.deviceName
+  }
+  return ''
 })
 </script>
 
 <template>
-  <div class="flex flex-col items-center gap-4">
-    <div v-if="isConnected" class="w-16 h-16 rounded-full bg-status-success flex items-center justify-center">
+  <div class="flex w-full flex-col items-center gap-4">
+    <div v-if="isConnected" class="flex h-16 w-16 items-center justify-center rounded-full bg-status-success">
       <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
         <path d="M5 13l4 4L19 7"/>
       </svg>
     </div>
-    
+
     <div class="text-center">
       <h1 class="text-2xl font-semibold tracking-tight text-primary-text">
         {{ isConnected ? t('status.connectedTitle') : t('status.waitingTitle') }}
       </h1>
-      <p v-if="isConnected" class="text-base text-secondary-text mt-2">{{ status.deviceName }}</p>
     </div>
-    
-    <div class="flex items-center gap-2 px-4 py-3 bg-bg-secondary border border-border-default rounded-xl">
-      <span class="w-2 h-2 rounded-full" :class="badgeClass"></span>
-      <span class="text-sm text-secondary-text font-mono">{{ statusText }}</span>
+
+    <div class="flex w-full items-center gap-2 rounded-xl border border-border-default bg-bg-secondary px-4 py-3">
+      <span class="h-2 w-2 shrink-0 rounded-full" :class="badgeClass" />
+      <span class="shrink-0 text-sm text-secondary-text">{{ statusLabel }}</span>
+      <template v-if="isConnected && connectionAddress">
+        <span class="text-muted-text">·</span>
+        <span class="min-w-0 truncate font-mono text-sm text-muted-text">{{ connectionAddress }}</span>
+      </template>
     </div>
   </div>
 </template>
