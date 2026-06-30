@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -13,6 +14,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"github.com/yuler/airvoice/cli/pairing"
+	"github.com/yuler/airvoice/cli/paste"
 	"github.com/yuler/airvoice/cli/server"
 	qr "rsc.io/qr"
 )
@@ -34,6 +36,7 @@ type App struct {
 	ctx          context.Context
 	server       *server.Server
 	history      *HistoryStore
+	paster       paste.Paster
 	token        string
 	port         int
 	settingsPath string
@@ -76,7 +79,12 @@ func NewApp() (*App, error) {
 
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
-	_ = a.StartServer(a.port)
+	server.LogHook = func(msg string) {
+		runtime.EventsEmit(a.ctx, "log_added", msg)
+	}
+	if err := a.StartServer(a.port); err != nil {
+		log.Printf("Failed to start server: %v", err)
+	}
 }
 
 func (a *App) GetPairingLink() (string, error) {
@@ -154,10 +162,23 @@ func (a *App) StartServer(port int) error {
 	}
 	a.mu.Unlock()
 
+	if a.ctx != nil {
+		runtime.EventsEmit(a.ctx, "log_added", fmt.Sprintf(" [airvoice] listening on :%d (health: /health, ws: /ws)", port))
+	}
+
+	if a.paster == nil {
+		paster, err := paste.New()
+		if err != nil {
+			return fmt.Errorf("failed to initialize paster: %w", err)
+		}
+		a.paster = paster
+	}
+
 	srv := server.New(server.Config{
 		Addr:     fmt.Sprintf(":%d", port),
 		Port:     port,
 		Hostname: getLocalHostname(),
+		Paster:   a.paster,
 		OnTextReceived: func(content, device string) {
 			if a.history != nil {
 				a.history.Add(content, device)

@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
-import { useI18n } from 'vue-i18n'
 
-const { t } = useI18n()
 const logs = ref<string[]>([])
 const logContainer = ref<HTMLElement>()
 
@@ -17,12 +15,19 @@ function addLog(message: string) {
 }
 
 onMounted(() => {
-  addLog(t('log.connected'))
-  addLog(t('log.handshake'))
-  addLog(t('log.listening'))
+  const runtime = (window as any).runtime
+  if (runtime && runtime.EventsOn) {
+    runtime.EventsOn('log_added', (msg: string) => {
+      addLog(msg)
+    })
+  }
 })
 
 onUnmounted(() => {
+  const runtime = (window as any).runtime
+  if (runtime && runtime.EventsOff) {
+    runtime.EventsOff('log_added')
+  }
   logs.value = []
 })
 </script>
@@ -32,7 +37,7 @@ onUnmounted(() => {
     ref="logContainer"
     class="w-full h-32 p-3 bg-bg-primary border border-border-default rounded-xl overflow-y-auto font-mono text-xs leading-relaxed"
   >
-    <div v-for="(log, index) in logs" :key="index" class="text-muted-text">
+    <div v-for="(log, index) in logs" :key="index" class="text-text-muted">
       {{ log }}
     </div>
   </div>
