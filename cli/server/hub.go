@@ -45,3 +45,13 @@ func (h *Hub) Count() int {
 	defer h.mu.Unlock()
 	return len(h.conns)
 }
+
+// CloseAll closes all tracked connections.
+func (h *Hub) CloseAll() {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	for conn := range h.conns {
+		conn.Close()
+	}
+	h.conns = make(map[*websocket.Conn]struct{})
+}

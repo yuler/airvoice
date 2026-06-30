@@ -7,14 +7,19 @@ const { entries, loading, loadHistory, searchHistory, clearHistory } = useHistor
 const { t } = useI18n()
 const query = ref('')
 
+let debounceTimer: ReturnType<typeof setTimeout> | null = null
+
 onMounted(() => loadHistory())
 
 function onSearch() {
-  if (query.value.trim()) {
-    searchHistory(query.value.trim())
-  } else {
-    loadHistory()
-  }
+  if (debounceTimer) clearTimeout(debounceTimer)
+  debounceTimer = setTimeout(() => {
+    if (query.value.trim()) {
+      searchHistory(query.value.trim())
+    } else {
+      loadHistory()
+    }
+  }, 300)
 }
 
 function formatTime(dateStr: string): string {

@@ -12,7 +12,8 @@
     "scan": "Scan with Airvoice app",
     "loading": "Loading QR code...",
     "copyLink": "Copy pairing link",
-    "copied": "Copied!"
+    "copied": "Copied!",
+    "error": "Failed to generate QR code"
   },
   "history": {
     "title": "Recent",
@@ -27,6 +28,7 @@
     "autoStart": "Auto-start",
     "language": "Language",
     "save": "Save",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "saveError": "Failed to save settings"
   }
 }

@@ -72,6 +72,8 @@ func (s *Server) ListenAndServe() error {
 
 // Close gracefully shuts down the server and closes all connections.
 func (s *Server) Close() error {
+	s.hub.CloseAll()
+
 	s.mu.Lock()
 	srv := s.httpServer
 	s.mu.Unlock()

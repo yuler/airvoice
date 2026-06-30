@@ -50,7 +50,7 @@ func NewApp() (*App, error) {
 		return nil, fmt.Errorf("failed to get home dir: %w", err)
 	}
 	dbPath := filepath.Join(homeDir, ".airvoice", "history.db")
-	if err := os.MkdirAll(filepath.Dir(dbPath), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(dbPath), 0700); err != nil {
 		return nil, fmt.Errorf("failed to create data dir: %w", err)
 	}
 
@@ -148,6 +148,10 @@ func (a *App) GetConnectionStatus() ConnectionStatus {
 
 func (a *App) StartServer(port int) error {
 	a.mu.Lock()
+	if a.server != nil {
+		a.mu.Unlock()
+		return fmt.Errorf("server already running")
+	}
 	a.port = port
 	a.status = ConnectionStatus{
 		State: "waiting",
@@ -242,6 +246,9 @@ func (a *App) loadSettings() {
 	if err := json.Unmarshal(data, &s); err != nil {
 		return
 	}
+	if s.Port < 1024 || s.Port > 65535 {
+		s.Port = 7383
+	}
 	a.settings = s
 	a.port = s.Port
 }
@@ -267,10 +274,10 @@ func (a *App) SaveSettings(s Settings) error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal settings: %w", err)
 	}
-	if err := os.MkdirAll(filepath.Dir(a.settingsPath), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(a.settingsPath), 0700); err != nil {
 		return fmt.Errorf("failed to create settings dir: %w", err)
 	}
-	if err := os.WriteFile(a.settingsPath, data, 0644); err != nil {
+	if err := os.WriteFile(a.settingsPath, data, 0600); err != nil {
 		return err
 	}
 

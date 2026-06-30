@@ -15,6 +15,7 @@ const settings = ref<Settings>({
 })
 
 const isOpen = ref(false)
+const saveError = ref('')
 const { t } = useI18n()
 
 async function loadSettings() {
@@ -26,10 +27,12 @@ async function loadSettings() {
 }
 
 async function saveSettings() {
+  saveError.value = ''
   try {
     await window.go.main.App.SaveSettings(settings.value)
     isOpen.value = false
-  } catch (e) {
+  } catch (e: any) {
+    saveError.value = e?.message || t('settings.saveError')
     console.error('Failed to save settings:', e)
   }
 }
@@ -81,6 +84,8 @@ onMounted(loadSettings)
               </button>
             </div>
           </div>
+
+          <div v-if="saveError" class="mt-3 text-sm text-status-error">{{ saveError }}</div>
 
           <div class="flex justify-end gap-2 mt-6">
             <button

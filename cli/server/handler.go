@@ -68,7 +68,7 @@ func (s *Server) handleConnection(conn *websocket.Conn) {
 		case "text":
 			logStatus("text id=%s len=%d preview=%q", inbound.ID, len(inbound.Content), previewText(inbound.Content, 40))
 			if s.cfg.OnTextReceived != nil {
-				s.cfg.OnTextReceived(inbound.Content, inbound.Device)
+				go s.cfg.OnTextReceived(inbound.Content, inbound.Device)
 			}
 			go func(inbound protocol.Inbound) {
 				var outbound protocol.Outbound

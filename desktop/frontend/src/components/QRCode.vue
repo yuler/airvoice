@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 const qrCodeData = ref<string>('')
@@ -13,7 +13,7 @@ async function loadQRCode() {
     qrCodeData.value = await window.go.main.App.GetQRCode()
     pairingLink.value = await window.go.main.App.GetPairingLink()
   } catch (e) {
-    error.value = 'Failed to generate QR code'
+    error.value = t('qr.error')
     console.error(e)
   }
 }
@@ -34,6 +34,13 @@ onMounted(() => {
   const runtime = (window as any).runtime
   if (runtime && runtime.EventsOn) {
     runtime.EventsOn('server_restarted', loadQRCode)
+  }
+})
+
+onUnmounted(() => {
+  const runtime = (window as any).runtime
+  if (runtime && runtime.EventsOff) {
+    runtime.EventsOff('server_restarted', loadQRCode)
   }
 })
 </script>

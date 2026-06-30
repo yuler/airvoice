@@ -1,4 +1,4 @@
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 
 interface ConnectionStatus {
   state: 'disconnected' | 'connecting' | 'connected' | 'waiting'
@@ -7,14 +7,16 @@ interface ConnectionStatus {
   port: number
 }
 
-export function useConnection() {
-  const status = ref<ConnectionStatus>({
-    state: 'disconnected',
-    deviceName: '',
-    host: '',
-    port: 7383,
-  })
+const status = ref<ConnectionStatus>({
+  state: 'disconnected',
+  deviceName: '',
+  host: '',
+  port: 7383,
+})
 
+let listenerCount = 0
+
+export function useConnection() {
   async function fetchStatus() {
     try {
       const result = await window.go.main.App.GetConnectionStatus()
@@ -26,11 +28,25 @@ export function useConnection() {
 
   onMounted(() => {
     fetchStatus()
-    const runtime = (window as any).runtime
-    if (runtime && runtime.EventsOn) {
-      runtime.EventsOn('status_changed', (newStatus: ConnectionStatus) => {
-        status.value = newStatus
-      })
+    if (listenerCount === 0) {
+      const runtime = (window as any).runtime
+      if (runtime && runtime.EventsOn) {
+        runtime.EventsOn('status_changed', (newStatus: ConnectionStatus) => {
+          status.value = newStatus
+        })
+      }
+    }
+    listenerCount++
+  })
+
+  onUnmounted(() => {
+    listenerCount--
+    if (listenerCount <= 0) {
+      listenerCount = 0
+      const runtime = (window as any).runtime
+      if (runtime && runtime.EventsOff) {
+        runtime.EventsOff('status_changed')
+      }
     }
   })
 
