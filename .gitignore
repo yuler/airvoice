@@ -29,5 +29,8 @@ android/app/release/
 tmp
 
 # Desktop frontend
+desktop/desktop
 desktop/frontend/node_modules
 desktop/frontend/dist
+desktop/frontend/wailsjs/
+desktop/frontend/package.json.md5
