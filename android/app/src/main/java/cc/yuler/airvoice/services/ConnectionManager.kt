@@ -127,6 +127,7 @@ class ConnectionManager(private val client: OkHttpClient) {
         return ws.send(jsonStr)
     }
 
+    @Synchronized
     private fun triggerReconnect() {
         reconnectJob?.cancel()
         reconnectJob = scope.launch {
