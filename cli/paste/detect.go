@@ -11,6 +11,7 @@ const (
 	SessionDarwin  SessionType = "darwin"
 	SessionX11     SessionType = "x11"
 	SessionWayland SessionType = "wayland"
+	SessionWindows SessionType = "windows"
 	SessionUnknown SessionType = "unknown"
 )
 
@@ -19,6 +20,9 @@ var goos = runtime.GOOS
 func DetectSession() SessionType {
 	if goos == "darwin" {
 		return SessionDarwin
+	}
+	if goos == "windows" {
+		return SessionWindows
 	}
 	if goos == "linux" {
 		if os.Getenv("XDG_SESSION_TYPE") == "wayland" || os.Getenv("WAYLAND_DISPLAY") != "" {
