@@ -29,7 +29,13 @@ async function copyLink() {
   }
 }
 
-onMounted(loadQRCode)
+onMounted(() => {
+  loadQRCode()
+  const runtime = (window as any).runtime
+  if (runtime && runtime.EventsOn) {
+    runtime.EventsOn('server_restarted', loadQRCode)
+  }
+})
 </script>
 
 <template>

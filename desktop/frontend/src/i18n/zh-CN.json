@@ -18,7 +18,8 @@
     "title": "最近记录",
     "empty": "暂无记录",
     "clear": "清空",
-    "search": "搜索记录..."
+    "search": "搜索记录...",
+    "loading": "加载中..."
   },
   "settings": {
     "title": "设置",

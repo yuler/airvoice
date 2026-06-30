@@ -7,11 +7,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"image/png"
+	"net/http"
 	"os"
 	"path/filepath"
 	"sync"
 
 	"github.com/google/uuid"
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"github.com/yuler/airvoice/cli/pairing"
 	"github.com/yuler/airvoice/cli/server"
 	qr "rsc.io/qr"
@@ -75,6 +77,7 @@ func NewApp() (*App, error) {
 
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+	_ = a.StartServer(a.port)
 }
 
 func (a *App) GetPairingLink() (string, error) {
@@ -83,9 +86,13 @@ func (a *App) GetPairingLink() (string, error) {
 		return "", fmt.Errorf("failed to get LAN IP: %w", err)
 	}
 
+	a.mu.RLock()
+	port := a.port
+	a.mu.RUnlock()
+
 	payload := pairing.Payload{
 		Version: 1,
-		WS:      fmt.Sprintf("ws://%s:%d/ws", ip, a.port),
+		WS:      fmt.Sprintf("ws://%s:%d/ws", ip, port),
 		Token:   a.token,
 	}
 
@@ -103,9 +110,13 @@ func (a *App) GetQRCode() (string, error) {
 		return "", fmt.Errorf("failed to get LAN IP: %w", err)
 	}
 
+	a.mu.RLock()
+	port := a.port
+	a.mu.RUnlock()
+
 	payload := pairing.Payload{
 		Version: 1,
-		WS:      fmt.Sprintf("ws://%s:%d/ws", ip, a.port),
+		WS:      fmt.Sprintf("ws://%s:%d/ws", ip, port),
 		Token:   a.token,
 	}
 
@@ -160,7 +171,11 @@ func (a *App) StartServer(port int) error {
 				DeviceName: device,
 				Port:       a.port,
 			}
+			status := a.status
 			a.mu.Unlock()
+			if a.ctx != nil {
+				runtime.EventsEmit(a.ctx, "status_changed", status)
+			}
 		},
 		OnDisconnect: func() {
 			a.mu.Lock()
@@ -168,7 +183,11 @@ func (a *App) StartServer(port int) error {
 				State: "waiting",
 				Port:  a.port,
 			}
+			status := a.status
 			a.mu.Unlock()
+			if a.ctx != nil {
+				runtime.EventsEmit(a.ctx, "status_changed", status)
+			}
 		},
 	})
 
@@ -178,7 +197,20 @@ func (a *App) StartServer(port int) error {
 	a.server = srv
 	a.mu.Unlock()
 
-	go srv.ListenAndServe()
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			a.mu.Lock()
+			a.status = ConnectionStatus{
+				State: "disconnected",
+				Port:  a.port,
+			}
+			status := a.status
+			a.mu.Unlock()
+			if a.ctx != nil {
+				runtime.EventsEmit(a.ctx, "status_changed", status)
+			}
+		}
+	}()
 
 	return nil
 }
@@ -188,7 +220,12 @@ func (a *App) StopServer() error {
 	srv := a.server
 	a.server = nil
 	a.status = ConnectionStatus{State: "disconnected"}
+	status := a.status
 	a.mu.Unlock()
+
+	if a.ctx != nil {
+		runtime.EventsEmit(a.ctx, "status_changed", status)
+	}
 
 	if srv != nil {
 		return srv.Close()
@@ -216,7 +253,12 @@ func (a *App) GetSettings() Settings {
 }
 
 func (a *App) SaveSettings(s Settings) error {
+	if s.Port < 1024 || s.Port > 65535 {
+		return fmt.Errorf("invalid port: must be between 1024 and 65535")
+	}
+
 	a.mu.Lock()
+	portChanged := a.port != s.Port
 	a.settings = s
 	a.port = s.Port
 	a.mu.Unlock()
@@ -228,7 +270,17 @@ func (a *App) SaveSettings(s Settings) error {
 	if err := os.MkdirAll(filepath.Dir(a.settingsPath), 0755); err != nil {
 		return fmt.Errorf("failed to create settings dir: %w", err)
 	}
-	return os.WriteFile(a.settingsPath, data, 0644)
+	if err := os.WriteFile(a.settingsPath, data, 0644); err != nil {
+		return err
+	}
+
+	if portChanged && a.ctx != nil {
+		_ = a.StopServer()
+		_ = a.StartServer(s.Port)
+		runtime.EventsEmit(a.ctx, "server_restarted")
+	}
+
+	return nil
 }
 
 func (a *App) GetHistory(limit int) ([]HistoryEntry, error) {

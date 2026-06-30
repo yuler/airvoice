@@ -1,9 +1,24 @@
 <script setup lang="ts">
+import { onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import QRCode from './components/QRCode.vue'
 import StatusBadge from './components/StatusBadge.vue'
 import HistoryList from './components/HistoryList.vue'
 import SettingsPanel from './components/SettingsPanel.vue'
 import LanguageSwitch from './components/LanguageSwitch.vue'
+
+const { locale } = useI18n()
+
+onMounted(async () => {
+  try {
+    const settings = await window.go.main.App.GetSettings()
+    if (settings && settings.language) {
+      locale.value = settings.language
+    }
+  } catch (e) {
+    console.error('Failed to load language setting:', e)
+  }
+})
 </script>
 
 <template>

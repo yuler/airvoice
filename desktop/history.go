@@ -24,6 +24,11 @@ func NewHistoryStore(dbPath string) (*HistoryStore, error) {
 		return nil, err
 	}
 
+	if _, err := db.Exec("PRAGMA busy_timeout = 5000;"); err != nil {
+		db.Close()
+		return nil, err
+	}
+
 	_, err = db.Exec(`
 		CREATE TABLE IF NOT EXISTS history (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -57,7 +62,7 @@ func (h *HistoryStore) List(limit int) ([]HistoryEntry, error) {
 	}
 	defer rows.Close()
 
-	var entries []HistoryEntry
+	entries := []HistoryEntry{}
 	for rows.Next() {
 		var e HistoryEntry
 		if err := rows.Scan(&e.ID, &e.Content, &e.Device, &e.CreatedAt); err != nil {
@@ -83,7 +88,7 @@ func (h *HistoryStore) Search(query string, limit int) ([]HistoryEntry, error) {
 	}
 	defer rows.Close()
 
-	var entries []HistoryEntry
+	entries := []HistoryEntry{}
 	for rows.Next() {
 		var e HistoryEntry
 		if err := rows.Scan(&e.ID, &e.Content, &e.Device, &e.CreatedAt); err != nil {

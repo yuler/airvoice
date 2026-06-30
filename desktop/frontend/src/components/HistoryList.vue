@@ -47,7 +47,7 @@ function formatTime(dateStr: string): string {
     </div>
 
     <div class="flex-1 overflow-y-auto">
-      <div v-if="loading" class="p-4 text-center text-text-muted">Loading...</div>
+      <div v-if="loading" class="p-4 text-center text-text-muted">{{ t('history.loading') }}</div>
       <div v-else-if="entries.length === 0" class="p-4 text-center text-text-muted">
         {{ t('history.empty') }}
       </div>

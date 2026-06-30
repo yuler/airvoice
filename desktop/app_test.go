@@ -1,10 +1,25 @@
 package main
 
 import (
+	"os"
 	"testing"
 )
 
 func TestNewApp(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "airvoice-test-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	origHome := os.Getenv("HOME")
+	os.Setenv("HOME", tmpDir)
+	defer os.Setenv("HOME", origHome)
+
+	origUserProfile := os.Getenv("USERPROFILE")
+	os.Setenv("USERPROFILE", tmpDir)
+	defer os.Setenv("USERPROFILE", origUserProfile)
+
 	app, err := NewApp()
 	if err != nil {
 		t.Fatalf("NewApp() error = %v", err)
@@ -18,6 +33,20 @@ func TestNewApp(t *testing.T) {
 }
 
 func TestGetSettings(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "airvoice-test-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	origHome := os.Getenv("HOME")
+	os.Setenv("HOME", tmpDir)
+	defer os.Setenv("HOME", origHome)
+
+	origUserProfile := os.Getenv("USERPROFILE")
+	os.Setenv("USERPROFILE", tmpDir)
+	defer os.Setenv("USERPROFILE", origUserProfile)
+
 	app, _ := NewApp()
 	settings := app.GetSettings()
 

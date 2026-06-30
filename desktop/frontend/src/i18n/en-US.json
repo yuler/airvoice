@@ -18,7 +18,8 @@
     "title": "Recent",
     "empty": "No history yet",
     "clear": "Clear",
-    "search": "Search history..."
+    "search": "Search history...",
+    "loading": "Loading..."
   },
   "settings": {
     "title": "Settings",

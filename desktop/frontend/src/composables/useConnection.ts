@@ -1,4 +1,4 @@
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted } from 'vue'
 
 interface ConnectionStatus {
   state: 'disconnected' | 'connecting' | 'connected' | 'waiting'
@@ -15,8 +15,6 @@ export function useConnection() {
     port: 7383,
   })
 
-  let interval: ReturnType<typeof setInterval> | null = null
-
   async function fetchStatus() {
     try {
       const result = await window.go.main.App.GetConnectionStatus()
@@ -28,11 +26,12 @@ export function useConnection() {
 
   onMounted(() => {
     fetchStatus()
-    interval = setInterval(fetchStatus, 1000)
-  })
-
-  onUnmounted(() => {
-    if (interval) clearInterval(interval)
+    const runtime = (window as any).runtime
+    if (runtime && runtime.EventsOn) {
+      runtime.EventsOn('status_changed', (newStatus: ConnectionStatus) => {
+        status.value = newStatus
+      })
+    }
   })
 
   return { status }

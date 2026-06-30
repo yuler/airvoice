@@ -76,7 +76,9 @@ func (s *Server) Close() error {
 	srv := s.httpServer
 	s.mu.Unlock()
 	if srv != nil {
-		return srv.Shutdown(context.Background())
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		return srv.Shutdown(ctx)
 	}
 	return nil
 }
