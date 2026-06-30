@@ -20,11 +20,13 @@ func main() {
 	defer app.history.Close()
 
 	trayManager := NewTrayManager(app)
+	app.tray = trayManager
 
 	err = wails.Run(&options.App{
-		Title:  "Airvoice",
-		Width:  320,
-		Height: 480,
+		Title:     "Airvoice",
+		Width:     320,
+		Height:    480,
+		Frameless: true,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},

@@ -42,6 +42,7 @@ type App struct {
 	settings     Settings
 	mu           sync.RWMutex
 	status       ConnectionStatus
+	tray         *TrayManager
 }
 
 func NewApp() (*App, error) {
@@ -157,6 +158,9 @@ func (a *App) StartServer(port int) error {
 		State: "waiting",
 		Port:  port,
 	}
+	if a.tray != nil {
+		a.tray.UpdateStatus()
+	}
 	a.mu.Unlock()
 
 	srv := server.New(server.Config{
@@ -177,6 +181,9 @@ func (a *App) StartServer(port int) error {
 			}
 			status := a.status
 			a.mu.Unlock()
+			if a.tray != nil {
+				a.tray.UpdateStatus()
+			}
 			if a.ctx != nil {
 				runtime.EventsEmit(a.ctx, "status_changed", status)
 			}
@@ -189,6 +196,9 @@ func (a *App) StartServer(port int) error {
 			}
 			status := a.status
 			a.mu.Unlock()
+			if a.tray != nil {
+				a.tray.UpdateStatus()
+			}
 			if a.ctx != nil {
 				runtime.EventsEmit(a.ctx, "status_changed", status)
 			}
@@ -226,6 +236,9 @@ func (a *App) StopServer() error {
 	a.status = ConnectionStatus{State: "disconnected"}
 	status := a.status
 	a.mu.Unlock()
+	if a.tray != nil {
+		a.tray.UpdateStatus()
+	}
 
 	if a.ctx != nil {
 		runtime.EventsEmit(a.ctx, "status_changed", status)
