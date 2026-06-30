@@ -11,7 +11,7 @@ var LogHook func(string)
 
 func logStatus(format string, args ...any) {
 	msg := fmt.Sprintf(format, args...)
-	fmt.Fprintf(os.Stderr, " [airvoice] "+msg+"\n")
+	fmt.Fprintf(os.Stderr, " [airvoice] %s\n", msg)
 	if LogHook != nil {
 		LogHook(" [airvoice] " + msg)
 	}
