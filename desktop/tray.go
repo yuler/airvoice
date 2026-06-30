@@ -12,9 +12,7 @@ type TrayManager struct {
 }
 
 func NewTrayManager(app *App) *TrayManager {
-	t := &TrayManager{app: app}
-	t.initPlatform()
-	return t
+	return &TrayManager{app: app}
 }
 
 func (t *TrayManager) GetMacOptions() *mac.Options {

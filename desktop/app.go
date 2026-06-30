@@ -79,6 +79,9 @@ func NewApp() (*App, error) {
 
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+	if a.tray != nil {
+		a.tray.Start()
+	}
 	server.LogHook = func(msg string) {
 		runtime.EventsEmit(a.ctx, "log_added", msg)
 	}
@@ -109,6 +112,29 @@ func (a *App) GetPairingLink() (string, error) {
 	}
 
 	return string(payloadBytes), nil
+}
+
+// RefreshPairing generates a new pairing token and invalidates pending connections.
+func (a *App) RefreshPairing() error {
+	a.mu.Lock()
+	if a.status.State == "connected" {
+		a.mu.Unlock()
+		return fmt.Errorf("cannot refresh pairing while connected")
+	}
+	a.token = uuid.New().String()
+	srv := a.server
+	a.mu.Unlock()
+
+	if srv != nil {
+		srv.SetToken(a.token)
+		srv.DisconnectClients()
+	}
+
+	if a.ctx != nil {
+		runtime.EventsEmit(a.ctx, "log_added", " [airvoice] pairing token refreshed")
+	}
+
+	return nil
 }
 
 func (a *App) GetQRCode() (string, error) {

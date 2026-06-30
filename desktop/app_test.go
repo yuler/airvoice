@@ -131,4 +131,46 @@ func TestGetQRCode(t *testing.T) {
 	}
 }
 
+func TestRefreshPairing(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "airvoice-test-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	origHome := os.Getenv("HOME")
+	os.Setenv("HOME", tmpDir)
+	defer os.Setenv("HOME", origHome)
+
+	origUserProfile := os.Getenv("USERPROFILE")
+	os.Setenv("USERPROFILE", tmpDir)
+	defer os.Setenv("USERPROFILE", origUserProfile)
+
+	app, err := NewApp()
+	if err != nil {
+		t.Fatalf("NewApp() error = %v", err)
+	}
+
+	oldToken := app.token
+	linkBefore, err := app.GetPairingLink()
+	if err != nil {
+		t.Fatalf("GetPairingLink() error = %v", err)
+	}
+
+	if err := app.RefreshPairing(); err != nil {
+		t.Fatalf("RefreshPairing() error = %v", err)
+	}
+	if app.token == oldToken {
+		t.Fatal("token should change after RefreshPairing")
+	}
+
+	linkAfter, err := app.GetPairingLink()
+	if err != nil {
+		t.Fatalf("GetPairingLink() after refresh error = %v", err)
+	}
+	if linkBefore == linkAfter {
+		t.Fatal("pairing link should change after RefreshPairing")
+	}
+}
+
 

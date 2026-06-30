@@ -11,5 +11,7 @@
   "log.handshake": "WebSocket 握手完成",
   "log.listening": "监听音频流...",
   "qr.loading": "加载二维码...",
-  "qr.error": "生成二维码失败"
+  "qr.error": "生成二维码失败",
+  "qr.refreshed": "配对码已更新",
+  "qr.refreshError": "刷新配对码失败"
 }

@@ -1,20 +1,43 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { GetPairingLink, GetQRCode, RefreshPairing } from '../../wailsjs/go/main/App'
+import { useToast } from '../composables/useToast'
 import RefreshIcon from './icons/RefreshIcon.vue'
 
 const qrCodeData = ref<string>('')
 const pairingLink = ref<string>('')
 const error = ref<string>('')
+const refreshing = ref(false)
 const { t } = useI18n()
+const { show } = useToast()
 
 async function loadQRCode() {
   try {
-    qrCodeData.value = await window.go.main.App.GetQRCode()
-    pairingLink.value = await window.go.main.App.GetPairingLink()
+    qrCodeData.value = await GetQRCode()
+    pairingLink.value = await GetPairingLink()
   } catch (e) {
     error.value = t('qr.error')
     console.error(e)
+  }
+}
+
+async function refreshPairing() {
+  if (refreshing.value) return
+
+  refreshing.value = true
+  error.value = ''
+
+  try {
+    await RefreshPairing()
+    await loadQRCode()
+    show(t('qr.refreshed'), 'success')
+  } catch (e) {
+    error.value = t('qr.error')
+    show(t('qr.refreshError'), 'error')
+    console.error(e)
+  } finally {
+    refreshing.value = false
   }
 }
 
@@ -42,16 +65,18 @@ onUnmounted(() => {
     </div>
     
     <div v-if="error" class="text-status-error text-sm">{{ error }}</div>
-    <div v-else-if="qrCodeData" class="w-52 h-52 rounded-xl flex items-center justify-center p-4" style="background-color: var(--color-bg-primary); border: 1px solid var(--color-border-default);">
+    <div v-else-if="qrCodeData" class="w-52 h-52 rounded-xl flex items-center justify-center p-4 overflow-hidden" style="background-color: var(--color-bg-primary); border: 1px solid var(--color-border-default);">
       <img :src="qrCodeData" alt="QR Code" class="block w-full h-full" style="image-rendering: pixelated;" />
     </div>
     <div v-else class="text-secondary-text">{{ t('qr.loading') }}</div>
     
     <button
-      @click="loadQRCode"
-      class="w-11 h-11 flex items-center justify-center rounded-full border border-border-default text-primary-text hover:bg-bg-secondary transition-colors"
+      type="button"
+      :disabled="refreshing"
+      @click="refreshPairing"
+      class="w-11 h-11 flex items-center justify-center rounded-full border border-border-default text-primary-text hover:bg-bg-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
     >
-      <RefreshIcon />
+      <RefreshIcon :class="{ 'animate-spin': refreshing }" />
     </button>
   </div>
 </template>

@@ -7,6 +7,7 @@ const theme = ref<'light' | 'dark'>(
 
 function applyTheme() {
   document.documentElement.classList.toggle('dark', theme.value === 'dark')
+  document.documentElement.classList.toggle('light', theme.value === 'light')
 }
 
 applyTheme()

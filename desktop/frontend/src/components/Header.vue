@@ -12,7 +12,7 @@ const isConnected = computed(() => status.value.state === 'connected')
 </script>
 
 <template>
-  <header class="flex items-center justify-between px-6 py-4" style="--wails-draggable: drag">
+  <header class="flex shrink-0 items-center justify-between px-6 py-4 pr-3" style="--wails-draggable: drag">
     <div class="flex items-center gap-2">
       <span 
         v-if="isConnected" 

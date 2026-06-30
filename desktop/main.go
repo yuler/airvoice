@@ -25,7 +25,7 @@ func main() {
 	err = wails.Run(&options.App{
 		Title:     "Airvoice",
 		Width:     320,
-		Height:    480,
+		Height:    500,
 		Frameless: true,
 		AssetServer: &assetserver.Options{
 			Assets: assets,

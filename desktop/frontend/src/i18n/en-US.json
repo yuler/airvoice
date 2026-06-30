@@ -11,5 +11,7 @@
   "log.handshake": "WebSocket handshake complete",
   "log.listening": "Listening for audio stream...",
   "qr.loading": "Loading QR code...",
-  "qr.error": "Failed to generate QR code"
+  "qr.error": "Failed to generate QR code",
+  "qr.refreshed": "Pairing code refreshed",
+  "qr.refreshError": "Failed to refresh pairing code"
 }

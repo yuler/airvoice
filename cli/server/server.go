@@ -70,6 +70,11 @@ func (s *Server) ListenAndServe() error {
 	return srv.ListenAndServe()
 }
 
+// DisconnectClients closes active WebSocket connections without stopping the server.
+func (s *Server) DisconnectClients() {
+	s.hub.CloseAll()
+}
+
 // Close gracefully shuts down the server and closes all connections.
 func (s *Server) Close() error {
 	s.hub.CloseAll()

@@ -7,6 +7,7 @@ import QRCode from './components/QRCode.vue'
 import StatusBadge from './components/StatusBadge.vue'
 import LogPanel from './components/LogPanel.vue'
 import DisconnectButton from './components/DisconnectButton.vue'
+import Toast from './components/Toast.vue'
 
 const { locale } = useI18n()
 const { status } = useConnection()
@@ -26,10 +27,11 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="w-full h-full flex flex-col bg-bg-primary">
+  <div class="relative w-full h-full flex flex-col bg-bg-primary">
+    <Toast />
     <Header />
     
-    <main class="flex-1 flex flex-col items-center justify-center px-6">
+    <main class="flex-1 min-h-0 overflow-y-auto flex flex-col items-center justify-center p-6">
       <template v-if="isConnected">
         <StatusBadge class="mb-6" />
         <LogPanel class="mb-6" />
