@@ -151,12 +151,13 @@ func (a *App) GetQRCode() (string, error) {
 
 	a.mu.RLock()
 	port := a.port
+	token := a.token
 	a.mu.RUnlock()
 
 	payload := pairing.Payload{
 		Version: 1,
 		WS:      fmt.Sprintf("ws://%s:%d/ws", ip, port),
-		Token:   a.token,
+		Token:   token,
 	}
 
 	payloadBytes, err := payload.Marshal()
