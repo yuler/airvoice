@@ -38,7 +38,7 @@ func TestWindowsPaster(t *testing.T) {
 		}
 
 		encoded := base64.StdEncoding.EncodeToString([]byte(text))
-		psCmd := `$b = [Console]::In.ReadToEnd().Trim(); if ($b) { Set-Clipboard -Value ([System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($b))); Start-Sleep -Milliseconds 80; (New-Object -ComObject WScript.Shell).SendKeys('^v') }`
+		psCmd := `$ErrorActionPreference = 'Stop'; $b = [Console]::In.ReadToEnd().Trim(); if ($b) { Set-Clipboard -Value ([System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($b))); Start-Sleep -Milliseconds 80; (New-Object -ComObject WScript.Shell).SendKeys('^v') }`
 
 		expected := []commandCall{
 			{name: "powershell", stdin: encoded, args: []string{"-NoProfile", "-Command", psCmd}},

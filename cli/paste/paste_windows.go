@@ -28,7 +28,7 @@ func (w *windowsPaster) Paste(text string) error {
 	// Write base64 string to powershell via stdin, decode it in-memory as UTF-8, set to clipboard,
 	// wait briefly, and simulate Ctrl+V keystroke — all in a single PowerShell invocation
 	// to halve process startup overhead.
-	psCmd := `$b = [Console]::In.ReadToEnd().Trim(); if ($b) { Set-Clipboard -Value ([System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($b))); Start-Sleep -Milliseconds 80; (New-Object -ComObject WScript.Shell).SendKeys('^v') }`
+	psCmd := `$ErrorActionPreference = 'Stop'; $b = [Console]::In.ReadToEnd().Trim(); if ($b) { Set-Clipboard -Value ([System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($b))); Start-Sleep -Milliseconds 80; (New-Object -ComObject WScript.Shell).SendKeys('^v') }`
 	if err := runCommand("powershell", encoded, "-NoProfile", "-Command", psCmd); err != nil {
 		return fmt.Errorf("failed to paste via PowerShell: %w", err)
 	}
