@@ -271,6 +271,9 @@ func (a *App) StartServer(port int) error {
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			a.mu.Lock()
+			if a.server == srv {
+				a.server = nil
+			}
 			a.status = ConnectionStatus{
 				State: "disconnected",
 				Port:  a.port,

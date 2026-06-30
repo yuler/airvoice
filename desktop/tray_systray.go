@@ -50,15 +50,24 @@ func (t *TrayManager) onReady() {
 	go func() {
 		for {
 			select {
-			case <-t.showItem.ClickedCh:
+			case _, ok := <-t.showItem.ClickedCh:
+				if !ok {
+					return
+				}
 				if t.app.ctx != nil {
 					wailsruntime.WindowShow(t.app.ctx)
 				}
-			case <-t.hideItem.ClickedCh:
+			case _, ok := <-t.hideItem.ClickedCh:
+				if !ok {
+					return
+				}
 				if t.app.ctx != nil {
 					wailsruntime.WindowHide(t.app.ctx)
 				}
-			case <-t.quitItem.ClickedCh:
+			case _, ok := <-t.quitItem.ClickedCh:
+				if !ok {
+					return
+				}
 				if t.app.ctx != nil {
 					wailsruntime.Quit(t.app.ctx)
 				}
