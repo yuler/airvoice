@@ -2,6 +2,8 @@ package server
 
 import (
 	"context"
+	"fmt"
+	"net"
 	"net/http"
 	"sync"
 	"time"
@@ -121,3 +123,14 @@ func (s *Server) validToken(token string) bool {
 	defer s.tokenMu.RUnlock()
 	return token != "" && token == s.token
 }
+
+// CheckPortAvailable checks if a TCP port is available to listen on all interfaces.
+func CheckPortAvailable(port int) error {
+	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+	if err != nil {
+		return fmt.Errorf("port %d is already in use", port)
+	}
+	ln.Close()
+	return nil
+}
+

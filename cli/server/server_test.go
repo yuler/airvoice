@@ -3,6 +3,8 @@ package server
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -233,4 +235,29 @@ func TestTokenStableAfterDisconnect(t *testing.T) {
 		t.Errorf("expected 101, got %d", resp.StatusCode)
 	}
 }
+
+func TestCheckPortAvailable(t *testing.T) {
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	addr := ln.Addr().(*net.TCPAddr)
+	port := addr.Port
+	ln.Close()
+
+	if err := CheckPortAvailable(port); err != nil {
+		t.Errorf("expected port %d to be available, got error: %v", port, err)
+	}
+
+	ln2, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ln2.Close()
+
+	if err := CheckPortAvailable(port); err == nil {
+		t.Errorf("expected port %d to be occupied, got nil error", port)
+	}
+}
+
 
