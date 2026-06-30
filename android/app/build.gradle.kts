@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.yule.airvoice"
+    namespace = "cc.yuler.airvoice"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.yule.airvoice"
+        applicationId = "cc.yuler.airvoice"
         minSdk = 26
         targetSdk = 34
         versionCode = 1
