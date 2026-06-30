@@ -50,8 +50,6 @@ export JAVA_HOME
 if [ -z "$ANDROID_HOME" ]; then
   if [ -d "$HOME/Android/Sdk" ]; then
     export ANDROID_HOME="$HOME/Android/Sdk"
-  elif [ -d "/home/yule/Android/Sdk" ]; then
-    export ANDROID_HOME="/home/yule/Android/Sdk"
   fi
 fi
 export ANDROID_HOME
