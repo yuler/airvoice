@@ -1,7 +1,7 @@
 min_version = "2024.11.0"
 
 [tools]
-go = "1.22"
+go = "1.25.0"
 node = "24"
 gum = "0.17"
 swift = { version = "6.3", os = ["macos"] }

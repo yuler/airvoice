@@ -5,6 +5,9 @@ on:
     branches: [main]
     tags:
       - 'v*'
+    paths:
+      - 'desktop/**'
+      - '.github/workflows/desktop-release.yml'
   workflow_dispatch:
     inputs:
       version:
@@ -42,13 +45,13 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24'
+          go-version-file: 'go.mod'
           cache-dependency-path: go.sum
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: 'npm'
           cache-dependency-path: desktop/frontend/package-lock.json
 
