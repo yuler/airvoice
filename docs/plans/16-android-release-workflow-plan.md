@@ -246,7 +246,7 @@ Write `airvoice-release-secrets.env` from the values generated in Step 1:
 ```bash
 umask 077
 {
-  printf 'ANDROID_KEYSTORE_BASE64=%s\n' "$(base64 -w 0 airvoice-release.keystore)"
+  printf 'ANDROID_KEYSTORE_BASE64=%s\n' "$(base64 < airvoice-release.keystore | tr -d '\n')"
   printf 'ANDROID_KEYSTORE_PASSWORD=%s\n' "$STORE_PASSWORD"
   printf 'ANDROID_KEY_ALIAS=%s\n' "$KEY_ALIAS"
   printf 'ANDROID_KEY_PASSWORD=%s\n' "$KEY_PASSWORD"
