@@ -21,7 +21,7 @@ run = "./scripts/versions.sh"
 
 [tasks.bump]
 description = "Bump version across all platforms (patch | minor | major | X.Y.Z)"
-run = "./scripts/bump.sh {{arg(name='level',optional=true)}}" 
+run = "./scripts/bump.sh" 
 
 # -- CLI (Go) --
 

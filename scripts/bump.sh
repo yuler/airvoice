@@ -70,13 +70,8 @@ else
   gum_header "Bump Version"
   gum style --foreground 212 "Current: $current"
 
-  choice=$(gum choose --header "Bump type" "patch" "minor" "major" "custom")
-  case "$choice" in
-    major|minor|patch) new_version=$(bump_semver "$choice") ;;
-    custom)
-      new_version=$(gum input --placeholder "e.g. 2.0.0" --value "$current")
-      ;;
-  esac
+  choice=$(gum choose --header "Bump type" "patch" "minor" "major")
+  new_version=$(bump_semver "$choice")
 fi
 
 # ── Validate ──
@@ -182,7 +177,10 @@ gum_info "www/package.json"
 echo ""
 if gum confirm "Create git tag v$new_version?"; then
   git add -A
-  git commit -m "chore: bump version to $new_version"
+  git commit -m "$(cat <<EOF
+🔖 [release]: Bump version to $new_version
+EOF
+)"
   git tag "v$new_version"
   gum_info "Tagged v$new_version"
   if gum confirm "Push commit and tag to origin?"; then
