@@ -47,7 +47,7 @@ function WindowsIcon() {
   );
 }
 
-function TuxIcon() {
+function UbuntuIcon() {
   return (
     <svg width="24" height="24" viewBox="0 0 256 256" aria-label="Linux">
       <path fill="#DD4814" d="M255.637 127.683c0 70.514-57.165 127.68-127.683 127.68C57.434 255.363.27 198.197.27 127.683C.27 57.165 57.436 0 127.954 0c70.519 0 127.683 57.165 127.683 127.683"/>
