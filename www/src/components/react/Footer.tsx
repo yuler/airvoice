@@ -22,7 +22,7 @@ export default function Footer({ lang }: FooterProps) {
         {/* Right side: links */}
         <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm">
           <a
-            href={isZh ? '/zh/docs/background/' : '/docs/background/'}
+            href={(import.meta.env.BASE_URL || '/') + (isZh ? 'zh/docs/background/' : 'docs/background/')}
             className="hover:underline transition-all"
             style={{ color: 'var(--secondary-text)' }}
           >

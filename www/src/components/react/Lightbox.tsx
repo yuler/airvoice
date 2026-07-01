@@ -31,47 +31,6 @@ export default function Lightbox({ src, alt, className, style }: LightboxProps) 
 
   return (
     <>
-      <style>{`
-        .lightbox-dialog {
-          opacity: 0;
-          transition: all 0.25s ease;
-        }
-        .lightbox-dialog[open] {
-          opacity: 1;
-          position: fixed;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          margin: 0;
-          animation: dialog-zoom-in 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-        }
-        .lightbox-dialog[open]::backdrop {
-          animation: dialog-fade-in 0.25s ease-out forwards;
-        }
-        @keyframes dialog-zoom-in {
-          from {
-            opacity: 0;
-            transform: translate(-50%, -50%) scale(0.92);
-          }
-          to {
-            opacity: 1;
-            transform: translate(-50%, -50%) scale(1);
-          }
-        }
-        @keyframes dialog-fade-in {
-          from {
-            background-color: rgba(0, 0, 0, 0);
-            backdrop-filter: blur(0px);
-            -webkit-backdrop-filter: blur(0px);
-          }
-          to {
-            background-color: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(6px);
-            -webkit-backdrop-filter: blur(6px);
-          }
-        }
-      `}</style>
-
       <img
         src={src}
         alt={alt}

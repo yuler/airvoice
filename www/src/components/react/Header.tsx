@@ -89,12 +89,16 @@ export default function Header({ lang, base, active = 'home', currentPath }: Hea
   const loc = (path: string) => lang === 'en' ? `${base}${path}` : `${base}zh/${path}`;
 
   useEffect(() => {
-    // Read theme from document or localStorage on mount
-    const stored = localStorage.getItem('theme');
-    if (stored) {
-      setTheme(stored as 'light' | 'dark');
-    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      setTheme('dark');
+    const htmlMode = document.documentElement.getAttribute('data-mode') as 'light' | 'dark' | null;
+    if (htmlMode) {
+      setTheme(htmlMode);
+    } else {
+      const stored = localStorage.getItem('theme');
+      if (stored) {
+        setTheme(stored as 'light' | 'dark');
+      } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        setTheme('dark');
+      }
     }
   }, []);
 
