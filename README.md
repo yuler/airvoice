@@ -16,6 +16,27 @@ Explore the detailed documentation to understand the project better:
 
 ---
 
+## Installation
+
+### Homebrew (macOS/Linux)
+
+```bash
+brew tap yuler/tap
+brew install airvoice
+```
+
+### Go
+
+```bash
+go install github.com/yuler/airvoice/cli@latest
+```
+
+### Manual Download
+
+Download the latest binary from [GitHub Releases](https://github.com/yuler/airvoice/releases).
+
+---
+
 ## Quick Start
 
 This project uses [mise](https://mise.jdx.dev/) to pin **Go**, **Swift**, and **gum**, and to run common dev tasks.
