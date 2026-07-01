@@ -48,5 +48,5 @@ func (w *windowsPaster) Name() string {
 }
 
 func formatWindowsKeystrokeError(err error) error {
-	return fmt.Errorf("keystroke (SendKeys) failed: %w；文本已复制到剪贴板，可手动按 Ctrl+V", err)
+	return fmt.Errorf("keystroke (SendKeys) failed: %w", err)
 }

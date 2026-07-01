@@ -84,7 +84,7 @@ func TestWindowsPaster(t *testing.T) {
 		if err == nil {
 			t.Fatal("expected error, got nil")
 		}
-		want := "keystroke (SendKeys) failed: sendkeys failed；文本已复制到剪贴板，可手动按 Ctrl+V"
+		want := "keystroke (SendKeys) failed: sendkeys failed"
 		if err.Error() != want {
 			t.Errorf("expected %q, got: %v", want, err)
 		}
