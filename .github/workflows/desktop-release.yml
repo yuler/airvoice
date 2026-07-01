@@ -1,0 +1,155 @@
+name: desktop-release
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to release (e.g. 0.1.0)
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: darwin
+            runner: macos-latest
+            arch: universal
+            artifact: macOS
+          - platform: linux
+            runner: ubuntu-22.04
+            arch: amd64
+            artifact: Linux
+          - platform: windows
+            runner: windows-latest
+            arch: amd64
+            artifact: Windows
+
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache-dependency-path: go.sum
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: desktop/frontend/package-lock.json
+
+      - name: Install Wails
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+
+      - name: Install frontend dependencies
+        working-directory: desktop/frontend
+        run: npm ci
+
+      - name: Install Linux dependencies
+        if: matrix.platform == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev libappindicator3-dev librsvg2-dev patchelf libxdo-dev
+
+      - name: Version tag
+        id: version
+        shell: bash
+        run: |
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            echo "version=${{ github.ref_name#v }}" >> $GITHUB_OUTPUT
+            echo "tag=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+            echo "release=true" >> $GITHUB_OUTPUT
+          else
+            SHORT_SHA=$(git rev-parse --short HEAD)
+            echo "version=0.0.0-${SHORT_SHA}" >> $GITHUB_OUTPUT
+            echo "tag=dev-${SHORT_SHA}" >> $GITHUB_OUTPUT
+            echo "release=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build (${{ matrix.artifact }})
+        working-directory: desktop
+        run: wails build --platform ${{ matrix.platform }}/${{ matrix.arch }}
+
+      - name: Collect artifacts
+        shell: bash
+        working-directory: desktop
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          PLATFORM="${{ matrix.platform }}"
+          ARCH="${{ matrix.arch }}"
+          mkdir -p release
+
+          case "$PLATFORM" in
+            darwin)
+              [ -d "build/bin/Airvoice.app" ] && zip -r "release/Airvoice-${VERSION}-macOS.zip" build/bin/Airvoice.app
+              [ -f "build/bin/Airvoice.dmg" ] && cp build/bin/Airvoice.dmg "release/Airvoice-${VERSION}-macOS.dmg"
+              ;;
+            linux)
+              if [ -f "build/bin/Airvoice" ]; then
+                chmod +x build/bin/Airvoice
+                tar czf "release/Airvoice-${VERSION}-Linux.tar.gz" -C build/bin Airvoice
+              fi
+              [ -f "build/bin/Airvoice-amd64.deb" ] && cp build/bin/Airvoice-amd64.deb "release/"
+              [ -f "build/bin/Airvoice.deb" ] && cp build/bin/Airvoice.deb "release/"
+              ;;
+            windows)
+              [ -f "build/bin/Airvoice.exe" ] && tar czf "release/Airvoice-${VERSION}-Windows.zip" -C build/bin Airvoice.exe
+              [ -f "build/bin/Airvoice-amd64.exe" ] && cp build/bin/Airvoice-amd64.exe "release/"
+              [ -f "build/bin/Airvoice-${VERSION}-amd64.exe" ] && cp build/bin/Airvoice-${VERSION}-amd64.exe "release/"
+              ;;
+          esac
+
+          echo "--- Released files ---"
+          find release -type f -exec ls -lh {} \;
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-${{ matrix.platform }}-${{ matrix.arch }}
+          path: desktop/release/*
+          if-no-files-found: warn
+
+  release:
+    needs: build
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: desktop-*
+          merge-multiple: true
+
+      - name: List artifacts
+        run: |
+          echo "=== Released files ==="
+          find artifacts -type f -exec ls -lh {} \;
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: artifacts/**/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
