@@ -27,7 +27,7 @@ brew install airvoice
 
 ### Windows
 
-Download `airvoice-windows-amd64.exe` from [GitHub Releases](https://github.com/yuler/airvoice/releases), rename to `airvoice.exe`, and add to your PATH.
+Download `airvoice-cli-windows-amd64.exe` from [GitHub Releases](https://github.com/yuler/airvoice/releases), rename to `airvoice.exe`, and add to your PATH.
 
 ### Go (all platforms)
 
@@ -41,11 +41,11 @@ Download the binary for your platform from [GitHub Releases](https://github.com/
 
 | Platform | File |
 |----------|------|
-| macOS (Apple Silicon) | `airvoice-darwin-arm64` |
-| macOS (Intel) | `airvoice-darwin-amd64` |
-| Linux (ARM64) | `airvoice-linux-arm64` |
-| Linux (AMD64) | `airvoice-linux-amd64` |
-| Windows | `airvoice-windows-amd64.exe` |
+| macOS (Apple Silicon) | `airvoice-cli-darwin-arm64` |
+| macOS (Intel) | `airvoice-cli-darwin-amd64` |
+| Linux (ARM64) | `airvoice-cli-linux-arm64` |
+| Linux (AMD64) | `airvoice-cli-linux-amd64` |
+| Windows | `airvoice-cli-windows-amd64.exe` |
 
 ---
 

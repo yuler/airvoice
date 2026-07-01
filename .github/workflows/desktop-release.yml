@@ -98,21 +98,21 @@ jobs:
 
           case "$PLATFORM" in
             darwin)
-              [ -d "build/bin/Airvoice.app" ] && zip -r "release/Airvoice-${VERSION}-macOS.zip" build/bin/Airvoice.app
-              [ -f "build/bin/Airvoice.dmg" ] && cp build/bin/Airvoice.dmg "release/Airvoice-${VERSION}-macOS.dmg"
+              [ -d "build/bin/Airvoice.app" ] && zip -r "release/Airvoice-Desktop-${VERSION}-macOS.zip" build/bin/Airvoice.app
+              [ -f "build/bin/Airvoice.dmg" ] && cp build/bin/Airvoice.dmg "release/Airvoice-Desktop-${VERSION}-macOS.dmg"
               ;;
             linux)
               if [ -f "build/bin/Airvoice" ]; then
                 chmod +x build/bin/Airvoice
-                tar czf "release/Airvoice-${VERSION}-Linux.tar.gz" -C build/bin Airvoice
+                tar czf "release/Airvoice-Desktop-${VERSION}-Linux.tar.gz" -C build/bin Airvoice
               fi
-              [ -f "build/bin/Airvoice-amd64.deb" ] && cp build/bin/Airvoice-amd64.deb "release/"
-              [ -f "build/bin/Airvoice.deb" ] && cp build/bin/Airvoice.deb "release/"
+              [ -f "build/bin/Airvoice-amd64.deb" ] && cp build/bin/Airvoice-amd64.deb "release/Airvoice-Desktop-${VERSION}-Linux-amd64.deb"
+              [ -f "build/bin/Airvoice.deb" ] && cp build/bin/Airvoice.deb "release/Airvoice-Desktop-${VERSION}-Linux.deb"
               ;;
             windows)
-              [ -f "build/bin/Airvoice.exe" ] && tar czf "release/Airvoice-${VERSION}-Windows.zip" -C build/bin Airvoice.exe
-              [ -f "build/bin/Airvoice-amd64.exe" ] && cp build/bin/Airvoice-amd64.exe "release/"
-              [ -f "build/bin/Airvoice-${VERSION}-amd64.exe" ] && cp build/bin/Airvoice-${VERSION}-amd64.exe "release/"
+              [ -f "build/bin/Airvoice.exe" ] && tar czf "release/Airvoice-Desktop-${VERSION}-Windows.zip" -C build/bin Airvoice.exe
+              [ -f "build/bin/Airvoice-amd64.exe" ] && cp build/bin/Airvoice-amd64.exe "release/Airvoice-Desktop-${VERSION}-Windows-amd64.exe"
+              [ -f "build/bin/Airvoice-${VERSION}-amd64.exe" ] && cp build/bin/Airvoice-${VERSION}-amd64.exe "release/Airvoice-Desktop-${VERSION}-Windows-amd64.exe"
               ;;
           esac
 
@@ -149,7 +149,7 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name }}
-          name: ${{ github.ref_name }}
+          name: Airvoice Desktop ${{ github.ref_name }}
           draft: false
           prerelease: false
           generate_release_notes: true

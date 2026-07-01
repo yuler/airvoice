@@ -40,24 +40,24 @@ jobs:
           mkdir -p dist
 
           # macOS ARM64 (Apple Silicon)
-          GOOS=darwin GOARCH=arm64 go build -ldflags "-s -w -X main.version=${VERSION#v}" -o dist/airvoice-darwin-arm64 ./cli
+          GOOS=darwin GOARCH=arm64 go build -ldflags "-s -w -X main.version=${VERSION#v}" -o dist/airvoice-cli-darwin-arm64 ./cli
 
           # macOS AMD64 (Intel)
-          GOOS=darwin GOARCH=amd64 go build -ldflags "-s -w -X main.version=${VERSION#v}" -o dist/airvoice-darwin-amd64 ./cli
+          GOOS=darwin GOARCH=amd64 go build -ldflags "-s -w -X main.version=${VERSION#v}" -o dist/airvoice-cli-darwin-amd64 ./cli
 
           # Linux ARM64
-          GOOS=linux GOARCH=arm64 go build -ldflags "-s -w -X main.version=${VERSION#v}" -o dist/airvoice-linux-arm64 ./cli
+          GOOS=linux GOARCH=arm64 go build -ldflags "-s -w -X main.version=${VERSION#v}" -o dist/airvoice-cli-linux-arm64 ./cli
 
           # Linux AMD64
-          GOOS=linux GOARCH=amd64 go build -ldflags "-s -w -X main.version=${VERSION#v}" -o dist/airvoice-linux-amd64 ./cli
+          GOOS=linux GOARCH=amd64 go build -ldflags "-s -w -X main.version=${VERSION#v}" -o dist/airvoice-cli-linux-amd64 ./cli
 
           # Windows AMD64
-          GOOS=windows GOARCH=amd64 go build -ldflags "-s -w -X main.version=${VERSION#v}" -o dist/airvoice-windows-amd64.exe ./cli
+          GOOS=windows GOARCH=amd64 go build -ldflags "-s -w -X main.version=${VERSION#v}" -o dist/airvoice-cli-windows-amd64.exe ./cli
 
       - name: Generate checksums
         run: |
           cd dist
-          sha256sum airvoice-* > checksums.txt
+          sha256sum airvoice-cli-* > checksums-cli.txt
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
@@ -66,22 +66,22 @@ jobs:
           name: Airvoice CLI ${{ steps.tag.outputs.version }}
           generate_release_notes: true
           files: |
-            dist/airvoice-darwin-arm64
-            dist/airvoice-darwin-amd64
-            dist/airvoice-linux-arm64
-            dist/airvoice-linux-amd64
-            dist/airvoice-windows-amd64.exe
-            dist/checksums.txt
+            dist/airvoice-cli-darwin-arm64
+            dist/airvoice-cli-darwin-amd64
+            dist/airvoice-cli-linux-arm64
+            dist/airvoice-cli-linux-amd64
+            dist/airvoice-cli-windows-amd64.exe
+            dist/checksums-cli.txt
 
       - name: Update Homebrew formula
         run: |
           VERSION="${{ steps.tag.outputs.version }}"
           VERSION_NUM="${VERSION#v}"
 
-          SHA256_ARM64=$(sha256sum dist/airvoice-darwin-arm64 | cut -d' ' -f1)
-          SHA256_AMD64=$(sha256sum dist/airvoice-darwin-amd64 | cut -d' ' -f1)
-          SHA256_LINUX_ARM64=$(sha256sum dist/airvoice-linux-arm64 | cut -d' ' -f1)
-          SHA256_LINUX_AMD64=$(sha256sum dist/airvoice-linux-amd64 | cut -d' ' -f1)
+          SHA256_ARM64=$(sha256sum dist/airvoice-cli-darwin-arm64 | cut -d' ' -f1)
+          SHA256_AMD64=$(sha256sum dist/airvoice-cli-darwin-amd64 | cut -d' ' -f1)
+          SHA256_LINUX_ARM64=$(sha256sum dist/airvoice-cli-linux-arm64 | cut -d' ' -f1)
+          SHA256_LINUX_AMD64=$(sha256sum dist/airvoice-cli-linux-amd64 | cut -d' ' -f1)
 
           git fetch origin main
           git checkout main
@@ -97,29 +97,29 @@ jobs:
 
             on_macos do
               if Hardware::CPU.arm?
-                url "https://github.com/yuler/airvoice/releases/download/v__VERSION__/airvoice-darwin-arm64"
+                url "https://github.com/yuler/airvoice/releases/download/v__VERSION__/airvoice-cli-darwin-arm64"
                 sha256 "__SHA256_ARM64__"
               else
-                url "https://github.com/yuler/airvoice/releases/download/v__VERSION__/airvoice-darwin-amd64"
+                url "https://github.com/yuler/airvoice/releases/download/v__VERSION__/airvoice-cli-darwin-amd64"
                 sha256 "__SHA256_AMD64__"
               end
             end
 
             on_linux do
               if Hardware::CPU.arm?
-                url "https://github.com/yuler/airvoice/releases/download/v__VERSION__/airvoice-linux-arm64"
+                url "https://github.com/yuler/airvoice/releases/download/v__VERSION__/airvoice-cli-linux-arm64"
                 sha256 "__SHA256_LINUX_ARM64__"
               else
-                url "https://github.com/yuler/airvoice/releases/download/v__VERSION__/airvoice-linux-amd64"
+                url "https://github.com/yuler/airvoice/releases/download/v__VERSION__/airvoice-cli-linux-amd64"
                 sha256 "__SHA256_LINUX_AMD64__"
               end
             end
 
             def install
               if OS.mac?
-                binary = Hardware::CPU.arm? ? "airvoice-darwin-arm64" : "airvoice-darwin-amd64"
+                binary = Hardware::CPU.arm? ? "airvoice-cli-darwin-arm64" : "airvoice-cli-darwin-amd64"
               else
-                binary = Hardware::CPU.arm? ? "airvoice-linux-arm64" : "airvoice-linux-amd64"
+                binary = Hardware::CPU.arm? ? "airvoice-cli-linux-arm64" : "airvoice-cli-linux-amd64"
               end
               bin.install binary => "airvoice"
             end
