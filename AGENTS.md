@@ -15,3 +15,7 @@ Implementation plans live only in `docs/plans/`, named with a zero-padded prefix
 With the Superpowers workflow (`brainstorming` → `writing-plans` → `executing-plans`), write design specs to `docs/specs/` (`NN-topic-design.md`, or `YYYY-MM-DD-topic-design.md` for exploratory work), then the plan to `docs/plans/`, then implement task-by-task.
 
 Do not put plans outside `docs/plans/`, or design specs under `docs/plans/` or `docs/superpowers/specs/`.
+
+## Git commit messages
+
+When committing, use the [git-commit](https://github.com/yuler/skills/tree/main/skills/git-commit) skill to generate the message from the staged diff.
