@@ -6,21 +6,21 @@ class Airvoice < Formula
 
   on_macos do
     if Hardware::CPU.arm?
-      url "https://github.com/yuler/airvoice/releases/download/v#{version}/airvoice-darwin-arm64"
-      sha256 "PLACEHOLDER"
+      url "https://github.com/yuler/airvoice/releases/download/v0.2.2/airvoice-darwin-arm64"
+      sha256 "a1bee32be54d92285ca0040b169fec8a6856ba7fbd3e28431589f65f1e3d5461"
     else
-      url "https://github.com/yuler/airvoice/releases/download/v#{version}/airvoice-darwin-amd64"
-      sha256 "PLACEHOLDER"
+      url "https://github.com/yuler/airvoice/releases/download/v0.2.2/airvoice-darwin-amd64"
+      sha256 "d579081451456ac6c11d08f93801fd41e44d90f33f3887deca395283f26d5ace"
     end
   end
 
   on_linux do
     if Hardware::CPU.arm?
-      url "https://github.com/yuler/airvoice/releases/download/v#{version}/airvoice-linux-arm64"
-      sha256 "PLACEHOLDER"
+      url "https://github.com/yuler/airvoice/releases/download/v0.2.2/airvoice-linux-arm64"
+      sha256 "3a46e5b61d1a40f551ab5511cffe34a9f8c0cfb6b86096bdd2ebb91613d52f57"
     else
-      url "https://github.com/yuler/airvoice/releases/download/v#{version}/airvoice-linux-amd64"
-      sha256 "PLACEHOLDER"
+      url "https://github.com/yuler/airvoice/releases/download/v0.2.2/airvoice-linux-amd64"
+      sha256 "2742974c7c599e86be6affc9be19867fc4f60dbdc95257149534618bdcf7ed31"
     end
   end
 
