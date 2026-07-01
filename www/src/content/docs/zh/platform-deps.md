@@ -34,6 +34,9 @@ systemctl --user enable --now ydotoold
 
 ## Windows
 
-CLI 可通过 `go build` 在 Windows 上编译。WebSocket 服务器正常工作，但剪贴板粘贴和按键注入尚未实现。
+需要 Windows PowerShell 5.x（系统自带 `powershell`）：
 
-当前状态：**实验性，未经测试**。欢迎贡献。
+- **剪贴板**：`Set-Clipboard`（通过 PowerShell）
+- **按键**：`WScript.Shell` SendKeys 模拟 Ctrl+V（发送到当前前台窗口）
+
+运行前请确保目标输入框已获得焦点。若按键注入失败，文本仍会写入剪贴板，可手动按 Ctrl+V。
