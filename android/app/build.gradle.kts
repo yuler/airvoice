@@ -23,8 +23,8 @@ android {
         applicationId = "cc.yuler.airvoice"
         minSdk = 26
         targetSdk = 34
-        versionCode = 204
-        versionName = "0.2.4"
+        versionCode = 300
+        versionName = "0.3.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
