@@ -1,0 +1,143 @@
+name: CLI Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. v0.2.0)'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: 'go.mod'
+
+      - name: Determine tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build binaries
+        run: |
+          VERSION="${{ steps.tag.outputs.version }}"
+          mkdir -p dist
+
+          # macOS ARM64 (Apple Silicon)
+          GOOS=darwin GOARCH=arm64 go build -ldflags "-s -w -X main.version=${VERSION#v}" -o dist/airvoice-cli-darwin-arm64 ./cli
+
+          # macOS AMD64 (Intel)
+          GOOS=darwin GOARCH=amd64 go build -ldflags "-s -w -X main.version=${VERSION#v}" -o dist/airvoice-cli-darwin-amd64 ./cli
+
+          # Linux ARM64
+          GOOS=linux GOARCH=arm64 go build -ldflags "-s -w -X main.version=${VERSION#v}" -o dist/airvoice-cli-linux-arm64 ./cli
+
+          # Linux AMD64
+          GOOS=linux GOARCH=amd64 go build -ldflags "-s -w -X main.version=${VERSION#v}" -o dist/airvoice-cli-linux-amd64 ./cli
+
+          # Windows AMD64
+          GOOS=windows GOARCH=amd64 go build -ldflags "-s -w -X main.version=${VERSION#v}" -o dist/airvoice-cli-windows-amd64.exe ./cli
+
+      - name: Generate checksums
+        run: |
+          cd dist
+          sha256sum airvoice-cli-* > checksums-cli.txt
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ steps.tag.outputs.version }}
+          name: Airvoice CLI ${{ steps.tag.outputs.version }}
+          generate_release_notes: true
+          files: |
+            dist/airvoice-cli-darwin-arm64
+            dist/airvoice-cli-darwin-amd64
+            dist/airvoice-cli-linux-arm64
+            dist/airvoice-cli-linux-amd64
+            dist/airvoice-cli-windows-amd64.exe
+            dist/checksums-cli.txt
+
+      - name: Update Homebrew formula
+        run: |
+          VERSION="${{ steps.tag.outputs.version }}"
+          VERSION_NUM="${VERSION#v}"
+
+          SHA256_ARM64=$(sha256sum dist/airvoice-cli-darwin-arm64 | cut -d' ' -f1)
+          SHA256_AMD64=$(sha256sum dist/airvoice-cli-darwin-amd64 | cut -d' ' -f1)
+          SHA256_LINUX_ARM64=$(sha256sum dist/airvoice-cli-linux-arm64 | cut -d' ' -f1)
+          SHA256_LINUX_AMD64=$(sha256sum dist/airvoice-cli-linux-amd64 | cut -d' ' -f1)
+
+          git fetch origin main
+          git checkout main
+          git pull --ff-only origin main
+
+          mkdir -p Formula
+          cat > Formula/airvoice.rb << 'FORMULA_EOF'
+          class Airvoice < Formula
+            desc "Voice-to-text CLI for Airvoice"
+            homepage "https://github.com/yuler/airvoice"
+            version "__VERSION__"
+            license "MIT"
+
+            on_macos do
+              if Hardware::CPU.arm?
+                url "https://github.com/yuler/airvoice/releases/download/v__VERSION__/airvoice-cli-darwin-arm64"
+                sha256 "__SHA256_ARM64__"
+              else
+                url "https://github.com/yuler/airvoice/releases/download/v__VERSION__/airvoice-cli-darwin-amd64"
+                sha256 "__SHA256_AMD64__"
+              end
+            end
+
+            on_linux do
+              if Hardware::CPU.arm?
+                url "https://github.com/yuler/airvoice/releases/download/v__VERSION__/airvoice-cli-linux-arm64"
+                sha256 "__SHA256_LINUX_ARM64__"
+              else
+                url "https://github.com/yuler/airvoice/releases/download/v__VERSION__/airvoice-cli-linux-amd64"
+                sha256 "__SHA256_LINUX_AMD64__"
+              end
+            end
+
+            def install
+              if OS.mac?
+                binary = Hardware::CPU.arm? ? "airvoice-cli-darwin-arm64" : "airvoice-cli-darwin-amd64"
+              else
+                binary = Hardware::CPU.arm? ? "airvoice-cli-linux-arm64" : "airvoice-cli-linux-amd64"
+              end
+              bin.install binary => "airvoice"
+            end
+
+            test do
+              assert_match "airvoice", shell_output("#{bin}/airvoice version")
+            end
+          end
+          FORMULA_EOF
+
+          sed -i "s/__VERSION__/${VERSION_NUM}/g" Formula/airvoice.rb
+          sed -i "s/__SHA256_ARM64__/${SHA256_ARM64}/g" Formula/airvoice.rb
+          sed -i "s/__SHA256_AMD64__/${SHA256_AMD64}/g" Formula/airvoice.rb
+          sed -i "s/__SHA256_LINUX_ARM64__/${SHA256_LINUX_ARM64}/g" Formula/airvoice.rb
+          sed -i "s/__SHA256_LINUX_AMD64__/${SHA256_LINUX_AMD64}/g" Formula/airvoice.rb
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/airvoice.rb
+          git commit -m "🔖 [homebrew]: Update formula to ${VERSION_NUM}" || echo "No changes to formula"
+          git push origin main
