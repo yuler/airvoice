@@ -1,134 +1,298 @@
-import { ArrowRight } from '@phosphor-icons/react';
+import { useState, useEffect } from 'react';
+import Lightbox from './Lightbox';
 
 interface HeroProps {
   lang: 'en' | 'zh';
   base: string;
 }
 
-// Platform SVG icons (inline, no external deps)
-function WindowsIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-label="Windows">
-      <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.549H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801" />
-    </svg>
-  );
-}
-
-function AppleIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-label="macOS">
-      <path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701" />
-    </svg>
-  );
-}
-
-function LinuxIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-label="Linux">
-      {/* Tux penguin — simplified clean version */}
-      <path d="M12 2C9.243 2 7 4.243 7 7v2c0 .738.203 1.43.556 2.022C6.613 12.482 6 14.207 6 16c0 2.21 1.343 3 3 3h6c1.657 0 3-.79 3-3 0-1.793-.613-3.518-1.556-4.978C16.797 10.43 17 9.738 17 9V7c0-2.757-2.243-5-5-5zm-1.5 6a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5zm3 0a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5zM12 18c-1.5 0-2-.5-2-2s.895-3.5 2-3.5 2 1.5 2 3.5-.5 2-2 2z" />
-    </svg>
-  );
-}
-
-function AndroidIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-label="Android">
-      {/* Material Design Android robot icon */}
-      <path d="M17.6 9.48l1.84-3.18c.16-.31.04-.69-.26-.85a.637.637 0 0 0-.83.22l-1.88 3.24C14.79 8.33 13.44 8 12 8s-2.79.33-4.47.91L5.65 5.67a.637.637 0 0 0-.83-.22c-.3.16-.42.54-.26.85L6.4 9.48C3.3 11.25 1.28 14.44 1 18h22c-.28-3.56-2.3-6.75-5.4-8.52zM7 15.25a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5zm10 0a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5z" />
-    </svg>
-  );
-}
-
-function IosIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-label="iOS">
-      <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
-    </svg>
-  );
-}
-
-export default function Hero({ lang, base }: HeroProps) {
-  const isZh = lang === 'zh';
-  const loc = (path: string) => lang === 'en' ? `${base}${path}` : `${base}zh/${path}`;
+// ── Terminal window mock ──────────────────────────────────────────────────────
+function TerminalWindow() {
+  const bg = '#ffffff';
+  const fg = '#374151';
+  const labelColor = '#6b7280';
 
   return (
-    <section className="py-24 md:py-36">
-      <div className="mx-auto max-w-3xl px-6 text-center">
-
-        {/* Live "LAN Only" badge */}
-        <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-kumo-hairline px-3 py-1.5 text-xs font-medium text-kumo-subtle">
-          <span className="av-pulse-dot" />
-          {isZh ? '局域网专属 · 无需联网' : 'LAN Only · No Internet Required'}
+    <div
+      className="rounded-2xl overflow-hidden shadow-2xl w-[260px] sm:w-[270px]"
+      style={{ background: bg, border: '1px solid #e5e7eb' }}
+    >
+      {/* Title bar */}
+      <div className="flex items-center gap-1.5 px-4 py-3 border-b" style={{ borderColor: '#e5e7eb' }}>
+        <span className="w-2 h-2 rounded-full" style={{ background: '#ff5f57' }} />
+        <span className="w-2 h-2 rounded-full" style={{ background: '#febc2e' }} />
+        <span className="w-2 h-2 rounded-full" style={{ background: '#28c840' }} />
+        <span className="ml-2 text-[9px] text-gray-400 font-mono">airvoice</span>
+      </div>
+      
+      {/* Body with QR and info vertically stacked */}
+      <div className="p-4 flex flex-col items-start">
+        {/* QR Code Container */}
+        <div className="mb-4">
+          <img
+            src="/qrcode.svg"
+            alt="https://github.com/yuler/airvoice"
+            className="w-[200px] h-[200px] block"
+          />
         </div>
 
-        <h1 className="text-4xl font-bold tracking-tight text-kumo-default md:text-5xl lg:text-6xl" style={{ letterSpacing: '-0.04em' }}>
-          {isZh
-            ? <>手机说话，<br />电脑打字</>
-            : <>Speak on your phone,<br />type on your PC</>
-          }
-        </h1>
-
-        <p className="mt-6 text-base text-kumo-subtle md:text-lg" style={{ maxWidth: '480px', margin: '1.5rem auto 0' }}>
-          {isZh
-            ? '局域网语音桥接。无云端、无账号、无追踪——所有数据留在本地。'
-            : 'Voice bridge over your local network. No cloud, no accounts, no data leaves your device.'}
-        </p>
-
-        {/* Platform support row */}
-        <div className="mt-8 flex flex-col items-center gap-3">
-          <p className="text-xs text-kumo-inactive uppercase tracking-widest">
-            {isZh ? '支持平台' : 'Supported Platforms'}
-          </p>
-          <div className="flex items-center gap-1">
-            {/* Desktop platforms */}
-            <div className="flex items-center gap-1">
-              <span className="inline-flex items-center gap-1.5 rounded-md border border-kumo-hairline px-2.5 py-1.5 text-kumo-subtle" title="Windows">
-                <WindowsIcon />
-                <span className="text-xs font-medium">Windows</span>
-              </span>
-              <span className="inline-flex items-center gap-1.5 rounded-md border border-kumo-hairline px-2.5 py-1.5 text-kumo-subtle" title="macOS">
-                <AppleIcon />
-                <span className="text-xs font-medium">macOS</span>
-              </span>
-              <span className="inline-flex items-center gap-1.5 rounded-md border border-kumo-hairline px-2.5 py-1.5 text-kumo-subtle" title="Linux">
-                <LinuxIcon />
-                <span className="text-xs font-medium">Linux</span>
-              </span>
-            </div>
-            {/* Divider */}
-            <span className="mx-2 text-kumo-inactive text-sm select-none">+</span>
-            {/* Mobile platforms */}
-            <div className="flex items-center gap-1">
-              <span className="inline-flex items-center gap-1.5 rounded-md border border-kumo-hairline px-2.5 py-1.5 text-kumo-subtle" title="Android">
-                <AndroidIcon />
-                <span className="text-xs font-medium">Android</span>
-              </span>
-              <span className="inline-flex items-center gap-1.5 rounded-md border border-kumo-hairline px-2.5 py-1.5 text-kumo-subtle" title="iOS">
-                <IosIcon />
-                <span className="text-xs font-medium">iOS</span>
-              </span>
-            </div>
+        {/* Text Contents */}
+        <div className="w-full font-mono text-[9px] leading-relaxed space-y-1 text-left">
+          <div>
+            <span style={{ color: labelColor }}>Token:</span>{' '}
+            <span style={{ color: fg }}>277129e4-35ea-40af-a122-13a5839e5e1f</span>
+          </div>
+          <div>
+            <span style={{ color: labelColor }}>WebSocket URL:</span>{' '}
+            <span style={{ color: fg }}>ws://192.168.20.189:7654/ws</span>
+          </div>
+          <div className="pt-2" style={{ color: labelColor }}>
+            [airvoice] waiting for phone connection...
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
 
-        {/* CTA buttons */}
-        <div className="mt-10 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-          <a
-            href="#get-started"
-            className="inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90"
-            style={{ backgroundColor: 'var(--accent-blue, #006efe)', height: '44px' }}
-          >
-            {isZh ? '快速开始' : 'Get Started'}
-            <ArrowRight size={14} />
-          </a>
-          <a
-            href={loc('docs/background/')}
-            className="inline-flex items-center gap-2 rounded-full border border-kumo-hairline px-6 py-3 text-sm font-medium text-kumo-default transition-colors hover:bg-kumo-control"
-            style={{ height: '44px' }}
-          >
-            {isZh ? '了解更多' : 'Learn more'}
-          </a>
+// ── Desktop client mockup ─────────────────────────────────────────────────────
+function DesktopWindow() {
+  return (
+    <div
+      className="rounded-2xl overflow-hidden shadow-2xl"
+      style={{
+        background: '#fff',
+        width: '170px',
+      }}
+    >
+      <Lightbox
+        src="/desktop.png"
+        alt="Airvoice Desktop Client"
+        className="w-full h-auto block"
+      />
+    </div>
+  );
+}
+
+// ── Mobile phone mock ─────────────────────────────────────────────────────────
+function MobilePhone() {
+  return (
+    <div
+      className="rounded-2xl overflow-hidden shadow-2xl"
+      style={{
+        width: '170px',
+      }}
+    >
+      <Lightbox
+        src="/phone.jpg"
+        alt="Airvoice App Screenshot"
+        className="w-full h-auto block"
+      />
+    </div>
+  );
+}
+
+// ── Mobile hero visuals (stacked phone + desktop client overlay) ───────────────
+function MobileHeroVisual({ activeTab }: { activeTab: 'cli' | 'desktop' }) {
+  const leftItemLeft = activeTab === 'cli' ? 'left-[-12px]' : 'left-[15px]';
+  const phoneRight = 'right-[-12px]';
+
+  return (
+    <div className="relative mx-auto h-[360px] w-[310px]">
+      {/* 1. CLI/Desktop (Left / Background) */}
+      <div className={`absolute ${leftItemLeft} top-8 z-10 scale-[0.75] origin-top-left transition-all duration-300`}>
+        {activeTab === 'cli' ? <TerminalWindow /> : <DesktopWindow />}
+      </div>
+
+      {/* 2. iOS App (Right / Foreground) */}
+      <div className={`absolute ${phoneRight} top-[20px] z-20 scale-[0.8] origin-top-right transition-all duration-300`}>
+        <MobilePhone />
+      </div>
+    </div>
+  );
+}
+
+// ── Desktop hero visual ───────────────────────────────────────────────────────
+function DesktopHeroVisual({ activeTab }: { activeTab: 'cli' | 'desktop' }) {
+  const leftItemLeft = activeTab === 'cli' ? 'left-[10px]' : 'left-[60px]';
+  const phoneLeft = activeTab === 'cli' ? 'left-[320px]' : 'left-[290px]';
+
+  return (
+    <div className="relative flex items-center justify-center h-[420px] w-full max-w-[540px] mx-auto">
+      {/* 1. CLI/Desktop (Left / Background) */}
+      <div className={`absolute ${leftItemLeft} top-12 z-10 transition-all duration-300`}>
+        {activeTab === 'cli' ? <TerminalWindow /> : <DesktopWindow />}
+      </div>
+
+      {/* 2. iOS App GUI (Right / Foreground) */}
+      <div className={`absolute ${phoneLeft} top-4 z-20 transition-all duration-300`}>
+        <MobilePhone />
+      </div>
+    </div>
+  );
+}
+
+// ── Status indicators ─────────────────────────────────────────────────────────
+function StatusIndicators({ isZh }: { isZh: boolean }) {
+  const statuses = [
+    { color: 'var(--status-success)', label: isZh ? '已连接' : 'Connected' },
+    { color: 'var(--status-warning)', label: isZh ? '连接中...' : 'Connecting...' },
+    { color: 'var(--status-error)', label: isZh ? '错误' : 'Error' },
+    { color: 'var(--status-neutral)', label: isZh ? '离线' : 'Offline' },
+  ];
+
+  return (
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+      {statuses.map((s) => (
+        <span key={s.label} className="flex items-center gap-1.5 text-sm" style={{ color: 'var(--secondary-text)' }}>
+          <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: s.color }} />
+          {s.label}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+// ── Download icon ─────────────────────────────────────────────────────────────
+function DownloadIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="7 10 12 15 17 10" />
+      <line x1="12" y1="15" x2="12" y2="3" />
+    </svg>
+  );
+}
+
+function MonitorIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="2" y="3" width="20" height="14" rx="2" />
+      <path d="M8 21h8M12 17v4" />
+    </svg>
+  );
+}
+
+// ── Main Hero ─────────────────────────────────────────────────────────────────
+export default function Hero({ lang, base }: HeroProps) {
+  const [activeTab, setActiveTab] = useState<'cli' | 'desktop'>('cli');
+  const isZh = lang === 'zh';
+
+  return (
+    <section className="py-12 md:py-16 lg:py-20">
+      <div className="mx-auto max-w-6xl px-4 md:px-6">
+
+        {/* ── Desktop layout: 2-col ── */}
+        <div className="flex flex-col gap-10 lg:flex-row lg:items-center lg:gap-12">
+
+          {/* Left column */}
+          <div className="flex-1 min-w-0">
+            {/* ALPHA badge */}
+            <div className="mb-4">
+              <span
+                className="text-xs font-bold uppercase tracking-widest"
+                style={{ color: '#006efe' }}
+              >
+                ALPHA
+              </span>
+            </div>
+
+            {/* Headline */}
+            <h1
+              className="text-4xl font-bold leading-tight tracking-tight md:text-5xl"
+              style={{ color: 'var(--primary-text)', letterSpacing: '-0.03em' }}
+            >
+              {isZh ? (
+                <>与你的设备沟通。<br />简单直接。</>
+              ) : (
+                <>Talk to your<br />devices. Simply.</>
+              )}
+            </h1>
+
+            <p className="mt-4 text-base leading-relaxed" style={{ color: 'var(--secondary-text)', maxWidth: '440px' }}>
+              {isZh
+                ? 'Airvoice 是跨设备通信的统一桥梁。我们提供简洁的移动端应用与强大的命令行 CLI，同时也为不习惯命令行的用户准备了直观易用的桌面客户端。'
+                : 'Airvoice is a unified bridge for cross-device communication, offering a clean mobile app, a powerful CLI, and a sleek desktop client for those who prefer a GUI.'}
+            </p>
+
+            {/* CTA buttons */}
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              {/* Primary */}
+              <a
+                href="https://github.com/yuler/airvoice/releases"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                style={{ background: '#006efe' }}
+              >
+                <DownloadIcon />
+                {isZh ? '下载 CLI' : 'Download CLI'}
+              </a>
+              {/* Secondary */}
+              <a
+                href="https://github.com/yuler/airvoice/releases"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2 rounded-full border px-6 py-3 text-sm font-semibold transition-colors hover:bg-black/5 dark:hover:bg-white/10"
+                style={{ borderColor: 'var(--border-default)', color: 'var(--primary-text)' }}
+              >
+                <MonitorIcon />
+                {isZh ? '下载桌面版' : 'Download Desktop'}
+              </a>
+            </div>
+
+            {/* Status indicators */}
+            <div className="mt-6">
+              <StatusIndicators isZh={isZh} />
+            </div>
+          </div>
+
+          {/* Right column — desktop: terminal + phone, mobile: stacked phone */}
+          <div className="flex-1 min-w-0 flex flex-col items-center justify-center">
+            {/* Tab switcher */}
+            <div className="w-full max-w-[540px] flex justify-center lg:justify-end mb-8">
+              <div className="inline-flex rounded-full p-1" style={{ background: 'var(--background-secondary)', border: '1px solid var(--border-default)' }}>
+                <button
+                  onClick={() => setActiveTab('cli')}
+                  className={`rounded-full px-5 py-2 text-xs font-bold transition-all duration-200 cursor-pointer border-none outline-none ${
+                    activeTab === 'cli'
+                      ? 'shadow-sm'
+                      : 'hover:opacity-85'
+                  }`}
+                  style={
+                    activeTab === 'cli'
+                      ? { backgroundColor: 'var(--background-primary)', color: 'var(--primary-text)' }
+                      : { backgroundColor: 'transparent', color: 'var(--secondary-text)' }
+                  }
+                >
+                  {isZh ? '命令行 CLI' : 'CLI'}
+                </button>
+                <button
+                  onClick={() => setActiveTab('desktop')}
+                  className={`rounded-full px-5 py-2 text-xs font-bold transition-all duration-200 cursor-pointer border-none outline-none ${
+                    activeTab === 'desktop'
+                      ? 'shadow-sm'
+                      : 'hover:opacity-85'
+                  }`}
+                  style={
+                    activeTab === 'desktop'
+                      ? { backgroundColor: 'var(--background-primary)', color: 'var(--primary-text)' }
+                      : { backgroundColor: 'transparent', color: 'var(--secondary-text)' }
+                  }
+                >
+                  {isZh ? '桌面端 Desktop' : 'Desktop'}
+                </button>
+              </div>
+            </div>
+
+            {/* Show different layout based on screen */}
+            <div className="hidden lg:block w-full">
+              <DesktopHeroVisual activeTab={activeTab} />
+            </div>
+            <div className="lg:hidden">
+              <MobileHeroVisual activeTab={activeTab} />
+            </div>
+          </div>
         </div>
       </div>
     </section>
