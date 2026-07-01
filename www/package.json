@@ -1,6 +1,6 @@
 {
   "name": "www",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "engines": {
     "node": ">=24"
@@ -16,7 +16,6 @@
     "@phosphor-icons/react": "^2.1.10",
     "@tailwindcss/vite": "4.0",
     "astro": "^6.4.8",
-
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "tailwindcss": "4.0"
