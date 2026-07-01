@@ -18,14 +18,18 @@ Explore the detailed documentation to understand the project better:
 
 ## Installation
 
-### Homebrew (macOS/Linux)
+### macOS / Linux (Homebrew)
 
 ```bash
-brew tap yuler/tap
+brew tap yuler/airvoice https://github.com/yuler/airvoice
 brew install airvoice
 ```
 
-### Go
+### Windows
+
+Download `airvoice-windows-amd64.exe` from [GitHub Releases](https://github.com/yuler/airvoice/releases), rename to `airvoice.exe`, and add to your PATH.
+
+### Go (all platforms)
 
 ```bash
 go install github.com/yuler/airvoice/cli@latest
@@ -33,7 +37,15 @@ go install github.com/yuler/airvoice/cli@latest
 
 ### Manual Download
 
-Download the latest binary from [GitHub Releases](https://github.com/yuler/airvoice/releases).
+Download the binary for your platform from [GitHub Releases](https://github.com/yuler/airvoice/releases):
+
+| Platform | File |
+|----------|------|
+| macOS (Apple Silicon) | `airvoice-darwin-arm64` |
+| macOS (Intel) | `airvoice-darwin-amd64` |
+| Linux (ARM64) | `airvoice-linux-arm64` |
+| Linux (AMD64) | `airvoice-linux-amd64` |
+| Windows | `airvoice-windows-amd64.exe` |
 
 ---
 

@@ -51,6 +51,9 @@ jobs:
           # Linux AMD64
           GOOS=linux GOARCH=amd64 go build -ldflags "-s -w -X main.version=${VERSION#v}" -o dist/airvoice-linux-amd64 ./cli
 
+          # Windows AMD64
+          GOOS=windows GOARCH=amd64 go build -ldflags "-s -w -X main.version=${VERSION#v}" -o dist/airvoice-windows-amd64.exe ./cli
+
       - name: Generate checksums
         run: |
           cd dist
@@ -67,51 +70,44 @@ jobs:
             dist/airvoice-darwin-amd64
             dist/airvoice-linux-arm64
             dist/airvoice-linux-amd64
+            dist/airvoice-windows-amd64.exe
             dist/checksums.txt
 
       - name: Update Homebrew formula
-        env:
-          TAP_REPO_TOKEN: ${{ secrets.TAP_REPO_TOKEN }}
         run: |
           VERSION="${{ steps.tag.outputs.version }}"
           VERSION_NUM="${VERSION#v}"
 
-          # Calculate SHA256 for macOS ARM64 (primary)
           SHA256_ARM64=$(sha256sum dist/airvoice-darwin-arm64 | cut -d' ' -f1)
           SHA256_AMD64=$(sha256sum dist/airvoice-darwin-amd64 | cut -d' ' -f1)
           SHA256_LINUX_ARM64=$(sha256sum dist/airvoice-linux-arm64 | cut -d' ' -f1)
           SHA256_LINUX_AMD64=$(sha256sum dist/airvoice-linux-amd64 | cut -d' ' -f1)
 
-          # Clone tap repo
-          git clone https://x-access-token:${TAP_REPO_TOKEN}@github.com/yuler/homebrew-tap.git /tmp/tap
-          cd /tmp/tap
-
-          # Create formula
           mkdir -p Formula
-          cat > Formula/airvoice.rb << EOF
+          cat > Formula/airvoice.rb << 'FORMULA_EOF'
           class Airvoice < Formula
             desc "Voice-to-text CLI for Airvoice"
             homepage "https://github.com/yuler/airvoice"
-            version "${VERSION_NUM}"
+            version "__VERSION__"
             license "MIT"
 
             on_macos do
               if Hardware::CPU.arm?
-                url "https://github.com/yuler/airvoice/releases/download/${VERSION}/airvoice-darwin-arm64"
-                sha256 "${SHA256_ARM64}"
+                url "https://github.com/yuler/airvoice/releases/download/v__VERSION__/airvoice-darwin-arm64"
+                sha256 "__SHA256_ARM64__"
               else
-                url "https://github.com/yuler/airvoice/releases/download/${VERSION}/airvoice-darwin-amd64"
-                sha256 "${SHA256_AMD64}"
+                url "https://github.com/yuler/airvoice/releases/download/v__VERSION__/airvoice-darwin-amd64"
+                sha256 "__SHA256_AMD64__"
               end
             end
 
             on_linux do
               if Hardware::CPU.arm?
-                url "https://github.com/yuler/airvoice/releases/download/${VERSION}/airvoice-linux-arm64"
-                sha256 "${SHA256_LINUX_ARM64}"
+                url "https://github.com/yuler/airvoice/releases/download/v__VERSION__/airvoice-linux-arm64"
+                sha256 "__SHA256_LINUX_ARM64__"
               else
-                url "https://github.com/yuler/airvoice/releases/download/${VERSION}/airvoice-linux-amd64"
-                sha256 "${SHA256_LINUX_AMD64}"
+                url "https://github.com/yuler/airvoice/releases/download/v__VERSION__/airvoice-linux-amd64"
+                sha256 "__SHA256_LINUX_AMD64__"
               end
             end
 
@@ -123,11 +119,16 @@ jobs:
               assert_match "airvoice", shell_output("#{bin}/airvoice version")
             end
           end
-          EOF
+          FORMULA_EOF
 
-          # Commit and push
+          sed -i "s/__VERSION__/${VERSION_NUM}/g" Formula/airvoice.rb
+          sed -i "s/__SHA256_ARM64__/${SHA256_ARM64}/g" Formula/airvoice.rb
+          sed -i "s/__SHA256_AMD64__/${SHA256_AMD64}/g" Formula/airvoice.rb
+          sed -i "s/__SHA256_LINUX_ARM64__/${SHA256_LINUX_ARM64}/g" Formula/airvoice.rb
+          sed -i "s/__SHA256_LINUX_AMD64__/${SHA256_LINUX_AMD64}/g" Formula/airvoice.rb
+
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add Formula/airvoice.rb
-          git commit -m "Update airvoice to ${VERSION}"
+          git commit -m "chore: update homebrew formula to ${VERSION}" || echo "No changes to formula"
           git push
