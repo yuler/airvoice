@@ -3,6 +3,8 @@ package server
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -28,7 +30,7 @@ func (m *mockPaster) Name() string {
 }
 
 func TestServerHealth(t *testing.T) {
-	s := New(Config{Addr: ":0", Port: 7383, Hostname: "test-host", Version: "0.1.0"})
+	s := New(Config{Addr: ":0", Port: 7654, Hostname: "test-host", Version: "0.1.0"})
 	ts := httptest.NewServer(http.HandlerFunc(s.handleHealth))
 	defer ts.Close()
 
@@ -42,7 +44,7 @@ func TestServerHealth(t *testing.T) {
 }
 
 func TestServerWSAuth(t *testing.T) {
-	s := New(Config{Addr: ":0", Port: 7383, Hostname: "test-host", Version: "0.1.0"})
+	s := New(Config{Addr: ":0", Port: 7654, Hostname: "test-host", Version: "0.1.0"})
 	s.SetToken("valid-token")
 	ts := httptest.NewServer(http.HandlerFunc(s.handleWS))
 	defer ts.Close()
@@ -71,7 +73,7 @@ func TestServerWSAuth(t *testing.T) {
 
 func TestServerMessageHandling(t *testing.T) {
 	paster := &mockPaster{}
-	s := New(Config{Addr: ":0", Port: 7383, Hostname: "host-pc", Version: "0.1.0", Paster: paster})
+	s := New(Config{Addr: ":0", Port: 7654, Hostname: "host-pc", Version: "0.1.0", Paster: paster})
 	s.SetToken("token")
 	ts := httptest.NewServer(http.HandlerFunc(s.handleWS))
 	defer ts.Close()
@@ -147,7 +149,7 @@ func TestServerMessageHandling(t *testing.T) {
 }
 
 func TestHubConnectionLifecycle(t *testing.T) {
-	s := New(Config{Addr: ":0", Port: 7383, Hostname: "host-pc", Version: "0.1.0"})
+	s := New(Config{Addr: ":0", Port: 7654, Hostname: "host-pc", Version: "0.1.0"})
 	s.SetToken("token")
 	ts := httptest.NewServer(http.HandlerFunc(s.handleWS))
 	defer ts.Close()
@@ -200,7 +202,7 @@ func TestHubConnectionLifecycle(t *testing.T) {
 }
 
 func TestTokenStableAfterDisconnect(t *testing.T) {
-	s := New(Config{Addr: ":0", Port: 7383, Hostname: "host-pc", Version: "0.1.0"})
+	s := New(Config{Addr: ":0", Port: 7654, Hostname: "host-pc", Version: "0.1.0"})
 	s.SetToken("stable-token")
 	ts := httptest.NewServer(http.HandlerFunc(s.handleWS))
 	defer ts.Close()
@@ -233,4 +235,29 @@ func TestTokenStableAfterDisconnect(t *testing.T) {
 		t.Errorf("expected 101, got %d", resp.StatusCode)
 	}
 }
+
+func TestCheckPortAvailable(t *testing.T) {
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	addr := ln.Addr().(*net.TCPAddr)
+	port := addr.Port
+	ln.Close()
+
+	if err := CheckPortAvailable(port); err != nil {
+		t.Errorf("expected port %d to be available, got error: %v", port, err)
+	}
+
+	ln2, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ln2.Close()
+
+	if err := CheckPortAvailable(port); err == nil {
+		t.Errorf("expected port %d to be occupied, got nil error", port)
+	}
+}
+
 

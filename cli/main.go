@@ -28,9 +28,15 @@ func main() {
 	case "serve":
 		var port int
 		fs := flag.NewFlagSet("serve", flag.ExitOnError)
-		fs.IntVar(&port, "port", 7383, "port to listen on")
-		fs.IntVar(&port, "p", 7383, "port to listen on (shorthand)")
+		fs.IntVar(&port, "port", 7654, "port to listen on")
+		fs.IntVar(&port, "p", 7654, "port to listen on (shorthand)")
 		_ = fs.Parse(os.Args[2:])
+
+		if err := server.CheckPortAvailable(port); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
+
 
 		paster, err := paste.New()
 		if err != nil {
@@ -77,7 +83,7 @@ func main() {
 
 func printUsage() {
 	fmt.Fprintf(os.Stderr, "Usage:\n")
-	fmt.Fprintf(os.Stderr, "  airvoice serve [--port 7383]\n")
+	fmt.Fprintf(os.Stderr, "  airvoice serve [--port 7654]\n")
 	fmt.Fprintf(os.Stderr, "  airvoice doctor\n")
 	fmt.Fprintf(os.Stderr, "  airvoice version\n")
 }

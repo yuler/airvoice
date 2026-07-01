@@ -16,7 +16,7 @@ func TestHubMultipleConnections(t *testing.T) {
 		t.Fatalf("expected 0 connections, got %d", hub.Count())
 	}
 
-	s := New(Config{Addr: ":0", Port: 7383, Hostname: "test", Version: "0.1.0"})
+	s := New(Config{Addr: ":0", Port: 7654, Hostname: "test", Version: "0.1.0"})
 	s.SetToken("tok")
 	ts := httptest.NewServer(http.HandlerFunc(s.handleWS))
 	defer ts.Close()
@@ -56,7 +56,7 @@ func TestHubMultipleConnections(t *testing.T) {
 
 func TestHubRemoveOnDisconnect(t *testing.T) {
 	hub := NewHub()
-	s := New(Config{Addr: ":0", Port: 7383, Hostname: "test", Version: "0.1.0"})
+	s := New(Config{Addr: ":0", Port: 7654, Hostname: "test", Version: "0.1.0"})
 	s.hub = hub
 	s.SetToken("tok")
 	ts := httptest.NewServer(http.HandlerFunc(s.handleWS))

@@ -1,0 +1,18 @@
+{
+  "pair.title": "Pair Device",
+  "pair.subtitle": "Scan QR code with your phone",
+  "status.connected": "Connected to {device}",
+  "status.connectedShort": "Connected",
+  "status.connecting": "Connecting...",
+  "status.waiting": "Waiting for device",
+  "status.disconnected": "Disconnected",
+  "status.connectedTitle": "Connected",
+  "status.waitingTitle": "Pair Device",
+  "log.connected": "Connected to device",
+  "log.handshake": "WebSocket handshake complete",
+  "log.listening": "Listening for audio stream...",
+  "qr.loading": "Loading QR code...",
+  "qr.error": "Failed to generate QR code",
+  "qr.refreshed": "Pairing code refreshed",
+  "qr.refreshError": "Failed to refresh pairing code"
+}

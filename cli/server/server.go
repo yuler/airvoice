@@ -1,6 +1,9 @@
 package server
 
 import (
+	"context"
+	"fmt"
+	"net"
 	"net/http"
 	"sync"
 	"time"
@@ -14,16 +17,21 @@ type Config struct {
 	Addr, Hostname, Version string
 	Port                     int
 	Paster                   paste.Paster
+	OnTextReceived           func(content, device string)
+	OnConnect               func(device string)
+	OnDisconnect            func()
 }
 
 // Server handles health checks and upgrades/coordinates websocket connections.
 type Server struct {
-	cfg      Config
-	hub      *Hub
-	upgrader websocket.Upgrader
-	tokenMu  sync.RWMutex
-	token    string
-	pasteMu  sync.Mutex
+	cfg        Config
+	hub        *Hub
+	upgrader   websocket.Upgrader
+	tokenMu    sync.RWMutex
+	token      string
+	pasteMu    sync.Mutex
+	httpServer *http.Server
+	mu         sync.Mutex
 }
 
 // New returns a newly configured Server instance.
@@ -58,7 +66,30 @@ func (s *Server) ListenAndServe() error {
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  120 * time.Second,
 	}
+	s.mu.Lock()
+	s.httpServer = srv
+	s.mu.Unlock()
 	return srv.ListenAndServe()
+}
+
+// DisconnectClients closes active WebSocket connections without stopping the server.
+func (s *Server) DisconnectClients() {
+	s.hub.CloseAll()
+}
+
+// Close gracefully shuts down the server and closes all connections.
+func (s *Server) Close() error {
+	s.hub.CloseAll()
+
+	s.mu.Lock()
+	srv := s.httpServer
+	s.mu.Unlock()
+	if srv != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		return srv.Shutdown(ctx)
+	}
+	return nil
 }
 
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
@@ -81,6 +112,9 @@ func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
 	}
 
 	logStatus("client connected from %s (active: %d)", r.RemoteAddr, s.hub.Count()+1)
+	if s.cfg.OnConnect != nil {
+		s.cfg.OnConnect(r.RemoteAddr)
+	}
 	s.handleConnection(conn)
 }
 
@@ -89,3 +123,14 @@ func (s *Server) validToken(token string) bool {
 	defer s.tokenMu.RUnlock()
 	return token != "" && token == s.token
 }
+
+// CheckPortAvailable checks if a TCP port is available to listen on all interfaces.
+func CheckPortAvailable(port int) error {
+	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+	if err != nil {
+		return fmt.Errorf("port %d is already in use", port)
+	}
+	ln.Close()
+	return nil
+}
+
