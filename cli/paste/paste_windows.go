@@ -26,16 +26,22 @@ func (w *windowsPaster) Paste(text string) error {
 	// Base64-encode the text to completely bypass any Windows/PowerShell console code page encoding issues.
 	encoded := base64.StdEncoding.EncodeToString([]byte(text))
 
-	// Write base64 string to powershell via stdin, decode it in-memory as UTF-8,
-	// and set it to the clipboard in a single PowerShell invocation.
-	psCmd := "$ErrorActionPreference = 'Stop'; $b = [Console]::In.ReadToEnd().Trim(); if ($b) { Set-Clipboard -Value ([System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($b))) }"
+	// Combine clipboard and keystroke into a single PowerShell invocation to minimize startup overhead.
+	// Uses try/catch with error tokens so Go can distinguish failure modes.
+	psCmd := "$ErrorActionPreference = 'Stop'; $b = [Console]::In.ReadToEnd().Trim(); if ($b) { " +
+		"try { Set-Clipboard -Value ([System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($b))) } catch { throw 'CLIPBOARD_FAILED' }; " +
+		"Start-Sleep -Milliseconds 80; " +
+		"try { (New-Object -ComObject WScript.Shell).SendKeys('^v') } catch { throw 'KEYSTROKE_FAILED' } " +
+		"}"
 	if err := runCommand("powershell", encoded, "-NoProfile", "-Command", psCmd); err != nil {
-		return fmt.Errorf("clipboard (Set-Clipboard) failed: %w", err)
-	}
-	time.Sleep(80 * time.Millisecond)
-
-	if err := runCommand("powershell", "", "-NoProfile", "-Command", pasteKeystrokeScript); err != nil {
-		return formatWindowsKeystrokeError(err)
+		errStr := err.Error()
+		if strings.Contains(errStr, "CLIPBOARD_FAILED") {
+			return fmt.Errorf("clipboard (Set-Clipboard) failed: %w", err)
+		}
+		if strings.Contains(errStr, "KEYSTROKE_FAILED") {
+			return formatWindowsKeystrokeError(err)
+		}
+		return fmt.Errorf("paste via PowerShell failed: %w", err)
 	}
 	return nil
 }
@@ -45,5 +51,5 @@ func (w *windowsPaster) Name() string {
 }
 
 func formatWindowsKeystrokeError(err error) error {
-	return fmt.Errorf("keystroke (SendKeys) failed: %w", err)
+	return fmt.Errorf("keystroke (SendKeys) failed: %w; text copied to clipboard, please press Ctrl+V manually", err)
 }
