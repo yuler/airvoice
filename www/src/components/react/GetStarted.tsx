@@ -113,6 +113,9 @@ export default function GetStarted({ lang, base }: GetStartedProps) {
                   brew tap yuler/airvoice https://github.com/yuler/airvoice && brew install airvoice
                 </code>
               </div>
+              <div className="text-center text-xs text-kumo-subtle py-1">
+                {isZh ? '或' : 'or'}
+              </div>
               <div
                 className="rounded-lg p-3"
                 style={{ backgroundColor: 'var(--color-kumo-control, #fafafa)', border: '1px solid var(--color-kumo-hairline, #eaeaea)' }}
