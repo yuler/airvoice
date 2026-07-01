@@ -27,3 +27,8 @@ android/app/release/
 *.aab
 
 tmp
+
+# Astro / www
+www/dist/
+www/.astro/
+

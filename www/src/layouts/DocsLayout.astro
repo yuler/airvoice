@@ -4,6 +4,7 @@ import BaseLayout from './BaseLayout.astro';
 import Header from '../components/react/Header';
 import DocsSidebar from '../components/react/DocsSidebar';
 import TableOfContents from '../components/react/TableOfContents';
+import Footer from '../components/react/Footer';
 
 interface Props {
   title: string;
@@ -19,26 +20,30 @@ const base = import.meta.env.BASE_URL;
 <BaseLayout title={title} description={description} lang={lang}>
   <DocsSidebar lang={lang} base={base} currentPath={Astro.url.pathname} client:load />
 
-  <div class="main-content min-h-screen md:ml-64">
+  <div class="main-content flex flex-col min-h-screen md:ml-64">
     <Header lang={lang} base={base} active="docs" currentPath={Astro.url.pathname} client:load />
 
-    <div class="flex">
-      <main class="flex-1 overflow-auto px-6 py-10 md:px-12 lg:pr-0">
-        <article class="mx-auto max-w-3xl">
-          <h1 class="mb-8 text-3xl font-bold tracking-tight text-kumo-default">{title}</h1>
-          <div class="prose prose-sm prose-kumo max-w-none">
-            <slot />
-          </div>
-        </article>
-      </main>
+    <div class="flex-1">
+      <div class="flex">
+        <main class="flex-1 overflow-auto px-6 py-10 md:px-12 lg:pr-0">
+          <article class="mx-auto max-w-3xl">
+            <h1 class="mb-8 text-3xl font-bold tracking-tight text-kumo-default">{title}</h1>
+            <div class="prose prose-sm prose-kumo max-w-none">
+              <slot />
+            </div>
+          </article>
+        </main>
 
-      {headings.length > 0 && (
-        <aside class="hidden w-56 shrink-0 xl:block">
-          <div class="sticky top-24 overflow-auto px-6 py-10">
-            <TableOfContents headings={headings} lang={lang} client:load />
-          </div>
-        </aside>
-      )}
+        {headings.length > 0 && (
+          <aside class="hidden w-56 shrink-0 xl:block">
+            <div class="sticky top-24 overflow-auto px-6 py-10">
+              <TableOfContents headings={headings} lang={lang} client:load />
+            </div>
+          </aside>
+        )}
+      </div>
     </div>
+    
+    <Footer lang={lang} client:load />
   </div>
 </BaseLayout>
