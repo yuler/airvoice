@@ -15,6 +15,14 @@ PKG_CONFIG_PATH = "./.mise/pkgconfig"
 description = "Install mise tools and platform dependencies"
 run = "./scripts/setup.sh"
 
+[tasks.version]
+description = "Show versions for all platforms (reads from VERSION file)"
+run = "./scripts/version.sh"
+
+[tasks.bump]
+description = "Bump version across all platforms (patch | minor | major | X.Y.Z)"
+run = "./scripts/bump.sh {{arg(name='level',optional=true)}}" 
+
 # -- CLI (Go) --
 
 [tasks."cli:dev"]
