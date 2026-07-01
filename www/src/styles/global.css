@@ -4,6 +4,28 @@
 
 @custom-variant dark (&:where([data-mode="dark"], [data-mode="dark"] *));
 
+/* Airvoice — LAN badge pulse animation */
+@keyframes av-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+.av-pulse-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background-color: #00ac3a;
+  animation: av-pulse 2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+/* Smooth font rendering */
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 :root {
   --text-color-kumo-inactive: oklch(55% 0 0);
   --accent-blue: #006efe;
