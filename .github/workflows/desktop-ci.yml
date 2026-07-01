@@ -28,6 +28,7 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version-file: 'go.mod'
+          cache-dependency-path: go.sum
 
       - name: Set up Node.js
         uses: actions/setup-node@v5
@@ -36,11 +37,17 @@ jobs:
           cache: 'npm'
           cache-dependency-path: desktop/frontend/package-lock.json
 
+      - name: Install Wails
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+
       - name: Build frontend
-        working-directory: desktop/frontend
+        working-directory: desktop
         run: |
-          npm ci
-          npm run build
+          npm ci --prefix frontend
+          mkdir -p frontend/dist
+          printf '%s\n' '<!doctype html><html></html>' > frontend/dist/index.html
+          wails generate module
+          npm run build --prefix frontend
 
       - name: Run desktop tests
         run: go test -v ./desktop/...
