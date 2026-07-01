@@ -2,6 +2,9 @@
 bin/airvoice
 .build/
 
+# tmp
+tmp
+
 # deps
 node_modules
 
@@ -27,12 +30,6 @@ android/app/release/
 *.apk
 *.aab
 
-tmp
-
-# Astro / www
-www/dist/
-www/.astro/
-
 # Desktop frontend
 desktop/airvoice
 desktop/desktop
@@ -41,3 +38,7 @@ desktop/frontend/node_modules
 desktop/frontend/dist
 desktop/frontend/wailsjs/
 desktop/frontend/package.json.md5
+
+# WWW
+www/.astro
+www/dist
