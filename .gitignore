@@ -30,6 +30,12 @@ android/app/release/
 *.apk
 *.aab
 
+# Android signing
+*.keystore
+*.jks
+*.p12
+airvoice-release-secrets.env
+
 # Desktop frontend
 desktop/airvoice
 desktop/desktop
