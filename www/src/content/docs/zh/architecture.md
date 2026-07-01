@@ -41,6 +41,7 @@ order: 4
 | macOS | `GOOS=darwin` | `pbcopy` | `osascript` Cmd+V | 辅助功能权限 |
 | Linux X11 | not wayland | `xclip` | `xdotool ctrl+v` | `xclip`, `xdotool` |
 | Linux Wayland | `XDG_SESSION_TYPE=wayland` 或 `WAYLAND_DISPLAY` | `wl-copy` | `ydotool` Ctrl+V 扫描码 | `wl-clipboard`, `ydotool`, `ydotoold` |
+| Windows | `GOOS=windows` | PowerShell `Set-Clipboard` | `WScript.Shell` Ctrl+V | Windows PowerShell 5.x |
 
 ## 通信协议
 

@@ -34,6 +34,11 @@ systemctl --user enable --now ydotoold
 
 ## Windows
 
-The CLI compiles on Windows via `go build`. The WebSocket server works, but clipboard paste and keystroke injection are not yet implemented.
+Requires Windows PowerShell 5.x (built-in `powershell`):
+
+- **Clipboard**: `Set-Clipboard` (via PowerShell)
+- **Keystroke**: `WScript.Shell` SendKeys simulates Ctrl+V (sent to the foreground window)
+
+Ensure the target text field has focus before sending. If keystroke injection fails, text remains on the clipboard — press Ctrl+V manually.
 
 Current status: **experimental, untested**. Contributions welcome.

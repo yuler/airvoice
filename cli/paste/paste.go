@@ -26,6 +26,7 @@ func runCommandCapture(name string, stdin string, args ...string) (string, error
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, name, args...)
+	configureCmd(cmd)
 	if stdin != "" {
 		cmd.Stdin = strings.NewReader(stdin)
 	}

@@ -42,6 +42,7 @@ func TestWindowsPaster(t *testing.T) {
 
 		expected := []commandCall{
 			{name: "powershell", stdin: encoded, args: []string{"-NoProfile", "-Command", psCmd}},
+			{name: "powershell", stdin: "", args: []string{"-NoProfile", "-Command", pasteKeystrokeScript}},
 		}
 		if !reflect.DeepEqual(calls, expected) {
 			t.Errorf("got calls %+v, expected %+v", calls, expected)
@@ -60,14 +61,32 @@ func TestWindowsPaster(t *testing.T) {
 		}
 	})
 
-	t.Run("windowsPaster failure", func(t *testing.T) {
+	t.Run("windowsPaster clipboard failure", func(t *testing.T) {
 		runCommand = func(name string, stdin string, args ...string) error {
-			return errors.New("paste failed")
+			return errors.New("clipboard failed")
 		}
 		p := &windowsPaster{}
 		err := p.Paste("hello")
-		if err == nil || err.Error() != "failed to paste via PowerShell: paste failed" {
-			t.Errorf("expected paste failed error, got: %v", err)
+		if err == nil || err.Error() != "clipboard (Set-Clipboard) failed: clipboard failed" {
+			t.Errorf("expected clipboard failed error, got: %v", err)
+		}
+	})
+
+	t.Run("windowsPaster keystroke failure", func(t *testing.T) {
+		runCommand = func(name string, stdin string, args ...string) error {
+			if stdin != "" {
+				return nil
+			}
+			return errors.New("sendkeys failed")
+		}
+		p := &windowsPaster{}
+		err := p.Paste("hello")
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+		want := "keystroke (SendKeys) failed: sendkeys failed；文本已复制到剪贴板，可手动按 Ctrl+V"
+		if err.Error() != want {
+			t.Errorf("expected %q, got: %v", want, err)
 		}
 	})
 }
