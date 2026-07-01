@@ -5,6 +5,7 @@ import Hero from '../components/react/Hero';
 import Features from '../components/react/Features';
 import WorksEverywhere from '../components/react/WorksEverywhere';
 import Footer from '../components/react/Footer';
+import GetStarted from '../components/react/GetStarted';
 
 const base = import.meta.env.BASE_URL;
 ---
@@ -16,6 +17,7 @@ const base = import.meta.env.BASE_URL;
 >
   <Header lang="en" base={base} active="home" currentPath={Astro.url.pathname} client:load />
   <Hero lang="en" base={base} client:load />
+  <GetStarted lang="en" base={base} client:load />
   <Features lang="en" client:load />
   <WorksEverywhere lang="en" />
   <Footer lang="en" />

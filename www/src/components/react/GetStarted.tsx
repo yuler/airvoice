@@ -53,13 +53,13 @@ export default function GetStarted({ lang, base }: GetStartedProps) {
           </h2>
           <p className="mt-3 text-sm text-kumo-subtle">
             {isZh
-              ? '需要安装两个客户端：桌面端 CLI + 手机端 App'
-              : 'Two clients needed: Desktop CLI + Mobile App'}
+              ? '需要 PC 和手机端'
+              : 'PC and mobile required'}
           </p>
         </div>
 
         <div className="mx-auto grid max-w-4xl grid-cols-1 gap-6 md:grid-cols-2">
-          {/* Desktop CLI Card */}
+          {/* PC Card */}
           <div
             className="rounded-xl border border-kumo-hairline p-6"
             style={{ backgroundColor: 'var(--color-kumo-canvas, #fff)' }}
@@ -71,11 +71,13 @@ export default function GetStarted({ lang, base }: GetStartedProps) {
                   style={{ backgroundColor: 'var(--color-kumo-control, #fafafa)', color: 'var(--accent-blue, #006efe)' }}
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="4 17 10 11 4 5" /><line x1="12" y1="19" x2="20" y2="19" />
+                    <rect x="2" y="3" width="20" height="14" rx="2" />
+                    <line x1="8" y1="21" x2="16" y2="21" />
+                    <line x1="12" y1="17" x2="12" y2="21" />
                   </svg>
                 </div>
                 <h3 className="text-sm font-semibold text-kumo-default">
-                  {isZh ? '桌面端 CLI' : 'Desktop CLI'}
+                  {isZh ? '电脑端' : 'PC'}
                 </h3>
               </div>
 
@@ -98,11 +100,22 @@ export default function GetStarted({ lang, base }: GetStartedProps) {
               </div>
             </div>
 
-            {/* Install commands */}
+            {/* CLI install */}
             <div className="mb-5 space-y-2">
               <p className="text-xs font-medium text-kumo-subtle uppercase tracking-wider">
-                {isZh ? '安装方式' : 'Install'}
+                CLI
               </p>
+              <div
+                className="rounded-lg p-3"
+                style={{ backgroundColor: 'var(--color-kumo-control, #fafafa)', border: '1px solid var(--color-kumo-hairline, #eaeaea)' }}
+              >
+                <code className="font-mono text-xs text-kumo-default">
+                  brew tap yuler/airvoice https://github.com/yuler/airvoice && brew install airvoice
+                </code>
+              </div>
+              <div className="text-center text-xs text-kumo-subtle py-1">
+                {isZh ? '或' : 'or'}
+              </div>
               <div
                 className="rounded-lg p-3"
                 style={{ backgroundColor: 'var(--color-kumo-control, #fafafa)', border: '1px solid var(--color-kumo-hairline, #eaeaea)' }}
@@ -111,26 +124,41 @@ export default function GetStarted({ lang, base }: GetStartedProps) {
                   go install github.com/yuler/airvoice/cli@latest
                 </code>
               </div>
-              <div
-                className="rounded-lg p-3"
-                style={{ backgroundColor: 'var(--color-kumo-control, #fafafa)', border: '1px solid var(--color-kumo-hairline, #eaeaea)' }}
-              >
-                <code className="font-mono text-xs text-kumo-default">
-                  mise trust && mise install
-                </code>
-              </div>
             </div>
 
-            <a
-              href="https://github.com/yuler/airvoice/releases"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-medium text-white transition-opacity hover:opacity-90"
-              style={{ backgroundColor: 'var(--accent-blue, #006efe)' }}
-            >
-              {isZh ? '下载 Release' : 'Download Release'}
-              <ArrowSquareOut size={11} />
-            </a>
+            {/* Desktop App */}
+            <div className="mb-5 border-t border-kumo-hairline pt-5">
+              <p className="mb-2 text-xs font-medium text-kumo-subtle uppercase tracking-wider">
+                {isZh ? '桌面端 App' : 'Desktop App'}
+              </p>
+              <p className="text-sm leading-relaxed text-kumo-subtle">
+                {isZh
+                  ? '可视化状态面板、连接配置与历史记录，适合不习惯命令行的用户。'
+                  : 'Visual status panel, connection settings, and history — for users who prefer a GUI.'}
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <a
+                href="https://github.com/yuler/airvoice/releases"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-medium text-white transition-opacity hover:opacity-90"
+                style={{ backgroundColor: 'var(--accent-blue, #006efe)' }}
+              >
+                {isZh ? '下载 CLI' : 'Download CLI'}
+                <ArrowSquareOut size={11} />
+              </a>
+              <a
+                href="https://github.com/yuler/airvoice/releases"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-full border border-kumo-hairline px-4 py-2 text-xs font-medium text-kumo-default transition-colors hover:bg-kumo-control"
+              >
+                {isZh ? '下载桌面版' : 'Download Desktop'}
+                <ArrowSquareOut size={11} />
+              </a>
+            </div>
           </div>
 
           {/* Mobile App Card */}

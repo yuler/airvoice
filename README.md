@@ -16,6 +16,39 @@ Explore the detailed documentation to understand the project better:
 
 ---
 
+## Installation
+
+### macOS / Linux (Homebrew)
+
+```bash
+brew tap yuler/airvoice https://github.com/yuler/airvoice
+brew install airvoice
+```
+
+### Windows
+
+Download `airvoice-windows-amd64.exe` from [GitHub Releases](https://github.com/yuler/airvoice/releases), rename to `airvoice.exe`, and add to your PATH.
+
+### Go (all platforms)
+
+```bash
+go install github.com/yuler/airvoice/cli@latest
+```
+
+### Manual Download
+
+Download the binary for your platform from [GitHub Releases](https://github.com/yuler/airvoice/releases):
+
+| Platform | File |
+|----------|------|
+| macOS (Apple Silicon) | `airvoice-darwin-arm64` |
+| macOS (Intel) | `airvoice-darwin-amd64` |
+| Linux (ARM64) | `airvoice-linux-arm64` |
+| Linux (AMD64) | `airvoice-linux-amd64` |
+| Windows | `airvoice-windows-amd64.exe` |
+
+---
+
 ## Quick Start
 
 This project uses [mise](https://mise.jdx.dev/) to pin **Go**, **Swift**, and **gum**, and to run common dev tasks.
