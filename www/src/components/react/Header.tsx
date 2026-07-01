@@ -110,14 +110,21 @@ export default function Header({ lang, base, active = 'home', currentPath }: Hea
   };
 
   const getLangTogglePath = () => {
-    const path = currentPath || '/';
+    const normalizedBase = base.endsWith('/') ? base : `${base}/`;
+    const path = currentPath || normalizedBase;
+
     if (lang === 'en') {
-      if (path.startsWith(base + 'zh/')) return path;
-      const subPath = path.startsWith(base) ? path.slice(base.length) : path;
-      return `${base}zh/${subPath}`.replace(/\/+/g, '/');
+      if (path.startsWith(normalizedBase + 'zh')) return path;
+      const subPath = path.startsWith(normalizedBase) ? path.slice(normalizedBase.length) : path.replace(/^\//, '');
+      return `${normalizedBase}zh/${subPath}`.replace(/\/+/g, '/');
     } else {
-      const subPath = path.startsWith(base + 'zh/') ? path.slice((base + 'zh/').length) : path;
-      return `${base}${subPath}`.replace(/\/+/g, '/');
+      if (path.startsWith(normalizedBase + 'zh/')) {
+        const subPath = path.slice((normalizedBase + 'zh/').length);
+        return `${normalizedBase}${subPath}`.replace(/\/+/g, '/');
+      } else if (path === normalizedBase + 'zh' || path === normalizedBase + 'zh/') {
+        return normalizedBase;
+      }
+      return path;
     }
   };
 

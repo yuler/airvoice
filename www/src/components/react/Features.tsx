@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 
 interface FeaturesProps {
   lang: 'en' | 'zh';

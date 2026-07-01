@@ -30,7 +30,7 @@ function TerminalWindow() {
         {/* QR Code Container */}
         <div className="mb-4">
           <img
-            src={(import.meta.env.BASE_URL || '/') + 'qrcode.svg'}
+            src={`${import.meta.env.BASE_URL || '/'}qrcode.svg`.replace(/\/+/g, '/')}
             alt="https://github.com/yuler/airvoice"
             className="w-[200px] h-[200px] block"
           />
@@ -66,7 +66,7 @@ function DesktopWindow() {
       }}
     >
       <Lightbox
-        src={(import.meta.env.BASE_URL || '/') + 'desktop.png'}
+        src={`${import.meta.env.BASE_URL || '/'}desktop.png`.replace(/\/+/g, '/')}
         alt="Airvoice Desktop Client"
         className="w-full h-auto block"
       />
@@ -84,7 +84,7 @@ function MobilePhone() {
       }}
     >
       <Lightbox
-        src={(import.meta.env.BASE_URL || '/') + 'phone.jpg'}
+        src={`${import.meta.env.BASE_URL || '/'}phone.jpg`.replace(/\/+/g, '/')}
         alt="Airvoice App Screenshot"
         className="w-full h-auto block"
       />
