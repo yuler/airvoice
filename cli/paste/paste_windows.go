@@ -5,11 +5,8 @@ package paste
 import (
 	"encoding/base64"
 	"fmt"
-	"time"
+	"strings"
 )
-
-// Keystroke via WScript.Shell SendKeys (targets the active foreground window).
-const pasteKeystrokeScript = `(New-Object -ComObject WScript.Shell).SendKeys('^v')`
 
 type windowsPaster struct{}
 
