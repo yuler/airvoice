@@ -7,7 +7,7 @@ import (
 	"runtime"
 	"sync"
 
-	"github.com/getlantern/systray"
+	"fyne.io/systray"
 	"github.com/wailsapp/wails/v2/pkg/menu"
 	wailsruntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
