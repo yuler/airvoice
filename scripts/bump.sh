@@ -172,6 +172,10 @@ with open('www/package.json', 'w') as f:
 "
 gum_info "www/package.json"
 
+# 10. Homebrew formula
+sed -i "s/version \"$current\"/version \"$new_version\"/" Formula/airvoice.rb
+gum_info "Formula/airvoice.rb"
+
 # ── Git tag ──
 
 echo ""

@@ -108,7 +108,7 @@ export default function GetStarted({ lang, base }: GetStartedProps) {
                 style={{ backgroundColor: 'var(--color-kumo-control, #fafafa)', border: '1px solid var(--color-kumo-hairline, #eaeaea)' }}
               >
                 <code className="font-mono text-xs text-kumo-default">
-                  brew tap yuler/airvoice && brew install airvoice
+                  brew tap yuler/airvoice https://github.com/yuler/airvoice && brew install airvoice
                 </code>
               </div>
               <div
