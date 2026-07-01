@@ -3,22 +3,20 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import Header from '../components/react/Header';
 import Hero from '../components/react/Hero';
 import Features from '../components/react/Features';
-import HowItWorks from '../components/react/HowItWorks';
-import GetStarted from '../components/react/GetStarted';
+import WorksEverywhere from '../components/react/WorksEverywhere';
 import Footer from '../components/react/Footer';
 
 const base = import.meta.env.BASE_URL;
 ---
 
 <BaseLayout
-  title="Airvoice — Speak on your phone, type on your PC"
-  description="LAN voice bridge for Mac and Linux. No cloud, no accounts."
+  title="Airvoice — Talk to your devices. Simply."
+  description="Talk to your devices. Simply. Airvoice is a unified bridge for cross-device communication with a clean mobile app and powerful CLI."
   lang="en"
 >
   <Header lang="en" base={base} active="home" currentPath={Astro.url.pathname} client:load />
-  <Hero lang="en" base={base} />
-  <Features lang="en" />
-  <HowItWorks lang="en" />
-  <GetStarted lang="en" base={base} />
-  <Footer lang="en" base={base} />
+  <Hero lang="en" base={base} client:load />
+  <Features lang="en" client:load />
+  <WorksEverywhere lang="en" />
+  <Footer lang="en" />
 </BaseLayout>

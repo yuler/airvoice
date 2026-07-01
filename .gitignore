@@ -29,6 +29,10 @@ android/app/release/
 
 tmp
 
+# Astro / www
+www/dist/
+www/.astro/
+
 # Desktop frontend
 desktop/airvoice
 desktop/desktop

@@ -4,9 +4,86 @@
 
 @custom-variant dark (&:where([data-mode="dark"], [data-mode="dark"] *));
 
+/* Lightbox dialog */
+.lightbox-dialog {
+  opacity: 0;
+  transition: all 0.25s ease;
+}
+.lightbox-dialog[open] {
+  opacity: 1;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  animation: dialog-zoom-in 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+.lightbox-dialog[open]::backdrop {
+  animation: dialog-fade-in 0.25s ease-out forwards;
+}
+@keyframes dialog-zoom-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+@keyframes dialog-fade-in {
+  from {
+    background-color: rgba(0, 0, 0, 0);
+    backdrop-filter: blur(0px);
+    -webkit-backdrop-filter: blur(0px);
+  }
+  to {
+    background-color: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+}
+
+/* Airvoice — LAN badge pulse animation */
+@keyframes av-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+.av-pulse-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background-color: #00ac3a;
+  animation: av-pulse 2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+/* Smooth font rendering & global variables styling */
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--background-primary);
+  color: var(--primary-text);
+  transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+}
+
 :root {
   --text-color-kumo-inactive: oklch(55% 0 0);
   --accent-blue: #006efe;
+
+  /* Airvoice Design Tokens */
+  --primary-text: #171717;
+  --secondary-text: #666666;
+  --muted-text: #888888;
+  --background-primary: #ffffff;
+  --background-secondary: #fafafa;
+  --border-default: #eaeaea;
+  --status-success: #28a948;
+  --status-warning: #ffae00;
+  --status-error: #fc0035;
+  --status-neutral: #8f8f8f;
 }
 
 [data-mode="dark"] {
@@ -14,6 +91,18 @@
   --text-color-kumo-strong: oklch(99% 0 0);
   --text-color-kumo-subtle: oklch(85% 0 0);
   --text-color-kumo-inactive: oklch(60% 0 0);
+
+  /* Airvoice Design Tokens - Dark */
+  --primary-text: #ededed;
+  --secondary-text: #a0a0a0;
+  --muted-text: #666666;
+  --background-primary: #000000;
+  --background-secondary: #0d0e15;
+  --border-default: #2e2e2e;
+  --status-success: #00ac3a;
+  --status-warning: #ffae00;
+  --status-error: #e2162a;
+  --status-neutral: #8f8f8f;
 }
 
 /* Docs prose styling — Light mode (DESIGN.md tokens) */
