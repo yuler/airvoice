@@ -139,7 +139,16 @@ class AirvoiceViewModel(application: Application) : AndroidViewModel(application
     private fun handleSentAck(success: Boolean, sentText: String, trigger: SendTrigger) {
         Log.d("AirvoiceViewModel", "handleSentAck called: success=$success, sentText=\"$sentText\", currentText=\"${_inputText.value}\"")
         if (success) {
-            _inputText.value = ""
+            val currentText = _inputText.value
+            val remaining = if (currentText.startsWith(sentText)) {
+                currentText.removePrefix(sentText)
+            } else {
+                currentText
+            }
+            _inputText.value = remaining
+            if (remaining.isNotEmpty()) {
+                autoSendController.textDidChange(remaining)
+            }
             _sendTimedOut.value = false
             isRetry = false
             vibratorHelper.triggerHapticClick()

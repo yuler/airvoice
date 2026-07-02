@@ -89,7 +89,9 @@ class AutoSendController(
             delay(1500L)
             if (!isActive) return@launch
             _countdownActive.value = false
-            attemptSend(textFlow.value, SendTrigger.AUTO)
+            scope.launch {
+                attemptSend(textFlow.value, SendTrigger.AUTO)
+            }
         }
     }
 
