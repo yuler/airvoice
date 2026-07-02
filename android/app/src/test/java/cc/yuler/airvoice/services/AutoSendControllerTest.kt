@@ -9,6 +9,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import java.lang.reflect.Field
 
 @RunWith(RobolectricTestRunner::class)
 class AutoSendControllerTest {
@@ -40,5 +41,27 @@ class AutoSendControllerTest {
         controller.textDidChange("hello world")
         assertTrue(controller.countdownActive.value)
         assertEquals(2, controller.countdownToken.value)
+    }
+
+    @Test
+    fun testCountdownStopsWhileInFlight() = runBlocking {
+        val controller = AutoSendController(textFlow, connectionManager) { _, _, _ -> }
+
+        controller.textDidChange("hello")
+        assertTrue(controller.countdownActive.value)
+
+        setInFlight(controller, true)
+        controller.textDidChange("hello world")
+
+        assertFalse(controller.countdownActive.value)
+        assertEquals(1, controller.countdownToken.value)
+    }
+
+    private fun setInFlight(controller: AutoSendController, value: Boolean) {
+        val field: Field = AutoSendController::class.java.getDeclaredField("_inFlight")
+        field.isAccessible = true
+        @Suppress("UNCHECKED_CAST")
+        val flow = field.get(controller) as MutableStateFlow<Boolean>
+        flow.value = value
     }
 }

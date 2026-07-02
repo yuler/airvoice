@@ -139,11 +139,7 @@ class AirvoiceViewModel(application: Application) : AndroidViewModel(application
     private fun handleSentAck(success: Boolean, sentText: String, trigger: SendTrigger) {
         Log.d("AirvoiceViewModel", "handleSentAck called: success=$success, sentText=\"$sentText\", currentText=\"${_inputText.value}\"")
         if (success) {
-            val textMatches = _inputText.value.trim() == sentText.trim()
-            Log.d("AirvoiceViewModel", "handleSentAck success: textMatches=$textMatches")
-            if (textMatches) {
-                _inputText.value = "" // Align with iOS: clear editor completely on success
-            }
+            _inputText.value = ""
             _sendTimedOut.value = false
             isRetry = false
             vibratorHelper.triggerHapticClick()
