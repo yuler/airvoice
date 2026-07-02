@@ -8,8 +8,9 @@ order: 4
 
 ```text
 ┌────────────────────────────────────────────────────────────┐
-│  iOS (SwiftUI)                                             │
-│  Onboarding → QR Scanner → Home (TextEditor + 豆包/微信 IME) │
+│  移动端客户端                                              │
+│  Android (Compose) / iOS (SwiftUI)                       │
+│  Onboarding → QR Scanner → Home (TextEditor + 语音输入法)  │
 │       │                                                    │
 │       │  WebSocket / JSON (LAN)                            │
 └───────┼────────────────────────────────────────────────────┘
@@ -19,10 +20,10 @@ order: 4
 │  QR pairing │ WS server │ token auth │ paste injection     │
 └────────────────────────────────────────────────────────────┘
         ▼
-   Focused app on macOS / Linux (any text field)
+   macOS / Linux / Windows 上获得焦点的任意文本输入框
 ```
 
-**数据路径：** IME 写入 `TextEditor` → iOS 自动发送 → `{type:"text"}` → Go CLI → 剪贴板 + 模拟 Cmd/Ctrl+V → 光标位置。
+**数据路径：** IME 写入 `TextEditor` → 手机端自动发送 → `{type:"text"}` → Go CLI → 剪贴板 + 模拟 Cmd/Ctrl+V → 光标位置。
 
 ## Go 包
 
@@ -73,5 +74,7 @@ order: 4
 ## 依赖
 
 **Go：** `github.com/gorilla/websocket`, `github.com/google/uuid`, `github.com/mdp/qrterminal/v3`
+
+**Android：** Kotlin、Jetpack Compose、OkHttp、CameraX + ML Kit（二维码扫描）。
 
 **iOS：** SwiftUI, VisionKit (iOS 17+), 无第三方 WS 库。

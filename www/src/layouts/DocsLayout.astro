@@ -21,10 +21,9 @@ const base = import.meta.env.BASE_URL;
 
 <BaseLayout title={title} description={description} lang={lang}>
   <DocsSidebar lang={lang} base={base} currentPath={Astro.url.pathname} client:load />
+  <Header lang={lang} base={base} active="docs" currentPath={Astro.url.pathname} client:load />
 
   <div class="main-content flex flex-col min-h-screen md:ml-64">
-    <Header lang={lang} base={base} active="docs" currentPath={Astro.url.pathname} client:load />
-
     <div class="flex-1">
       <div class="flex">
         <main class="flex-1 overflow-auto px-6 py-10 md:px-12 lg:pr-0">
@@ -38,8 +37,8 @@ const base = import.meta.env.BASE_URL;
         </main>
 
         {headings.length > 0 && (
-          <aside class="hidden w-56 shrink-0 lg:block">
-            <div class="sticky top-24 overflow-auto px-6 py-10">
+          <aside class="hidden w-80 shrink-0 lg:block">
+            <div class="sticky top-24 overflow-auto px-4 py-10">
               <TableOfContents headings={headings} lang={lang} client:load />
             </div>
           </aside>

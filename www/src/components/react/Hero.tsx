@@ -32,50 +32,43 @@ function useScrollReveal(threshold = 0.1) {
 }
 
 function TerminalWindow() {
+  const bg = '#ffffff';
+  const fg = '#374151';
+  const labelColor = '#6b7280';
+
   return (
     <div
-      className="rounded-2xl overflow-hidden w-[260px] sm:w-[270px]"
-      style={{ background: '#000000', border: '1px solid #2e2e2e' }}
+      className="rounded-2xl overflow-hidden shadow-2xl w-[260px] sm:w-[270px]"
+      style={{ background: bg, border: '1px solid #e5e7eb' }}
     >
       {/* Title bar */}
-      <div
-        className="flex items-center gap-1.5 px-4 py-3 border-b"
-        style={{ background: '#0d0e15', borderColor: '#2e2e2e' }}
-      >
-        <span className="w-2.5 h-2.5 rounded-full" style={{ background: '#ff5f57' }} />
-        <span className="w-2.5 h-2.5 rounded-full" style={{ background: '#febc2e' }} />
-        <span className="w-2.5 h-2.5 rounded-full" style={{ background: '#28c840' }} />
-        <span className="ml-2 text-[10px] font-mono" style={{ color: '#666666' }}>airvoice</span>
+      <div className="flex items-center gap-1.5 px-4 py-3 border-b" style={{ borderColor: '#e5e7eb' }}>
+        <span className="w-2 h-2 rounded-full" style={{ background: '#ff5f57' }} />
+        <span className="w-2 h-2 rounded-full" style={{ background: '#febc2e' }} />
+        <span className="w-2 h-2 rounded-full" style={{ background: '#28c840' }} />
+        <span className="ml-2 text-[9px] text-gray-400 font-mono">airvoice</span>
       </div>
 
-      {/* Body */}
+      {/* Body with QR and info vertically stacked */}
       <div className="p-4 flex flex-col items-start">
         <div className="mb-4">
           <img
             src={`${import.meta.env.BASE_URL || '/'}qrcode.svg`.replace(/\/+/g, '/')}
-            alt="Airvoice QR code"
+            alt="https://github.com/yuler/airvoice"
             className="w-[200px] h-[200px] block"
-            style={{ filter: 'invert(1)' }}
           />
         </div>
+
         <div className="w-full font-mono text-[9px] leading-relaxed space-y-1 text-left">
           <div>
-            <span style={{ color: '#666666' }}>Token:</span>{' '}
-            <span style={{ color: '#ededed' }}>277129e4-35ea-40af-a122-13a5839e5e1f</span>
+            <span style={{ color: labelColor }}>Token:</span>{' '}
+            <span style={{ color: fg }}>277129e4-35ea-40af-a122-13a5839e5e1f</span>
           </div>
           <div>
-            <span style={{ color: '#666666' }}>WebSocket URL:</span>{' '}
-            <span style={{ color: '#ededed' }}>ws://192.168.20.189:7654/ws</span>
+            <span style={{ color: labelColor }}>WebSocket URL:</span>{' '}
+            <span style={{ color: fg }}>ws://192.168.20.189:7654/ws</span>
           </div>
-          <div>
-            <span style={{ color: '#666666' }}>Status:</span>{' '}
-            <span style={{ color: '#00ac3a' }}>Connected</span>
-          </div>
-          <div>
-            <span style={{ color: '#666666' }}>Device:</span>{' '}
-            <span style={{ color: '#ededed' }}>Pixel 8 Pro</span>
-          </div>
-          <div className="pt-2" style={{ color: '#666666' }}>
+          <div className="pt-2" style={{ color: labelColor }}>
             [airvoice] waiting for phone connection...
           </div>
         </div>
@@ -88,7 +81,7 @@ function DesktopWindow({ base }: { base: string }) {
   return (
     <div
       className="rounded-2xl overflow-hidden"
-      style={{ width: '170px', border: '1px solid #2e2e2e' }}
+      style={{ width: '170px', border: '1px solid var(--border-default)' }}
     >
       <Lightbox
         src={`${base || '/'}desktop.png`.replace(/\/+/g, '/')}
@@ -103,7 +96,7 @@ function MobilePhone({ base }: { base: string }) {
   return (
     <div
       className="rounded-2xl overflow-hidden"
-      style={{ width: '170px', border: '1px solid #2e2e2e' }}
+      style={{ width: '170px', border: '1px solid var(--border-default)' }}
     >
       <Lightbox
         src={`${base || '/'}phone.jpg`.replace(/\/+/g, '/')}
@@ -179,14 +172,17 @@ export default function Hero({ lang, base }: HeroProps) {
   const rightRef = useScrollReveal(0.05);
 
   const statuses = [
-    { color: '#00ac3a', label: isZh ? '已连接' : 'Connected', pulse: true },
-    { color: '#ffae00', label: isZh ? '连接中...' : 'Connecting...' },
-    { color: '#e2162a', label: isZh ? '错误' : 'Error' },
-    { color: '#8f8f8f', label: isZh ? '离线' : 'Offline' },
+    { color: 'var(--status-success)', label: isZh ? '已连接' : 'Connected', pulse: true },
+    { color: 'var(--status-warning)', label: isZh ? '连接中...' : 'Connecting...' },
+    { color: 'var(--status-error)', label: isZh ? '错误' : 'Error' },
+    { color: 'var(--status-neutral)', label: isZh ? '离线' : 'Offline' },
   ];
 
   return (
-    <section style={{ background: '#000000' }} className="py-14 md:py-20 lg:py-24">
+    <section
+      className="py-14 md:py-20 lg:py-24 border-b"
+      style={{ background: 'var(--background-primary)', borderColor: 'var(--border-default)' }}
+    >
       <div className="mx-auto max-w-6xl px-4 md:px-6">
         <div className="flex flex-col gap-10 lg:flex-row lg:items-center lg:gap-16">
 
@@ -211,7 +207,7 @@ export default function Hero({ lang, base }: HeroProps) {
             {/* Headline */}
             <h1
               className="text-5xl font-bold leading-tight md:text-6xl"
-              style={{ color: '#ededed', letterSpacing: '-0.04em' }}
+              style={{ color: 'var(--primary-text)', letterSpacing: '-0.04em' }}
             >
               {isZh ? (
                 <>与你的设备沟通。<br />简单直接。</>
@@ -220,7 +216,7 @@ export default function Hero({ lang, base }: HeroProps) {
               )}
             </h1>
 
-            <p className="mt-5 text-base leading-relaxed" style={{ color: '#a0a0a0', maxWidth: '440px' }}>
+            <p className="mt-5 text-base leading-relaxed" style={{ color: 'var(--secondary-text)', maxWidth: '440px' }}>
               {isZh
                 ? 'Airvoice 是跨设备通信的统一桥梁。我们提供简洁的移动端应用与强大的命令行 CLI，同时也为不习惯命令行的用户准备了直观易用的桌面客户端。'
                 : 'Airvoice is a unified bridge for cross-device communication, offering a clean mobile app, a powerful CLI, and a sleek desktop client for those who prefer a GUI.'}
@@ -242,8 +238,8 @@ export default function Hero({ lang, base }: HeroProps) {
                 href={urls.desktop}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 rounded-full px-6 text-sm font-semibold transition-colors hover:bg-white/10"
-                style={{ border: '1px solid #2e2e2e', color: '#ededed', height: '44px' }}
+                className="inline-flex items-center justify-center gap-2 rounded-full border px-6 text-sm font-semibold transition-colors hover:bg-black/5 dark:hover:bg-white/10"
+                style={{ borderColor: 'var(--border-default)', color: 'var(--primary-text)', height: '44px' }}
               >
                 <MonitorIcon />
                 {isZh ? '下载桌面版' : 'Download Desktop'}
@@ -253,7 +249,7 @@ export default function Hero({ lang, base }: HeroProps) {
             {/* Status indicators */}
             <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2">
               {statuses.map((s) => (
-                <span key={s.label} className="flex items-center gap-1.5 text-sm" style={{ color: '#a0a0a0' }}>
+                <span key={s.label} className="flex items-center gap-1.5 text-sm" style={{ color: 'var(--secondary-text)' }}>
                   {s.pulse
                     ? <span className="av-pulse-dot" style={{ background: s.color }} />
                     : <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: s.color }} />
@@ -270,7 +266,7 @@ export default function Hero({ lang, base }: HeroProps) {
             <div className="w-full max-w-[540px] flex justify-center lg:justify-end mb-8">
               <div
                 className="inline-flex rounded-full p-1"
-                style={{ background: '#0d0e15', border: '1px solid #2e2e2e' }}
+                style={{ background: 'var(--background-secondary)', border: '1px solid var(--border-default)' }}
               >
                 {(['cli', 'desktop'] as const).map((tab) => (
                   <button
@@ -279,8 +275,8 @@ export default function Hero({ lang, base }: HeroProps) {
                     className="rounded-full px-5 py-2 text-xs font-bold transition-all duration-200 cursor-pointer border-none outline-none"
                     style={
                       activeTab === tab
-                        ? { backgroundColor: '#1a1a1a', color: '#ededed' }
-                        : { backgroundColor: 'transparent', color: '#666666' }
+                        ? { backgroundColor: 'var(--background-primary)', color: 'var(--primary-text)' }
+                        : { backgroundColor: 'transparent', color: 'var(--secondary-text)' }
                     }
                   >
                     {tab === 'cli'

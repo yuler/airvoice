@@ -25,19 +25,6 @@ function CloseIcon() {
   );
 }
 
-function SoundwaveIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M2 10v4" />
-      <path d="M6 6v12" />
-      <path d="M10 3v18" />
-      <path d="M14 6v12" />
-      <path d="M18 10v4" />
-      <path d="M22 12v0" />
-    </svg>
-  );
-}
-
 export default function DocsSidebar({ lang, base, currentPath }: SidebarProps) {
   const [open, setOpen] = useState(false);
   const isZh = lang === 'zh';
@@ -96,23 +83,7 @@ export default function DocsSidebar({ lang, base, currentPath }: SidebarProps) {
           borderRight: '1px solid var(--border-default)',
         }}
       >
-        {/* Logo */}
-        <div
-          className="flex h-[52px] items-center border-b px-4"
-          style={{ borderColor: 'var(--border-default)' }}
-        >
-          <a
-            href={loc('')}
-            className="flex items-center gap-2 transition-opacity hover:opacity-80"
-            style={{ color: 'var(--primary-text)', textDecoration: 'none' }}
-          >
-            <SoundwaveIcon />
-            <span className="text-sm font-semibold">Airvoice</span>
-          </a>
-        </div>
-
-        {/* Nav */}
-        <nav className="p-4">
+        <nav className="p-4 pt-16 md:pt-[68px]">
           {sections.map((section) => (
             <div key={section.title} className="mb-6">
               <h3

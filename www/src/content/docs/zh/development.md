@@ -25,6 +25,7 @@ mise install
 ```
 airvoice/
 ├── cli/          # Go CLI — WebSocket 服务器 + 按键注入
+├── android/      # Android Kotlin/Compose 应用
 ├── ios/          # iOS SwiftUI 应用
 ├── www/          # 文档站点（Astro）
 ├── scripts/      # 构建和开发脚本
@@ -39,10 +40,22 @@ airvoice/
 | 构建 CLI | `mise run cli:build` |
 | 运行服务器 | `mise run cli:dev` |
 | 运行测试 | `mise run cli:test` |
+| 构建 Android（调试 APK） | `mise run android:build` |
+| 安装 Android（USB） | `mise run android:install` |
 | 构建 iOS（模拟器） | `mise run ios:dev` |
 | 构建 iOS（真机） | `mise run ios:build` |
 | 文档开发服务器 | `mise run www:dev` |
 | 构建文档 | `mise run www:build` |
+
+## Android 开发
+
+需要 JDK（Android Studio 自带的 JBR 即可）。构建调试版 APK：
+
+```bash
+mise run android:build
+```
+
+APK 输出路径：`android/app/build/outputs/apk/debug/app-debug.apk`。正式版会发布到 [GitHub Releases](https://github.com/yuler/airvoice/releases/latest)，文件名为 `airvoice-android-*.apk`。
 
 ## iOS 开发
 

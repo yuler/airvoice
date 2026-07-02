@@ -1,3 +1,5 @@
+import { ANDROID_APK_URL } from '../../lib/downloads';
+
 interface FooterProps {
   lang: 'en' | 'zh';
 }
@@ -58,7 +60,7 @@ export default function Footer({ lang }: FooterProps) {
               {[
                 { href: 'https://github.com/yuler/airvoice/releases/latest', label: isZh ? '下载 CLI' : 'Download CLI', external: true },
                 { href: 'https://github.com/yuler/airvoice/releases/latest', label: isZh ? '下载桌面版' : 'Download Desktop', external: true },
-                { href: 'https://github.com/yuler/airvoice/releases/latest', label: isZh ? '移动端应用' : 'Mobile App', external: true },
+                { href: ANDROID_APK_URL, label: isZh ? '下载 Android APK' : 'Download Android APK', external: true },
                 { href: 'https://github.com/yuler/airvoice/releases', label: isZh ? '版本发布' : 'Releases', external: true },
               ].map((l) => (
                 <li key={l.label}>

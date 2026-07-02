@@ -15,11 +15,11 @@ That's all Airvoice does. It's a bridge.
 ## How It Works
 
 ```
-iPhone (voice keyboard)  →  LAN WebSocket  →  Desktop (paste at cursor)
+Phone (Android or iPhone, voice keyboard)  →  LAN WebSocket  →  Desktop (paste at cursor)
 ```
 
 1. **Desktop:** A Go CLI starts a WebSocket server on your local network and prints a QR code.
-2. **iPhone:** The iOS app connects by scanning the QR code. It provides a text field where you use any voice keyboard (豆包输入法, 微信输入法, etc.) to dictate.
+2. **Phone:** The Android or iOS app connects by scanning the QR code. It provides a text field where you use any voice keyboard (豆包输入法, 微信输入法, etc.) to dictate.
 3. **When you dismiss the keyboard** (or after 1.5 seconds of idle), the text is sent over LAN and pasted at your cursor position.
 
 No cloud. No accounts. No data leaves your local network. The speech recognition is done entirely by the voice keyboard on your phone — Airvoice doesn't include its own STT engine.
@@ -52,7 +52,7 @@ For most people, these tools are a better fit:
 | Topic | Decision |
 |-------|----------|
 | Product name | **Airvoice** |
-| Mobile | iOS SwiftUI, iOS 17+ |
+| Mobile | Android (Kotlin/Compose) + iOS (SwiftUI, iOS 17+) |
 | Desktop | Go CLI (`airvoice serve`) |
 | Pairing | QR code with one-time token |
 | Send mode | Auto-send when keyboard dismisses or text idle 1.5s |

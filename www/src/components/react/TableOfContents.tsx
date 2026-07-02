@@ -42,11 +42,10 @@ export default function TableOfContents({ headings, lang }: TocProps) {
             <li key={h.slug}>
               <a
                 href={`#${h.slug}`}
-                className="block text-sm transition-colors"
+                className="block text-sm whitespace-nowrap transition-colors"
                 style={{
                   paddingLeft: h.depth === 3 ? '16px' : undefined,
                   color: isActive ? '#006efe' : 'var(--muted-text)',
-                  fontWeight: isActive ? 500 : undefined,
                   textDecoration: 'none',
                 }}
               >

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ArrowSquareOut } from '@phosphor-icons/react';
-import { getDownloadUrls, type DownloadUrls } from '../../lib/downloads';
+import { getDownloadUrls, getMobileDownloadInfo, type DownloadUrls, type MobileDownloadInfo } from '../../lib/downloads';
 
 interface GetStartedProps {
   lang: 'en' | 'zh';
@@ -50,9 +50,15 @@ export default function GetStarted({ lang, base }: GetStartedProps) {
     desktop: 'https://github.com/yuler/airvoice/releases/latest',
     mobile: 'https://github.com/yuler/airvoice/releases/latest',
   });
+  const [mobileInfo, setMobileInfo] = useState<MobileDownloadInfo>({
+    platform: 'other',
+    apkUrl: 'https://github.com/yuler/airvoice/releases/latest',
+    iosDocsPath: 'docs/quick-start/#ios',
+  });
   useEffect(() => {
     setUrls(getDownloadUrls());
-  }, []);
+    setMobileInfo(getMobileDownloadInfo(lang));
+  }, [lang]);
 
   return (
     <section id="get-started" className="border-t border-kumo-hairline py-20">
@@ -210,28 +216,70 @@ export default function GetStarted({ lang, base }: GetStartedProps) {
               </div>
             </div>
 
-            <p className="mb-5 text-sm leading-relaxed text-kumo-subtle">
+            <p className="mb-4 text-sm leading-relaxed text-kumo-subtle">
               {isZh
                 ? '使用手机自带的系统语音识别，扫码连接桌面端，无需额外账号或云服务。'
                 : 'Uses your phone\'s native speech recognition. Scan to connect — no account or cloud service needed.'}
             </p>
 
+            {mobileInfo.platform === 'ios' && (
+              <div
+                className="mb-4 rounded-lg px-3 py-2.5 text-xs leading-relaxed"
+                style={{
+                  background: 'var(--background-secondary)',
+                  border: '1px solid var(--border-default)',
+                  color: 'var(--secondary-text)',
+                }}
+              >
+                {isZh
+                  ? 'iOS 版未上架 App Store。请使用 Mac 从源码构建并安装到 iPhone，详见安装文档。'
+                  : 'iOS is not on the App Store. Build from source on a Mac and install to your iPhone — see the install guide.'}
+              </div>
+            )}
+
+            <div className="mb-5 space-y-3">
+              <div>
+                <p className="mb-1.5 text-xs font-medium text-kumo-subtle uppercase tracking-wider">Android</p>
+                <p className="mb-2 text-xs leading-relaxed text-kumo-subtle">
+                  {isZh
+                    ? '从 GitHub Releases 下载 APK 直接安装。'
+                    : 'Download the APK from GitHub Releases and install directly.'}
+                </p>
+                <a
+                  href={mobileInfo.apkUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-medium text-white transition-opacity hover:opacity-90"
+                  style={{ backgroundColor: 'var(--accent-blue, #006efe)' }}
+                >
+                  {isZh ? '下载 Android APK' : 'Download Android APK'}
+                  <ArrowSquareOut size={11} />
+                </a>
+              </div>
+
+              <div className="border-t border-kumo-hairline pt-3">
+                <p className="mb-1.5 text-xs font-medium text-kumo-subtle uppercase tracking-wider">iOS</p>
+                <p className="mb-2 text-xs leading-relaxed text-kumo-subtle">
+                  {isZh
+                    ? '未上架 App Store，需用 Mac + Xcode 从源码构建。'
+                    : 'Not on the App Store — build from source with Mac and Xcode.'}
+                </p>
+                <a
+                  href={`${loc('docs/quick-start/')}#ios`}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-kumo-hairline px-4 py-2 text-xs font-medium text-kumo-default transition-colors hover:bg-kumo-control"
+                >
+                  {isZh ? '查看 iOS 安装步骤' : 'iOS build guide'}
+                  <ArrowSquareOut size={11} />
+                </a>
+              </div>
+            </div>
+
             <div className="flex flex-wrap items-center gap-2">
               <a
                 href={loc('docs/quick-start/')}
-                className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-medium text-white transition-opacity hover:opacity-90"
-                style={{ backgroundColor: 'var(--accent-blue, #006efe)' }}
-              >
-                {isZh ? '安装文档' : 'Install Docs'}
-                <ArrowSquareOut size={11} />
-              </a>
-              <a
-                href={urls.mobile}
-                target="_blank"
-                rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 rounded-full border border-kumo-hairline px-4 py-2 text-xs font-medium text-kumo-default transition-colors hover:bg-kumo-control"
               >
-                {isZh ? '从 GitHub 下载' : 'GitHub Releases'}
+                {isZh ? '完整安装文档' : 'Full install guide'}
                 <ArrowSquareOut size={11} />
               </a>
             </div>
