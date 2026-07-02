@@ -146,9 +146,7 @@ class AirvoiceViewModel(application: Application) : AndroidViewModel(application
                 currentText
             }
             _inputText.value = remaining
-            if (remaining.isNotEmpty()) {
-                autoSendController.textDidChange(remaining)
-            }
+            autoSendController.textDidChange(remaining)
             _sendTimedOut.value = false
             isRetry = false
             vibratorHelper.triggerHapticClick()

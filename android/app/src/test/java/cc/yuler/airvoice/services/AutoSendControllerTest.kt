@@ -57,11 +57,33 @@ class AutoSendControllerTest {
         assertEquals(1, controller.countdownToken.value)
     }
 
+    @Test
+    fun testResetLastAckedWhenTextCleared() {
+        val controller = AutoSendController(textFlow, connectionManager) { _, _, _ -> }
+        setLastAckedText(controller, "hello")
+
+        controller.textDidChange("")
+
+        assertEquals("", getLastAckedText(controller))
+    }
+
     private fun setInFlight(controller: AutoSendController, value: Boolean) {
         val field: Field = AutoSendController::class.java.getDeclaredField("_inFlight")
         field.isAccessible = true
         @Suppress("UNCHECKED_CAST")
         val flow = field.get(controller) as MutableStateFlow<Boolean>
         flow.value = value
+    }
+
+    private fun setLastAckedText(controller: AutoSendController, value: String) {
+        val field: Field = AutoSendController::class.java.getDeclaredField("lastAckedText")
+        field.isAccessible = true
+        field.set(controller, value)
+    }
+
+    private fun getLastAckedText(controller: AutoSendController): String {
+        val field: Field = AutoSendController::class.java.getDeclaredField("lastAckedText")
+        field.isAccessible = true
+        return field.get(controller) as String
     }
 }
