@@ -122,36 +122,88 @@ export default function Features({ lang }: FeaturesProps) {
           {isZh ? '您所需的一切' : 'Everything you need'}
         </h2>
 
-        {/* Desktop View: Grid layout */}
-        <div className="hidden sm:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          {features.map((f) => (
-            <div
-              key={f.title}
-              className="rounded-xl p-6 transition-shadow hover:shadow-sm"
-              style={{
-                background: 'var(--background-primary)',
-                border: '1px solid var(--border-default)',
-              }}
-            >
-              {/* Icon */}
-              <div
-                className="mb-4 inline-flex items-center justify-center rounded-xl p-2.5"
-                style={{ background: 'var(--background-secondary)', color: 'var(--primary-text)', border: '1px solid var(--border-default)' }}
-              >
-                {f.icon}
-              </div>
-
-              {/* Title */}
-              <h3 className="mb-1.5 text-base font-semibold" style={{ color: 'var(--primary-text)' }}>
-                {f.title}
-              </h3>
-
-              {/* Description */}
-              <p className="text-sm leading-relaxed" style={{ color: 'var(--secondary-text)' }}>
-                {f.desc}
-              </p>
+        {/* Desktop View: Bento Grid */}
+        <div
+          className="hidden sm:grid gap-4"
+          style={{
+            gridTemplateColumns: '1fr 1.6fr 1fr',
+            gridTemplateRows: 'auto auto',
+            gridTemplateAreas: `
+              "pairing sync secure"
+              "pairing cli desktop"
+            `,
+          }}
+        >
+          {/* Easy Pairing — tall (rowspan 2) */}
+          <div
+            className="rounded-xl p-6 flex flex-col"
+            style={{ gridArea: 'pairing', background: 'var(--background-primary)', border: '1px solid var(--border-default)' }}
+          >
+            <div className="mb-4 inline-flex items-center justify-center rounded-xl p-2.5 self-start"
+              style={{ background: 'var(--background-secondary)', color: 'var(--primary-text)', border: '1px solid var(--border-default)' }}>
+              {features[0].icon}
             </div>
-          ))}
+            <h3 className="mb-2 text-base font-semibold" style={{ color: 'var(--primary-text)' }}>{features[0].title}</h3>
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--secondary-text)' }}>{features[0].desc}</p>
+          </div>
+
+          {/* Real-Time Sync — featured */}
+          <div
+            className="rounded-xl p-7 flex flex-col"
+            style={{ gridArea: 'sync', background: 'var(--background-secondary)', border: '1px solid var(--border-default)' }}
+          >
+            <div className="mb-4 inline-flex items-center justify-center rounded-xl p-3 self-start"
+              style={{ background: 'var(--background-primary)', color: 'var(--primary-text)', border: '1px solid var(--border-default)' }}>
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
+                <line x1="4" y1="10" x2="4" y2="14" />
+                <line x1="8" y1="7" x2="8" y2="17" />
+                <line x1="12" y1="4" x2="12" y2="20" />
+                <line x1="16" y1="7" x2="16" y2="17" />
+                <line x1="20" y1="10" x2="20" y2="14" />
+              </svg>
+            </div>
+            <h3 className="mb-2 text-lg font-semibold" style={{ color: 'var(--primary-text)' }}>{features[1].title}</h3>
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--secondary-text)' }}>{features[1].desc}</p>
+          </div>
+
+          {/* Secure & Local */}
+          <div
+            className="rounded-xl p-6"
+            style={{ gridArea: 'secure', background: 'var(--background-primary)', border: '1px solid var(--border-default)' }}
+          >
+            <div className="mb-4 inline-flex items-center justify-center rounded-xl p-2.5"
+              style={{ background: 'var(--background-secondary)', color: 'var(--primary-text)', border: '1px solid var(--border-default)' }}>
+              {features[2].icon}
+            </div>
+            <h3 className="mb-1.5 text-base font-semibold" style={{ color: 'var(--primary-text)' }}>{features[2].title}</h3>
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--secondary-text)' }}>{features[2].desc}</p>
+          </div>
+
+          {/* CLI Power */}
+          <div
+            className="rounded-xl p-6"
+            style={{ gridArea: 'cli', background: 'var(--background-primary)', border: '1px solid var(--border-default)' }}
+          >
+            <div className="mb-4 inline-flex items-center justify-center rounded-xl p-2.5"
+              style={{ background: 'var(--background-secondary)', color: 'var(--primary-text)', border: '1px solid var(--border-default)' }}>
+              {features[3].icon}
+            </div>
+            <h3 className="mb-1.5 text-base font-semibold" style={{ color: 'var(--primary-text)' }}>{features[3].title}</h3>
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--secondary-text)' }}>{features[3].desc}</p>
+          </div>
+
+          {/* Desktop App */}
+          <div
+            className="rounded-xl p-6"
+            style={{ gridArea: 'desktop', background: 'var(--background-primary)', border: '1px solid var(--border-default)' }}
+          >
+            <div className="mb-4 inline-flex items-center justify-center rounded-xl p-2.5"
+              style={{ background: 'var(--background-secondary)', color: 'var(--primary-text)', border: '1px solid var(--border-default)' }}>
+              {features[4].icon}
+            </div>
+            <h3 className="mb-1.5 text-base font-semibold" style={{ color: 'var(--primary-text)' }}>{features[4].title}</h3>
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--secondary-text)' }}>{features[4].desc}</p>
+          </div>
         </div>
 
         {/* Mobile View: Carousel slider */}

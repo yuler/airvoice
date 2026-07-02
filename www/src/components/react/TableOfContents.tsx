@@ -13,19 +13,15 @@ export default function TableOfContents({ headings, lang }: TocProps) {
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
-          if (entry.isIntersecting) {
-            setActiveId(entry.target.id);
-          }
+          if (entry.isIntersecting) setActiveId(entry.target.id);
         }
       },
       { rootMargin: '-80px 0px -70% 0px', threshold: 0 }
     );
-
     for (const h of filtered) {
       const el = document.getElementById(h.slug);
       if (el) observer.observe(el);
     }
-
     return () => observer.disconnect();
   }, [filtered]);
 
@@ -33,7 +29,10 @@ export default function TableOfContents({ headings, lang }: TocProps) {
 
   return (
     <nav>
-      <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-kumo-subtle">
+      <h4
+        className="mb-3 uppercase"
+        style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', color: 'var(--muted-text)' }}
+      >
         {lang === 'en' ? 'On this page' : '本页目录'}
       </h4>
       <ul className="space-y-1">
@@ -43,13 +42,13 @@ export default function TableOfContents({ headings, lang }: TocProps) {
             <li key={h.slug}>
               <a
                 href={`#${h.slug}`}
-                className={`block text-sm transition-colors ${
-                  h.depth === 3 ? 'pl-4' : ''
-                } ${
-                  isActive
-                    ? 'text-kumo-default font-medium'
-                    : 'text-kumo-inactive hover:text-kumo-subtle'
-                }`}
+                className="block text-sm transition-colors"
+                style={{
+                  paddingLeft: h.depth === 3 ? '16px' : undefined,
+                  color: isActive ? '#006efe' : 'var(--muted-text)',
+                  fontWeight: isActive ? 500 : undefined,
+                  textDecoration: 'none',
+                }}
               >
                 {h.text}
               </a>
@@ -57,6 +56,15 @@ export default function TableOfContents({ headings, lang }: TocProps) {
           );
         })}
       </ul>
+      <div className="mt-6 pt-4" style={{ borderTop: '1px solid var(--border-default)' }}>
+        <button
+          className="text-xs transition-opacity hover:opacity-70 bg-transparent border-none cursor-pointer p-0"
+          style={{ color: 'var(--muted-text)' }}
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        >
+          ↑ {lang === 'en' ? 'Back to top' : '回到顶部'}
+        </button>
+      </div>
     </nav>
   );
 }

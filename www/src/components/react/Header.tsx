@@ -152,25 +152,42 @@ export default function Header({ lang, base, active = 'home', currentPath }: Hea
         <div className="hidden md:flex items-center gap-5">
           <a
             href={loc('docs/background/')}
-            className={`flex items-center text-sm transition-colors ${active === 'docs' ? 'text-kumo-default font-medium' : 'text-kumo-subtle hover:text-kumo-default'}`}
-            title={isZh ? '文档' : 'Docs'}
+            className="flex items-center gap-1.5 text-sm transition-colors hover:opacity-80"
+            style={{ color: active === 'docs' ? 'var(--primary-text)' : 'var(--secondary-text)', fontWeight: active === 'docs' ? 500 : undefined }}
           >
             <BookIcon />
+            {isZh ? '文档' : 'Docs'}
+          </a>
+          <a
+            href="https://github.com/yuler/airvoice/releases/latest"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 text-sm transition-colors hover:opacity-80"
+            style={{ color: 'var(--secondary-text)' }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            CLI
           </a>
           <a
             href="https://github.com/yuler/airvoice"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center text-sm text-kumo-subtle hover:text-kumo-default transition-colors"
-            title="GitHub"
+            className="flex items-center gap-1.5 text-sm transition-colors hover:opacity-80"
+            style={{ color: 'var(--secondary-text)' }}
           >
             <GithubIcon />
+            GitHub
           </a>
 
           {/* Lang Toggle */}
           <a
             href={getLangTogglePath()}
-            className="flex items-center justify-center text-base text-kumo-subtle hover:text-kumo-default transition-colors w-6 h-6 cursor-pointer"
+            className="flex items-center justify-center text-sm transition-colors hover:opacity-80 cursor-pointer"
+            style={{ color: 'var(--secondary-text)' }}
             title={isZh ? 'Switch to English' : '切换至中文'}
           >
             {isZh ? '🇺🇸' : '🇨🇳'}
@@ -179,7 +196,8 @@ export default function Header({ lang, base, active = 'home', currentPath }: Hea
           {/* Theme Toggle */}
           <button
             onClick={toggleTheme}
-            className="flex items-center justify-center text-kumo-subtle hover:text-kumo-default transition-colors w-6 h-6 cursor-pointer bg-transparent border-none outline-none p-0"
+            className="flex items-center justify-center transition-colors hover:opacity-80 cursor-pointer bg-transparent border-none outline-none p-0"
+            style={{ color: 'var(--secondary-text)' }}
             title={isZh ? '切换主题' : 'Toggle Theme'}
           >
             {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
@@ -202,7 +220,8 @@ export default function Header({ lang, base, active = 'home', currentPath }: Hea
         <div className="md:hidden border-t px-4 py-4 space-y-3" style={{ backgroundColor: 'var(--background-primary)', borderColor: 'var(--border-default)' }}>
           <a
             href={loc('docs/background/')}
-            className="flex items-center text-sm text-kumo-subtle hover:text-kumo-default transition-colors py-1"
+            className="flex items-center gap-2 text-sm transition-colors py-1 hover:opacity-80"
+            style={{ color: 'var(--secondary-text)' }}
             onClick={() => setMobileOpen(false)}
           >
             <BookIcon />
@@ -212,11 +231,27 @@ export default function Header({ lang, base, active = 'home', currentPath }: Hea
             href="https://github.com/yuler/airvoice"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center text-sm text-kumo-subtle hover:text-kumo-default transition-colors py-1"
+            className="flex items-center gap-2 text-sm transition-colors py-1 hover:opacity-80"
+            style={{ color: 'var(--secondary-text)' }}
             onClick={() => setMobileOpen(false)}
           >
             <GithubIcon />
             GitHub
+          </a>
+          <a
+            href="https://github.com/yuler/airvoice/releases/latest"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 text-sm transition-colors py-1 hover:opacity-80"
+            style={{ color: 'var(--secondary-text)' }}
+            onClick={() => setMobileOpen(false)}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            CLI
           </a>
 
           {/* Lang/Theme switch for mobile */}

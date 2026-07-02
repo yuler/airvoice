@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { List, X } from '@phosphor-icons/react';
-import { Button } from '@cloudflare/kumo';
 
 interface SidebarProps {
   lang: 'en' | 'zh';
@@ -8,11 +6,46 @@ interface SidebarProps {
   currentPath: string;
 }
 
+function HamburgerIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+      <line x1="3" y1="6" x2="21" y2="6" />
+      <line x1="3" y1="12" x2="21" y2="12" />
+      <line x1="3" y1="18" x2="21" y2="18" />
+    </svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+  );
+}
+
+function SoundwaveIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M2 10v4" />
+      <path d="M6 6v12" />
+      <path d="M10 3v18" />
+      <path d="M14 6v12" />
+      <path d="M18 10v4" />
+      <path d="M22 12v0" />
+    </svg>
+  );
+}
+
 export default function DocsSidebar({ lang, base, currentPath }: SidebarProps) {
   const [open, setOpen] = useState(false);
   const isZh = lang === 'zh';
   const normalizedBase = base.endsWith('/') ? base : `${base}/`;
-  const loc = (path: string) => lang === 'en' ? `${normalizedBase}${path}` : `${normalizedBase}zh/${path}`;
+  const loc = (path: string) =>
+    lang === 'en'
+      ? `${normalizedBase}${path}`
+      : `${normalizedBase}zh/${path}`;
 
   const sections = [
     {
@@ -34,53 +67,96 @@ export default function DocsSidebar({ lang, base, currentPath }: SidebarProps) {
 
   return (
     <>
-      <div className="fixed left-4 top-3 z-50 md:hidden">
-        <Button
-          variant="ghost"
-          shape="square"
-          icon={open ? X : List}
-          onClick={() => setOpen(!open)}
-          aria-label={isZh ? '切换菜单' : 'Toggle menu'}
-        />
-      </div>
+      {/* Mobile toggle */}
+      <button
+        className="fixed left-4 top-3.5 z-50 md:hidden flex items-center justify-center rounded-md p-1.5 transition-colors"
+        style={{ color: 'var(--secondary-text)', background: 'transparent', border: 'none', cursor: 'pointer' }}
+        onClick={() => setOpen(!open)}
+        aria-label={isZh ? '切换菜单' : 'Toggle menu'}
+      >
+        {open ? <CloseIcon /> : <HamburgerIcon />}
+      </button>
 
+      {/* Backdrop */}
       {open && (
         <div
-          className="fixed inset-0 z-30 bg-black/50 md:hidden"
+          className="fixed inset-0 z-30 md:hidden"
+          style={{ background: 'rgba(0,0,0,0.5)' }}
           onClick={() => setOpen(false)}
         />
       )}
 
+      {/* Sidebar panel */}
       <aside
-        className={`fixed top-0 left-0 z-40 h-full w-64 overflow-auto border-r border-kumo-hairline bg-kumo-canvas transition-transform duration-300 ${
+        className={`fixed top-0 left-0 z-40 h-full w-64 overflow-auto transition-transform duration-300 ${
           open ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         }`}
+        style={{
+          background: 'var(--background-secondary)',
+          borderRight: '1px solid var(--border-default)',
+        }}
       >
-        <div className="flex h-12 items-center border-b border-kumo-hairline px-4">
-          <a href={loc('')} className="text-lg font-bold text-kumo-default hover:text-kumo-subtle transition-colors">
-            Airvoice
+        {/* Logo */}
+        <div
+          className="flex h-[52px] items-center border-b px-4"
+          style={{ borderColor: 'var(--border-default)' }}
+        >
+          <a
+            href={loc('')}
+            className="flex items-center gap-2 transition-opacity hover:opacity-80"
+            style={{ color: 'var(--primary-text)', textDecoration: 'none' }}
+          >
+            <SoundwaveIcon />
+            <span className="text-sm font-semibold">Airvoice</span>
           </a>
         </div>
 
+        {/* Nav */}
         <nav className="p-4">
           {sections.map((section) => (
             <div key={section.title} className="mb-6">
-              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-kumo-subtle">
+              <h3
+                className="mb-2 uppercase"
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  letterSpacing: '0.08em',
+                  color: 'var(--muted-text)',
+                }}
+              >
                 {section.title}
               </h3>
-              <ul className="space-y-1">
+              <ul className="space-y-0.5">
                 {section.items.map((item) => {
-                  const isActive = currentPath === item.href;
+                  const isActive =
+                    currentPath === item.href ||
+                    currentPath === item.href.replace(/\/$/, '') ||
+                    (item.href !== normalizedBase && currentPath.startsWith(item.href));
                   return (
                     <li key={item.href}>
                       <a
                         href={item.href}
                         onClick={() => setOpen(false)}
-                        className={`block rounded-md px-3 py-2 text-sm transition-colors ${
+                        className="block py-2 text-sm transition-colors"
+                        style={
                           isActive
-                            ? 'bg-kumo-control text-kumo-default font-medium'
-                            : 'text-kumo-subtle hover:text-kumo-default hover:bg-kumo-control'
-                        }`}
+                            ? {
+                                borderLeft: '2px solid #006efe',
+                                borderRadius: '0 6px 6px 0',
+                                paddingLeft: '10px',
+                                paddingRight: '12px',
+                                color: 'var(--primary-text)',
+                                fontWeight: 500,
+                                background: 'transparent',
+                                textDecoration: 'none',
+                              }
+                            : {
+                                paddingLeft: '12px',
+                                paddingRight: '12px',
+                                color: 'var(--secondary-text)',
+                                textDecoration: 'none',
+                              }
+                        }
                       >
                         {item.label}
                       </a>

@@ -19,6 +19,7 @@ const { Content, headings } = await render(doc);
   description={doc.data.description}
   lang="zh"
   headings={headings}
+  currentSlug={doc.id.replace('zh/', '')}
 >
   <Content />
 </DocsLayout>

@@ -60,6 +60,10 @@
   flex-shrink: 0;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 /* Smooth font rendering & global variables styling */
 body {
   -webkit-font-smoothing: antialiased;

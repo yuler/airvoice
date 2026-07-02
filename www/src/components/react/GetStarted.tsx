@@ -1,4 +1,6 @@
+import { useState, useEffect } from 'react';
 import { ArrowSquareOut } from '@phosphor-icons/react';
+import { getDownloadUrls, type DownloadUrls } from '../../lib/downloads';
 
 interface GetStartedProps {
   lang: 'en' | 'zh';
@@ -43,6 +45,14 @@ function AndroidIcon({ size = 16 }: { size?: number }) {
 export default function GetStarted({ lang, base }: GetStartedProps) {
   const isZh = lang === 'zh';
   const loc = (path: string) => lang === 'en' ? `${base}${path}` : `${base}zh/${path}`;
+  const [urls, setUrls] = useState<DownloadUrls>({
+    cli: 'https://github.com/yuler/airvoice/releases/latest',
+    desktop: 'https://github.com/yuler/airvoice/releases/latest',
+    mobile: 'https://github.com/yuler/airvoice/releases/latest',
+  });
+  useEffect(() => {
+    setUrls(getDownloadUrls());
+  }, []);
 
   return (
     <section id="get-started" className="border-t border-kumo-hairline py-20">
@@ -140,7 +150,7 @@ export default function GetStarted({ lang, base }: GetStartedProps) {
 
             <div className="flex flex-wrap items-center gap-2">
               <a
-                href="https://github.com/yuler/airvoice/releases"
+                href={urls.cli}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-medium text-white transition-opacity hover:opacity-90"
@@ -150,7 +160,7 @@ export default function GetStarted({ lang, base }: GetStartedProps) {
                 <ArrowSquareOut size={11} />
               </a>
               <a
-                href="https://github.com/yuler/airvoice/releases"
+                href={urls.desktop}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 rounded-full border border-kumo-hairline px-4 py-2 text-xs font-medium text-kumo-default transition-colors hover:bg-kumo-control"
@@ -216,7 +226,7 @@ export default function GetStarted({ lang, base }: GetStartedProps) {
                 <ArrowSquareOut size={11} />
               </a>
               <a
-                href="https://github.com/yuler/airvoice/releases"
+                href={urls.mobile}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 rounded-full border border-kumo-hairline px-4 py-2 text-xs font-medium text-kumo-default transition-colors hover:bg-kumo-control"

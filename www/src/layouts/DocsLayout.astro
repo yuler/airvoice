@@ -4,6 +4,7 @@ import BaseLayout from './BaseLayout.astro';
 import Header from '../components/react/Header';
 import DocsSidebar from '../components/react/DocsSidebar';
 import TableOfContents from '../components/react/TableOfContents';
+import DocsPagination from '../components/react/DocsPagination';
 import Footer from '../components/react/Footer';
 
 interface Props {
@@ -11,9 +12,10 @@ interface Props {
   description: string;
   lang: 'en' | 'zh';
   headings: { depth: number; slug: string; text: string }[];
+  currentSlug: string;
 }
 
-const { title, description, lang, headings } = Astro.props;
+const { title, description, lang, headings, currentSlug } = Astro.props;
 const base = import.meta.env.BASE_URL;
 ---
 
@@ -31,11 +33,12 @@ const base = import.meta.env.BASE_URL;
             <div class="prose prose-sm prose-kumo max-w-none">
               <slot />
             </div>
+            <DocsPagination lang={lang} currentSlug={currentSlug} base={base} client:load />
           </article>
         </main>
 
         {headings.length > 0 && (
-          <aside class="hidden w-56 shrink-0 xl:block">
+          <aside class="hidden w-56 shrink-0 lg:block">
             <div class="sticky top-24 overflow-auto px-6 py-10">
               <TableOfContents headings={headings} lang={lang} client:load />
             </div>
