@@ -139,10 +139,15 @@ class AirvoiceViewModel(application: Application) : AndroidViewModel(application
     private fun handleSentAck(success: Boolean, sentText: String, trigger: SendTrigger) {
         Log.d("AirvoiceViewModel", "handleSentAck called: success=$success, sentText=\"$sentText\", currentText=\"${_inputText.value}\"")
         if (success) {
-            val textMatches = _inputText.value.trim() == sentText.trim()
-            Log.d("AirvoiceViewModel", "handleSentAck success: textMatches=$textMatches")
-            if (textMatches) {
-                _inputText.value = "" // Align with iOS: clear editor completely on success
+            val currentText = _inputText.value
+            val remaining = if (currentText.startsWith(sentText)) {
+                currentText.removePrefix(sentText)
+            } else {
+                currentText
+            }
+            _inputText.value = remaining
+            if (remaining.isNotEmpty()) {
+                autoSendController.textDidChange(remaining)
             }
             _sendTimedOut.value = false
             isRetry = false

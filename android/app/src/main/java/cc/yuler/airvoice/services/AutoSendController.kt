@@ -8,6 +8,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -78,7 +79,7 @@ class AutoSendController(
     fun textDidChange(text: String) {
         debounceJob?.cancel()
         val trimmed = text.trim()
-        if (trimmed.isEmpty()) {
+        if (trimmed.isEmpty() || _inFlight.value) {
             stopCountdown()
             return
         }
@@ -86,9 +87,10 @@ class AutoSendController(
         startCountdown()
         debounceJob = scope.launch {
             delay(1500L)
+            if (!isActive) return@launch
             _countdownActive.value = false
-            kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) {
-                attemptSend(text, SendTrigger.AUTO)
+            scope.launch {
+                attemptSend(textFlow.value, SendTrigger.AUTO)
             }
         }
     }
@@ -167,18 +169,10 @@ class AutoSendController(
         if (success) {
             lastAckedText = text
             onSentAck(true, text, trigger)
-            sendPendingText()
         } else {
             onSentAck(false, text, trigger)
         }
         return success
-    }
-
-    private suspend fun sendPendingText() {
-        val current = textFlow.value
-        if (current.isNotEmpty() && current != lastAckedText) {
-            attemptSend(current, SendTrigger.AUTO)
-        }
     }
 
     private fun startCountdown() {
