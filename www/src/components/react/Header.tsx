@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react';
+import type { HeaderMessages } from '../../i18n/messages';
+import type { Locale } from '../../i18n/ui';
 
 interface HeaderProps {
-  lang: 'en' | 'zh';
-  base: string;
+  m: HeaderMessages;
+  lang: Locale;
   active?: 'home' | 'docs';
-  currentPath?: string;
+  homeUrl: string;
+  docsUrl: string;
+  langTogglePath: string;
 }
 
 function SoundwaveIcon() {
@@ -23,6 +27,16 @@ function SoundwaveIcon() {
 function BookIcon() {
   return (
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="mr-1.5">
+      <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z" />
+      <path d="M6 6h10" />
+      <path d="M6 10h10" />
+    </svg>
+  );
+}
+
+function DocsLogoIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z" />
       <path d="M6 6h10" />
       <path d="M6 10h10" />
@@ -81,12 +95,10 @@ function MoonIcon() {
   );
 }
 
-export default function Header({ lang, base, active = 'home', currentPath }: HeaderProps) {
+export default function Header({ m, lang, active = 'home', homeUrl, docsUrl, langTogglePath }: HeaderProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const isZh = lang === 'zh';
-
-  const loc = (path: string) => lang === 'en' ? `${base}${path}` : `${base}zh/${path}`;
 
   useEffect(() => {
     const htmlMode = document.documentElement.getAttribute('data-mode') as 'light' | 'dark' | null;
@@ -109,26 +121,6 @@ export default function Header({ lang, base, active = 'home', currentPath }: Hea
     localStorage.setItem('theme', nextTheme);
   };
 
-  const getLangTogglePath = () => {
-    const normalizedBase = base.endsWith('/') ? base : `${base}/`;
-    const path = currentPath || normalizedBase;
-
-    if (lang === 'en') {
-      if (path.startsWith(normalizedBase + 'zh')) return path;
-      const subPath = path.startsWith(normalizedBase) ? path.slice(normalizedBase.length) : path.replace(/^\//, '');
-      return `${normalizedBase}zh/${subPath}`.replace(/\/+/g, '/');
-    } else {
-      if (path.startsWith(normalizedBase + 'zh/')) {
-        const subPath = path.slice((normalizedBase + 'zh/').length);
-        return `${normalizedBase}${subPath}`.replace(/\/+/g, '/');
-      } else if (path === normalizedBase + 'zh' || path === normalizedBase + 'zh/') {
-        return normalizedBase;
-      }
-      return path;
-    }
-  };
-
-  // Close mobile menu on outside click
   useEffect(() => {
     if (!mobileOpen) return;
     const handle = (e: MouseEvent) => {
@@ -140,24 +132,28 @@ export default function Header({ lang, base, active = 'home', currentPath }: Hea
   }, [mobileOpen]);
 
   const logoLink = (
-    <a
-      href={loc('')}
-      className="flex items-center gap-2 text-kumo-default hover:opacity-80 transition-opacity shrink-0"
-    >
+    <a href={homeUrl} className="flex items-center gap-2 text-kumo-default hover:opacity-80 transition-opacity shrink-0">
       <SoundwaveIcon />
       <span className="text-base font-semibold">Airvoice</span>
+    </a>
+  );
+
+  const docsLogoLink = (
+    <a href={docsUrl} className="flex items-center gap-2 text-kumo-default hover:opacity-80 transition-opacity shrink-0">
+      <DocsLogoIcon />
+      <span className="text-base font-semibold">{m.docs}</span>
     </a>
   );
 
   const desktopNav = (
     <div className="hidden md:flex items-center gap-5 shrink-0">
       <a
-        href={loc('docs/background/')}
+        href={docsUrl}
         className="flex items-center gap-1.5 text-sm transition-colors hover:opacity-80"
         style={{ color: active === 'docs' ? 'var(--primary-text)' : 'var(--secondary-text)' }}
       >
         <BookIcon />
-        {isZh ? '文档' : 'Docs'}
+        {m.docs}
       </a>
       <a
         href="https://github.com/yuler/airvoice"
@@ -170,10 +166,10 @@ export default function Header({ lang, base, active = 'home', currentPath }: Hea
         GitHub
       </a>
       <a
-        href={getLangTogglePath()}
+        href={langTogglePath}
         className="flex items-center justify-center w-6 h-6 text-sm transition-colors hover:opacity-80 cursor-pointer"
         style={{ color: 'var(--secondary-text)' }}
-        title={isZh ? 'Switch to English' : '切换至中文'}
+        title={m.switchLangTitle}
       >
         {isZh ? '🇺🇸' : '🇨🇳'}
       </a>
@@ -181,7 +177,7 @@ export default function Header({ lang, base, active = 'home', currentPath }: Hea
         onClick={toggleTheme}
         className="flex items-center justify-center w-6 h-6 transition-colors hover:opacity-80 cursor-pointer bg-transparent border-none outline-none p-0"
         style={{ color: 'var(--secondary-text)' }}
-        title={isZh ? '切换主题' : 'Toggle Theme'}
+        title={m.toggleThemeTitle}
       >
         {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
       </button>
@@ -191,85 +187,54 @@ export default function Header({ lang, base, active = 'home', currentPath }: Hea
   return (
     <header className="sticky top-0 z-50 border-b backdrop-blur-sm" style={{ backgroundColor: 'var(--background-primary)', borderColor: 'var(--border-default)', opacity: 0.95 }} data-mobile-nav>
       <div className="relative h-[52px]">
-        {/* Docs desktop: brand in sidebar column */}
         {active === 'docs' && (
           <div
             className="hidden md:flex absolute inset-y-0 left-0 z-10 w-64 items-center px-4 border-r"
-            style={{
-              borderColor: 'var(--border-default)',
-              backgroundColor: 'var(--background-secondary)',
-            }}
+            style={{ borderColor: 'var(--border-default)', backgroundColor: 'var(--background-secondary)' }}
           >
-            {logoLink}
+            {docsLogoLink}
           </div>
         )}
-
-        {/* Same max-w-6xl bar on home and docs — keeps nav icons at identical positions */}
         <div className="mx-auto flex h-full max-w-6xl items-center justify-between px-4 md:px-6">
-          {active !== 'docs' ? (
-            logoLink
-          ) : (
-            <>
-              <div className="md:hidden">{logoLink}</div>
-              <div className="hidden md:flex invisible pointer-events-none shrink-0" aria-hidden="true">
-                {logoLink}
-              </div>
-            </>
-          )}
-
+          {logoLink}
           {desktopNav}
-
-          <button
-            className="flex md:hidden items-center justify-center p-1.5 rounded-md text-kumo-subtle hover:text-kumo-default transition-colors shrink-0"
-            onClick={() => setMobileOpen(!mobileOpen)}
-            aria-label={isZh ? '菜单' : 'Menu'}
-          >
-            {mobileOpen ? <CloseIcon /> : <HamburgerIcon />}
-          </button>
-        </div>
-      </div>
-
-      {/* Mobile dropdown */}
-      {mobileOpen && (
-        <div className="md:hidden border-t px-4 py-4 space-y-3" style={{ backgroundColor: 'var(--background-primary)', borderColor: 'var(--border-default)' }}>
-          <a
-            href={loc('docs/background/')}
-            className="flex items-center gap-2 text-sm transition-colors py-1 hover:opacity-80"
-            style={{ color: 'var(--secondary-text)' }}
-            onClick={() => setMobileOpen(false)}
-          >
-            <BookIcon />
-            {isZh ? '文档' : 'Docs'}
-          </a>
-          <a
-            href="https://github.com/yuler/airvoice"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 text-sm transition-colors py-1 hover:opacity-80"
-            style={{ color: 'var(--secondary-text)' }}
-            onClick={() => setMobileOpen(false)}
-          >
-            <GithubIcon />
-            GitHub
-          </a>
-
-          {/* Lang/Theme switch for mobile */}
-          <div className="flex items-center gap-4 py-2 border-t" style={{ borderColor: 'var(--border-default)' }}>
-            <span className="text-xs text-kumo-inactive" style={{ color: 'var(--muted-text)' }}>{isZh ? '语言与主题:' : 'Lang & Theme:'}</span>
+          <div className="flex md:hidden items-center gap-3">
             <a
-              href={getLangTogglePath()}
-              className="flex items-center justify-center text-base text-kumo-subtle hover:text-kumo-default transition-colors w-6 h-6 cursor-pointer"
+              href={langTogglePath}
+              className="flex items-center justify-center w-6 h-6 text-sm transition-colors hover:opacity-80 cursor-pointer"
+              style={{ color: 'var(--secondary-text)' }}
+              title={m.switchLangTitle}
             >
               {isZh ? '🇺🇸' : '🇨🇳'}
             </a>
             <button
               onClick={toggleTheme}
-              className="flex items-center justify-center text-kumo-subtle hover:text-kumo-default transition-colors w-6 h-6 cursor-pointer bg-transparent border-none outline-none p-0"
+              className="flex items-center justify-center w-6 h-6 transition-colors hover:opacity-80 cursor-pointer bg-transparent border-none outline-none p-0"
+              style={{ color: 'var(--secondary-text)' }}
+              title={m.toggleThemeTitle}
             >
               {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
             </button>
+            <button
+              className="flex items-center justify-center p-1.5 rounded-md text-kumo-subtle hover:text-kumo-default transition-colors shrink-0"
+              onClick={() => setMobileOpen(!mobileOpen)}
+              aria-label={m.menu}
+            >
+              {mobileOpen ? <CloseIcon /> : <HamburgerIcon />}
+            </button>
           </div>
-
+        </div>
+      </div>
+      {mobileOpen && (
+        <div className="md:hidden border-t px-4 py-4 space-y-3" style={{ backgroundColor: 'var(--background-primary)', borderColor: 'var(--border-default)' }}>
+          <a href={docsUrl} className="flex items-center gap-2 text-sm transition-colors py-1 hover:opacity-80" style={{ color: 'var(--secondary-text)' }} onClick={() => setMobileOpen(false)}>
+            <BookIcon />
+            {m.docs}
+          </a>
+          <a href="https://github.com/yuler/airvoice" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm transition-colors py-1 hover:opacity-80" style={{ color: 'var(--secondary-text)' }} onClick={() => setMobileOpen(false)}>
+            <GithubIcon />
+            GitHub
+          </a>
         </div>
       )}
     </header>

@@ -1,5 +1,7 @@
+import type { WorksEverywhereMessages } from '../../i18n/messages';
+
 interface WorksEverywhereProps {
-  lang: 'en' | 'zh';
+  m: WorksEverywhereMessages;
 }
 
 function AppleIcon() {
@@ -54,9 +56,7 @@ function UbuntuIcon() {
   );
 }
 
-export default function WorksEverywhere({ lang }: WorksEverywhereProps) {
-  const isZh = lang === 'zh';
-
+export default function WorksEverywhere({ m }: WorksEverywhereProps) {
   const platforms = [
     { icon: <AppleIcon />, name: 'iOS' },
     { icon: <AndroidIcon />, name: 'Android' },
@@ -75,9 +75,8 @@ export default function WorksEverywhere({ lang }: WorksEverywhereProps) {
           className="text-center text-2xl font-bold mb-10"
           style={{ color: 'var(--primary-text)', letterSpacing: '-0.02em' }}
         >
-          {isZh ? '多平台运行' : 'Works everywhere'}
+          {m.title}
         </h2>
-
         <div className="flex flex-wrap justify-center gap-4">
           {platforms.map((p) => (
             <div

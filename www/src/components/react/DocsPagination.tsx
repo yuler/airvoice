@@ -1,38 +1,17 @@
+import type { DocsMessages } from '../../i18n/messages';
+
 interface PaginationProps {
-  lang: 'en' | 'zh';
+  m: DocsMessages;
   currentSlug: string;
-  base: string;
+  pages: Array<{ slug: string; label: string; href: string }>;
 }
 
-const ORDER_EN = [
-  { slug: 'background', label: 'Background' },
-  { slug: 'quick-start', label: 'Quick Start' },
-  { slug: 'development', label: 'Development' },
-  { slug: 'architecture', label: 'Architecture' },
-  { slug: 'platform-deps', label: 'Platform Deps' },
-];
-
-const ORDER_ZH = [
-  { slug: 'background', label: '背景' },
-  { slug: 'quick-start', label: '快速开始' },
-  { slug: 'development', label: '开发指南' },
-  { slug: 'architecture', label: '架构' },
-  { slug: 'platform-deps', label: '平台依赖' },
-];
-
-export default function DocsPagination({ lang, currentSlug, base }: PaginationProps) {
-  const order = lang === 'zh' ? ORDER_ZH : ORDER_EN;
-  const normalizedBase = base.endsWith('/') ? base : `${base}/`;
-  const loc = (slug: string) =>
-    lang === 'en'
-      ? `${normalizedBase}docs/${slug}/`.replace(/\/+/g, '/')
-      : `${normalizedBase}zh/docs/${slug}/`.replace(/\/+/g, '/');
-
-  const idx = order.findIndex((p) => p.slug === currentSlug);
+export default function DocsPagination({ m, currentSlug, pages }: PaginationProps) {
+  const idx = pages.findIndex((p) => p.slug === currentSlug);
   if (idx === -1) return null;
 
-  const prev = idx > 0 ? order[idx - 1] : null;
-  const next = idx < order.length - 1 ? order[idx + 1] : null;
+  const prev = idx > 0 ? pages[idx - 1] : null;
+  const next = idx < pages.length - 1 ? pages[idx + 1] : null;
 
   if (!prev && !next) return null;
 
@@ -43,7 +22,7 @@ export default function DocsPagination({ lang, currentSlug, base }: PaginationPr
     >
       {prev ? (
         <a
-          href={loc(prev.slug)}
+          href={prev.href}
           className="flex flex-col rounded-xl p-4 transition-opacity hover:opacity-80"
           style={{
             border: '1px solid var(--border-default)',
@@ -52,7 +31,7 @@ export default function DocsPagination({ lang, currentSlug, base }: PaginationPr
           }}
         >
           <span className="text-xs mb-1" style={{ color: 'var(--muted-text)' }}>
-            ← {lang === 'en' ? 'Previous' : '上一篇'}
+            ← {m.prev}
           </span>
           <span className="text-sm font-medium" style={{ color: 'var(--primary-text)' }}>
             {prev.label}
@@ -61,10 +40,9 @@ export default function DocsPagination({ lang, currentSlug, base }: PaginationPr
       ) : (
         <div />
       )}
-
       {next ? (
         <a
-          href={loc(next.slug)}
+          href={next.href}
           className="flex flex-col rounded-xl p-4 transition-opacity hover:opacity-80 sm:text-right"
           style={{
             border: '1px solid var(--border-default)',
@@ -73,7 +51,7 @@ export default function DocsPagination({ lang, currentSlug, base }: PaginationPr
           }}
         >
           <span className="text-xs mb-1" style={{ color: 'var(--muted-text)' }}>
-            {lang === 'en' ? 'Next' : '下一篇'} →
+            {m.next} →
           </span>
           <span className="text-sm font-medium" style={{ color: 'var(--primary-text)' }}>
             {next.label}

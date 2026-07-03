@@ -6,7 +6,7 @@ order: 1
 
 ## Why This Exists
 
-I work at a desk with a tower PC and a Mac mini — neither has a built-in microphone. Bluetooth headsets are unreliable, and I didn't want to buy a dedicated mic just for occasional voice input.
+I work daily with a Linux machine and a Mac mini. Voice input support on Linux is poor, and the Mac mini has no built-in microphone — you need a separate voice input device. I didn't want to buy a dedicated mic for occasional dictation, and Bluetooth headsets are unreliable.
 
 My phone already has an excellent microphone with great noise cancellation. And I already use voice keyboards like 豆包输入法 (Doubao IME) on my phone every day. The question was: **how do I get the text from my phone's voice keyboard into whatever app has focus on my desktop?**
 
@@ -28,7 +28,7 @@ No cloud. No accounts. No data leaves your local network. The speech recognition
 
 Airvoice is for a **very specific scenario**:
 
-- You use a desktop without a built-in microphone (tower PC, Mac mini, headless server)
+- Your Mac mini or other desktop has no built-in microphone and needs a separate voice input device
 - You want to dictate text into any app (editor, terminal, browser, chat) using your phone
 - You care about privacy and want LAN-only, no-cloud communication
 - You're on Linux where most commercial voice input tools don't work well

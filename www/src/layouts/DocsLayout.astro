@@ -6,22 +6,65 @@ import DocsSidebar from '../components/react/DocsSidebar';
 import TableOfContents from '../components/react/TableOfContents';
 import DocsPagination from '../components/react/DocsPagination';
 import Footer from '../components/react/Footer';
+import { useTranslations, useTranslatedPath, getLangTogglePath } from '../i18n/utils';
+import { headerMessages, footerMessages, docsMessages } from '../i18n/messages';
+import type { Locale } from '../i18n/ui';
 
 interface Props {
   title: string;
   description: string;
-  lang: 'en' | 'zh';
+  lang: Locale;
   headings: { depth: number; slug: string; text: string }[];
   currentSlug: string;
 }
 
 const { title, description, lang, headings, currentSlug } = Astro.props;
-const base = import.meta.env.BASE_URL;
+const t = useTranslations(lang);
+const path = useTranslatedPath(lang);
+const docs = docsMessages(t);
+const currentPath = Astro.url.pathname;
+const langToggle = getLangTogglePath(currentPath, lang);
+
+const docSlugs = ['background', 'quick-start', 'development', 'architecture', 'platform-deps'] as const;
+const docLabels: Record<typeof docSlugs[number], string> = {
+  background: docs.background,
+  'quick-start': docs.quickStart,
+  development: docs.development,
+  architecture: docs.architecture,
+  'platform-deps': docs.platformDeps,
+};
+const docPages = docSlugs.map((slug) => ({
+  slug,
+  label: docLabels[slug],
+  href: path(`/docs/${slug}/`),
+}));
+
+const docPaths = {
+  background: path('/docs/background/'),
+  quickStart: path('/docs/quick-start/'),
+  development: path('/docs/development/'),
+  architecture: path('/docs/architecture/'),
+  platformDeps: path('/docs/platform-deps/'),
+};
+
+const footerPaths = {
+  docs: docPaths.background,
+  quickStart: docPaths.quickStart,
+  architecture: docPaths.architecture,
+};
 ---
 
 <BaseLayout title={title} description={description} lang={lang}>
-  <DocsSidebar lang={lang} base={base} currentPath={Astro.url.pathname} client:load />
-  <Header lang={lang} base={base} active="docs" currentPath={Astro.url.pathname} client:load />
+  <DocsSidebar m={docs} currentPath={currentPath} paths={docPaths} client:load />
+  <Header
+    m={headerMessages(t, lang)}
+    lang={lang}
+    active="docs"
+    homeUrl={path('/')}
+    docsUrl={docPaths.background}
+    langTogglePath={langToggle}
+    client:load
+  />
 
   <div class="main-content flex flex-col min-h-screen md:ml-64">
     <div class="flex-1">
@@ -32,20 +75,20 @@ const base = import.meta.env.BASE_URL;
             <div class="prose prose-sm prose-kumo max-w-none">
               <slot />
             </div>
-            <DocsPagination lang={lang} currentSlug={currentSlug} base={base} client:load />
+            <DocsPagination m={docs} currentSlug={currentSlug} pages={docPages} client:load />
           </article>
         </main>
 
         {headings.length > 0 && (
           <aside class="hidden w-80 shrink-0 lg:block">
             <div class="sticky top-24 overflow-auto px-4 py-10">
-              <TableOfContents headings={headings} lang={lang} client:load />
+              <TableOfContents headings={headings} m={docs} client:load />
             </div>
           </aside>
         )}
       </div>
     </div>
-    
-    <Footer lang={lang} />
+
+    <Footer m={footerMessages(t)} paths={footerPaths} />
   </div>
 </BaseLayout>

@@ -1,9 +1,16 @@
 import { useState } from 'react';
+import type { DocsMessages } from '../../i18n/messages';
 
 interface SidebarProps {
-  lang: 'en' | 'zh';
-  base: string;
+  m: DocsMessages;
   currentPath: string;
+  paths: {
+    background: string;
+    quickStart: string;
+    development: string;
+    architecture: string;
+    platformDeps: string;
+  };
 }
 
 function HamburgerIcon() {
@@ -25,46 +32,37 @@ function CloseIcon() {
   );
 }
 
-export default function DocsSidebar({ lang, base, currentPath }: SidebarProps) {
+export default function DocsSidebar({ m, currentPath, paths }: SidebarProps) {
   const [open, setOpen] = useState(false);
-  const isZh = lang === 'zh';
-  const normalizedBase = base.endsWith('/') ? base : `${base}/`;
-  const loc = (path: string) =>
-    lang === 'en'
-      ? `${normalizedBase}${path}`
-      : `${normalizedBase}zh/${path}`;
 
   const sections = [
     {
-      title: isZh ? '入门' : 'Overview',
+      title: m.overview,
       items: [
-        { href: loc('docs/background/'), label: isZh ? '背景' : 'Background' },
-        { href: loc('docs/quick-start/'), label: isZh ? '快速开始' : 'Quick Start' },
+        { href: paths.background, label: m.background },
+        { href: paths.quickStart, label: m.quickStart },
       ],
     },
     {
-      title: isZh ? '指南' : 'Guide',
+      title: m.guide,
       items: [
-        { href: loc('docs/development/'), label: isZh ? '开发指南' : 'Development' },
-        { href: loc('docs/architecture/'), label: isZh ? '架构' : 'Architecture' },
-        { href: loc('docs/platform-deps/'), label: isZh ? '平台依赖' : 'Platform Deps' },
+        { href: paths.development, label: m.development },
+        { href: paths.architecture, label: m.architecture },
+        { href: paths.platformDeps, label: m.platformDeps },
       ],
     },
   ];
 
   return (
     <>
-      {/* Mobile toggle */}
       <button
         className="fixed left-4 top-3.5 z-50 md:hidden flex items-center justify-center rounded-md p-1.5 transition-colors"
         style={{ color: 'var(--secondary-text)', background: 'transparent', border: 'none', cursor: 'pointer' }}
         onClick={() => setOpen(!open)}
-        aria-label={isZh ? '切换菜单' : 'Toggle menu'}
+        aria-label={m.sidebarToggle}
       >
         {open ? <CloseIcon /> : <HamburgerIcon />}
       </button>
-
-      {/* Backdrop */}
       {open && (
         <div
           className="fixed inset-0 z-30 md:hidden"
@@ -72,8 +70,6 @@ export default function DocsSidebar({ lang, base, currentPath }: SidebarProps) {
           onClick={() => setOpen(false)}
         />
       )}
-
-      {/* Sidebar panel */}
       <aside
         className={`fixed top-0 left-0 z-40 h-full w-64 overflow-auto transition-transform duration-300 ${
           open ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
@@ -102,7 +98,7 @@ export default function DocsSidebar({ lang, base, currentPath }: SidebarProps) {
                   const isActive =
                     currentPath === item.href ||
                     currentPath === item.href.replace(/\/$/, '') ||
-                    (item.href !== normalizedBase && currentPath.startsWith(item.href));
+                    currentPath.startsWith(item.href);
                   return (
                     <li key={item.href}>
                       <a

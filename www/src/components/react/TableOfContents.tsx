@@ -1,11 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
+import type { DocsMessages } from '../../i18n/messages';
 
 interface TocProps {
   headings: { depth: number; slug: string; text: string }[];
-  lang: 'en' | 'zh';
+  m: Pick<DocsMessages, 'tocTitle' | 'backToTop'>;
 }
 
-export default function TableOfContents({ headings, lang }: TocProps) {
+export default function TableOfContents({ headings, m }: TocProps) {
   const filtered = useMemo(() => headings.filter((h) => h.depth <= 3), [headings]);
   const [activeId, setActiveId] = useState<string>('');
 
@@ -29,41 +30,34 @@ export default function TableOfContents({ headings, lang }: TocProps) {
 
   return (
     <nav>
-      <h4
-        className="mb-3 uppercase"
-        style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.08em', color: 'var(--muted-text)' }}
-      >
-        {lang === 'en' ? 'On this page' : '本页目录'}
-      </h4>
-      <ul className="space-y-1">
-        {filtered.map((h) => {
-          const isActive = activeId === h.slug;
-          return (
-            <li key={h.slug}>
-              <a
-                href={`#${h.slug}`}
-                className="block text-sm whitespace-nowrap transition-colors"
-                style={{
-                  paddingLeft: h.depth === 3 ? '16px' : undefined,
-                  color: isActive ? '#006efe' : 'var(--muted-text)',
-                  textDecoration: 'none',
-                }}
-              >
-                {h.text}
-              </a>
-            </li>
-          );
-        })}
+      <p className="mb-3 text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--muted-text)', letterSpacing: '0.08em' }}>
+        {m.tocTitle}
+      </p>
+      <ul className="space-y-2">
+        {filtered.map((h) => (
+          <li key={h.slug} style={{ paddingLeft: `${(h.depth - 1) * 12}px` }}>
+            <a
+              href={`#${h.slug}`}
+              className="block text-sm transition-colors"
+              style={{
+                color: activeId === h.slug ? 'var(--primary-text)' : 'var(--secondary-text)',
+                fontWeight: activeId === h.slug ? 500 : 400,
+                textDecoration: 'none',
+              }}
+            >
+              {h.text}
+            </a>
+          </li>
+        ))}
       </ul>
-      <div className="mt-6 pt-4" style={{ borderTop: '1px solid var(--border-default)' }}>
-        <button
-          className="text-xs transition-opacity hover:opacity-70 bg-transparent border-none cursor-pointer p-0"
-          style={{ color: 'var(--muted-text)' }}
-          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-        >
-          ↑ {lang === 'en' ? 'Back to top' : '回到顶部'}
-        </button>
-      </div>
+      <a
+        href="#"
+        className="mt-6 inline-block text-xs transition-colors hover:opacity-80"
+        style={{ color: 'var(--muted-text)', textDecoration: 'none' }}
+        onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+      >
+        ↑ {m.backToTop}
+      </a>
     </nav>
   );
 }

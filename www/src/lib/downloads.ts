@@ -59,19 +59,39 @@ export function getMobilePlatform(): MobilePlatform {
   return 'other';
 }
 
-export function getMobileDownloadInfo(lang: 'en' | 'zh'): MobileDownloadInfo {
+export function getMobileDownloadInfo(iosDocsUrl: string): MobileDownloadInfo {
   return {
     platform: getMobilePlatform(),
     apkUrl: ANDROID_APK_URL,
-    iosDocsPath: lang === 'zh' ? 'zh/docs/quick-start/#ios' : 'docs/quick-start/#ios',
+    iosDocsPath: iosDocsUrl,
   };
 }
 
-export function getDownloadUrls(): DownloadUrls {
+export type DesktopOS = 'windows' | 'macos' | 'linux';
+
+export function getDesktopOS(): DesktopOS {
+  const { isWindows, isMac, isLinux } = detectPlatform();
+  if (isMac) return 'macos';
+  if (isLinux) return 'linux';
+  return 'windows'; // Default to Windows
+}
+
+export function getDesktopDownloadUrl(os: DesktopOS): string {
+  switch (os) {
+    case 'macos':
+      return `${BASE}/Airvoice-Desktop-${VERSION}-macOS.zip`;
+    case 'linux':
+      return `${BASE}/Airvoice-Desktop-${VERSION}-Linux.tar.gz`;
+    default:
+      return `${BASE}/Airvoice-Desktop-${VERSION}-Windows.zip`;
+  }
+}
+
+export function getDownloadUrls(iosDocsUrl = 'docs/quick-start/#ios'): DownloadUrls {
   const { isWindows, isMac, isLinux, isAndroid, isIOS, isARM } = detectPlatform();
 
   let cli = RELEASES;
-  let desktop = RELEASES;
+  let desktop = `${BASE}/Airvoice-Desktop-${VERSION}-Windows.zip`; // Default to Windows ZIP
   let mobile = RELEASES;
 
   if (isWindows) {
@@ -90,7 +110,7 @@ export function getDownloadUrls(): DownloadUrls {
   if (isAndroid) {
     mobile = ANDROID_APK_URL;
   } else if (isIOS) {
-    mobile = getMobileDownloadInfo('en').iosDocsPath;
+    mobile = iosDocsUrl;
   }
 
   return { cli, desktop, mobile };

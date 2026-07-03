@@ -1,0 +1,53 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Header from './react/Header';
+import Hero from './react/Hero';
+import Features from './react/Features';
+import WorksEverywhere from './react/WorksEverywhere';
+import Footer from './react/Footer';
+import GetStarted from './react/GetStarted';
+import HowItWorks from './react/HowItWorks';
+import { useTranslations, useTranslatedPath, getLangTogglePath } from '../i18n/utils';
+import {
+  headerMessages,
+  heroMessages,
+  howItWorksMessages,
+  getStartedMessages,
+  featuresMessages,
+  worksEverywhereMessages,
+  footerMessages,
+} from '../i18n/messages';
+import type { Locale } from '../i18n/ui';
+
+const lang = Astro.currentLocale as Locale;
+const t = useTranslations(lang);
+const path = useTranslatedPath(lang);
+const currentPath = Astro.url.pathname;
+const langToggle = getLangTogglePath(currentPath, lang);
+---
+
+<BaseLayout title={t('meta.title')} description={t('meta.description')} lang={lang}>
+  <Header
+    m={headerMessages(t, lang)}
+    lang={lang}
+    active="home"
+    homeUrl={path('/')}
+    docsUrl={path('/docs/background/')}
+    langTogglePath={langToggle}
+    client:load
+  />
+  <Hero m={heroMessages(t)} docsUrl={path('/docs/quick-start/')} client:load />
+  <HowItWorks m={howItWorksMessages(t)} client:load />
+  <GetStarted
+    m={getStartedMessages(t)}
+    iosDocsUrl={`${path('/docs/quick-start/')}#ios`}
+    client:load
+  />
+  <Features m={featuresMessages(t)} />
+  <WorksEverywhere m={worksEverywhereMessages(t)} />
+  <Footer m={footerMessages(t)} paths={{
+    docs: path('/docs/background/'),
+    quickStart: path('/docs/quick-start/'),
+    architecture: path('/docs/architecture/'),
+  }} />
+</BaseLayout>
