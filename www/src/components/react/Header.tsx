@@ -34,16 +34,6 @@ function BookIcon() {
   );
 }
 
-function DocsLogoIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z" />
-      <path d="M6 6h10" />
-      <path d="M6 10h10" />
-    </svg>
-  );
-}
-
 function GithubIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className="mr-1.5">
@@ -138,23 +128,18 @@ export default function Header({ m, lang, active = 'home', homeUrl, docsUrl, lan
     </a>
   );
 
-  const docsLogoLink = (
-    <a href={docsUrl} className="flex items-center gap-2 text-kumo-default hover:opacity-80 transition-opacity shrink-0">
-      <DocsLogoIcon />
-      <span className="text-base font-semibold">{m.docs}</span>
-    </a>
-  );
-
   const desktopNav = (
     <div className="hidden md:flex items-center gap-5 shrink-0">
-      <a
-        href={docsUrl}
-        className="flex items-center gap-1.5 text-sm transition-colors hover:opacity-80"
-        style={{ color: active === 'docs' ? 'var(--primary-text)' : 'var(--secondary-text)' }}
-      >
-        <BookIcon />
-        {m.docs}
-      </a>
+      {active !== 'docs' && (
+        <a
+          href={docsUrl}
+          className="flex items-center gap-1.5 text-sm transition-colors hover:opacity-80"
+          style={{ color: 'var(--secondary-text)' }}
+        >
+          <BookIcon />
+          {m.docs}
+        </a>
+      )}
       <a
         href="https://github.com/yuler/airvoice"
         target="_blank"
@@ -192,11 +177,18 @@ export default function Header({ m, lang, active = 'home', homeUrl, docsUrl, lan
             className="hidden md:flex absolute inset-y-0 left-0 z-10 w-64 items-center px-4 border-r"
             style={{ borderColor: 'var(--border-default)', backgroundColor: 'var(--background-secondary)' }}
           >
-            {docsLogoLink}
+            <a
+              href={docsUrl}
+              className="flex items-center gap-1.5 text-sm transition-colors hover:opacity-80"
+              style={{ color: 'var(--secondary-text)' }}
+            >
+              <BookIcon />
+              {m.docs}
+            </a>
           </div>
         )}
         <div className="mx-auto flex h-full max-w-6xl items-center justify-between px-4 md:px-6">
-          {active === 'docs' ? <div className="shrink-0" /> : logoLink}
+          {logoLink}
           {desktopNav}
           <div className="flex md:hidden items-center gap-3">
             <a
@@ -227,10 +219,12 @@ export default function Header({ m, lang, active = 'home', homeUrl, docsUrl, lan
       </div>
       {mobileOpen && (
         <div className="md:hidden border-t px-4 py-4 space-y-3" style={{ backgroundColor: 'var(--background-primary)', borderColor: 'var(--border-default)' }}>
-          <a href={docsUrl} className="flex items-center gap-2 text-sm transition-colors py-1 hover:opacity-80" style={{ color: 'var(--secondary-text)' }} onClick={() => setMobileOpen(false)}>
-            <BookIcon />
-            {m.docs}
-          </a>
+          {active !== 'docs' && (
+            <a href={docsUrl} className="flex items-center gap-2 text-sm transition-colors py-1 hover:opacity-80" style={{ color: 'var(--secondary-text)' }} onClick={() => setMobileOpen(false)}>
+              <BookIcon />
+              {m.docs}
+            </a>
+          )}
           <a href="https://github.com/yuler/airvoice" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm transition-colors py-1 hover:opacity-80" style={{ color: 'var(--secondary-text)' }} onClick={() => setMobileOpen(false)}>
             <GithubIcon />
             GitHub
