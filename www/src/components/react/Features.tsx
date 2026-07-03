@@ -118,7 +118,7 @@ export default function Features({ m }: FeaturesProps) {
             <p className="text-xs leading-relaxed" style={{ color: 'var(--secondary-text)' }}>{features[0].desc}</p>
             
             {/* 3-step connection guide */}
-            <div className="mt-auto pt-3 border-t border-kumo-hairline space-y-1.5">
+            <div className="mt-auto pt-3 border-t space-y-1.5" style={{ borderColor: 'var(--border-default)' }}>
               {steps.map((item) => (
                 <div key={item.step} className="flex gap-1.5 items-center whitespace-nowrap">
                   <span className="text-[10px] font-mono font-bold" style={{ color: 'var(--secondary-text)' }}>
@@ -223,7 +223,7 @@ export default function Features({ m }: FeaturesProps) {
 
               {/* If it is the first card (pairing), show the 3 steps below it */}
               {idx === 0 && (
-                <div className="mt-4 pt-3 border-t border-kumo-hairline space-y-1.5">
+                <div className="mt-4 pt-3 border-t space-y-1.5" style={{ borderColor: 'var(--border-default)' }}>
                   {steps.map((item) => (
                     <div key={item.step} className="flex gap-1.5 items-center whitespace-nowrap">
                       <span className="text-[10px] font-mono font-bold" style={{ color: 'var(--secondary-text)' }}>

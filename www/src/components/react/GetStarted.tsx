@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ArrowSquareOut, CheckCircle, Copy } from '@phosphor-icons/react';
 import {
   getDownloadUrls,
@@ -35,6 +35,7 @@ export default function GetStarted({ m, iosDocsUrl }: GetStartedProps) {
   });
   const [desktopOS, setDesktopOS] = useState<DesktopOS>('windows');
   const [copiedCommand, setCopiedCommand] = useState<string | null>(null);
+  const copyTimeoutRef = useRef<number | null>(null);
 
   const desktopDownloadLabel = {
     windows: m.downloadDesktopWindows,
@@ -48,12 +49,25 @@ export default function GetStarted({ m, iosDocsUrl }: GetStartedProps) {
       if (navigator.clipboard) {
         await navigator.clipboard.writeText(command);
         setCopiedCommand(command);
-        window.setTimeout(() => setCopiedCommand((current) => current === command ? null : current), 1600);
+        if (copyTimeoutRef.current) {
+          window.clearTimeout(copyTimeoutRef.current);
+        }
+        copyTimeoutRef.current = window.setTimeout(() => {
+          setCopiedCommand((current) => current === command ? null : current);
+        }, 1600);
       }
     } catch (err) {
       console.error('Failed to copy command:', err);
     }
   };
+
+  useEffect(() => {
+    return () => {
+      if (copyTimeoutRef.current) {
+        window.clearTimeout(copyTimeoutRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     setUrls(getDownloadUrls(iosDocsUrl));

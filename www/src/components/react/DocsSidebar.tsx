@@ -98,7 +98,7 @@ export default function DocsSidebar({ m, currentPath, paths }: SidebarProps) {
                   const isActive =
                     currentPath === item.href ||
                     currentPath === item.href.replace(/\/$/, '') ||
-                    currentPath.startsWith(item.href);
+                    currentPath.startsWith(item.href.endsWith('/') ? item.href : `${item.href}/`);
                   return (
                     <li key={item.href}>
                       <a

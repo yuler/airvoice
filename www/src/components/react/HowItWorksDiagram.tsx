@@ -1,3 +1,4 @@
+import { type CSSProperties } from 'react';
 import type { HowItWorksMessages } from '../../i18n/messages';
 
 interface HowItWorksDiagramProps {
@@ -15,7 +16,7 @@ export default function HowItWorksDiagram({ labels }: HowItWorksDiagramProps) {
     <div
       className="relative w-full select-none"
       aria-hidden="true"
-      style={{ '--av-typed-max-width': typedMaxWidth } as React.CSSProperties}
+      style={{ '--av-typed-max-width': typedMaxWidth } as CSSProperties}
     >
       <style>{`
         /* ─── iOS-style voice waveform flow ─── */
