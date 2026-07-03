@@ -44,9 +44,15 @@ export default function GetStarted({ m, iosDocsUrl }: GetStartedProps) {
   const desktopDownloadUrl = getDesktopDownloadUrl(desktopOS);
 
   const copyCommand = async (command: string) => {
-    await navigator.clipboard.writeText(command);
-    setCopiedCommand(command);
-    window.setTimeout(() => setCopiedCommand((current) => current === command ? null : current), 1600);
+    try {
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(command);
+        setCopiedCommand(command);
+        window.setTimeout(() => setCopiedCommand((current) => current === command ? null : current), 1600);
+      }
+    } catch (err) {
+      console.error('Failed to copy command:', err);
+    }
   };
 
   useEffect(() => {

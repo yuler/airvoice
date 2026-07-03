@@ -196,7 +196,7 @@ export default function Header({ m, lang, active = 'home', homeUrl, docsUrl, lan
           </div>
         )}
         <div className="mx-auto flex h-full max-w-6xl items-center justify-between px-4 md:px-6">
-          {logoLink}
+          {active === 'docs' ? <div className="shrink-0" /> : logoLink}
           {desktopNav}
           <div className="flex md:hidden items-center gap-3">
             <a

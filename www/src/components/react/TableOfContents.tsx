@@ -40,7 +40,7 @@ export default function TableOfContents({ headings, m }: TocProps) {
               href={`#${h.slug}`}
               className="block text-sm transition-colors"
               style={{
-                color: activeId === h.slug ? 'var(--primary-text)' : 'var(--secondary-text)',
+                color: activeId === h.slug ? '#006efe' : 'var(--secondary-text)',
                 fontWeight: activeId === h.slug ? 500 : 400,
                 textDecoration: 'none',
               }}
