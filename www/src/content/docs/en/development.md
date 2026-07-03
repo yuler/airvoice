@@ -25,6 +25,7 @@ mise install
 ```
 airvoice/
 ├── cli/          # Go CLI — WebSocket server + keystroke injection
+├── android/      # Android Kotlin/Compose app
 ├── ios/          # iOS SwiftUI app
 ├── www/          # Documentation site (Astro)
 ├── scripts/      # Build and dev scripts
@@ -39,10 +40,22 @@ airvoice/
 | Build CLI | `mise run cli:build` |
 | Run server | `mise run cli:dev` |
 | Run tests | `mise run cli:test` |
+| Build Android (debug APK) | `mise run android:build` |
+| Install Android (USB) | `mise run android:install` |
 | Build iOS (simulator) | `mise run ios:dev` |
 | Build iOS (device) | `mise run ios:build` |
 | Docs dev server | `mise run www:dev` |
 | Build docs | `mise run www:build` |
+
+## Android Development
+
+Requires JDK (Android Studio JBR works). Build a debug APK:
+
+```bash
+mise run android:build
+```
+
+The APK is at `android/app/build/outputs/apk/debug/app-debug.apk`. Release builds are published on [GitHub Releases](https://github.com/yuler/airvoice/releases/latest) as `airvoice-android-*.apk`.
 
 ## iOS Development
 

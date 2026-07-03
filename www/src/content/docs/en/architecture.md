@@ -8,8 +8,9 @@ order: 4
 
 ```text
 ┌────────────────────────────────────────────────────────────┐
-│  iOS (SwiftUI)                                             │
-│  Onboarding → QR Scanner → Home (TextEditor + 豆包/微信 IME) │
+│  Mobile clients                                            │
+│  Android (Compose) / iOS (SwiftUI)                         │
+│  Onboarding → QR Scanner → Home (TextEditor + voice IME) │
 │       │                                                    │
 │       │  WebSocket / JSON (LAN)                            │
 └───────┼────────────────────────────────────────────────────┘
@@ -19,10 +20,10 @@ order: 4
 │  QR pairing │ WS server │ token auth │ paste injection     │
 └────────────────────────────────────────────────────────────┘
         ▼
-   Focused app on macOS / Linux (any text field)
+   Focused app on macOS / Linux / Windows (any text field)
 ```
 
-**Data path:** IME writes into `TextEditor` → iOS auto-send → `{type:"text"}` → Go CLI → clipboard + synthetic Cmd/Ctrl+V → cursor.
+**Data path:** IME writes into `TextEditor` → mobile auto-send → `{type:"text"}` → Go CLI → clipboard + synthetic Cmd/Ctrl+V → cursor.
 
 ## Go packages
 
@@ -73,5 +74,7 @@ Transport: **WebSocket**, JSON text frames, LAN only.
 ## Dependencies
 
 **Go:** `github.com/gorilla/websocket`, `github.com/google/uuid`, `github.com/mdp/qrterminal/v3`
+
+**Android:** Kotlin, Jetpack Compose, OkHttp, CameraX + ML Kit (QR scan).
 
 **iOS:** SwiftUI, VisionKit (iOS 17+), no third-party WS library.

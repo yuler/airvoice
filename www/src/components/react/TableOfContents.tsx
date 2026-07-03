@@ -1,11 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
+import type { DocsMessages } from '../../i18n/messages';
 
 interface TocProps {
   headings: { depth: number; slug: string; text: string }[];
-  lang: 'en' | 'zh';
+  m: Pick<DocsMessages, 'tocTitle' | 'backToTop'>;
 }
 
-export default function TableOfContents({ headings, lang }: TocProps) {
+export default function TableOfContents({ headings, m }: TocProps) {
   const filtered = useMemo(() => headings.filter((h) => h.depth <= 3), [headings]);
   const [activeId, setActiveId] = useState<string>('');
 
@@ -13,19 +14,15 @@ export default function TableOfContents({ headings, lang }: TocProps) {
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
-          if (entry.isIntersecting) {
-            setActiveId(entry.target.id);
-          }
+          if (entry.isIntersecting) setActiveId(entry.target.id);
         }
       },
       { rootMargin: '-80px 0px -70% 0px', threshold: 0 }
     );
-
     for (const h of filtered) {
       const el = document.getElementById(h.slug);
       if (el) observer.observe(el);
     }
-
     return () => observer.disconnect();
   }, [filtered]);
 
@@ -33,30 +30,34 @@ export default function TableOfContents({ headings, lang }: TocProps) {
 
   return (
     <nav>
-      <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-kumo-subtle">
-        {lang === 'en' ? 'On this page' : '本页目录'}
-      </h4>
-      <ul className="space-y-1">
-        {filtered.map((h) => {
-          const isActive = activeId === h.slug;
-          return (
-            <li key={h.slug}>
-              <a
-                href={`#${h.slug}`}
-                className={`block text-sm transition-colors ${
-                  h.depth === 3 ? 'pl-4' : ''
-                } ${
-                  isActive
-                    ? 'text-kumo-default font-medium'
-                    : 'text-kumo-inactive hover:text-kumo-subtle'
-                }`}
-              >
-                {h.text}
-              </a>
-            </li>
-          );
-        })}
+      <p className="mb-3 text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--muted-text)', letterSpacing: '0.08em' }}>
+        {m.tocTitle}
+      </p>
+      <ul className="space-y-2">
+        {filtered.map((h) => (
+          <li key={h.slug} style={{ paddingLeft: `${(h.depth - 1) * 12}px` }}>
+            <a
+              href={`#${h.slug}`}
+              className="block text-sm transition-colors"
+              style={{
+                color: activeId === h.slug ? '#006efe' : 'var(--secondary-text)',
+                fontWeight: activeId === h.slug ? 500 : 400,
+                textDecoration: 'none',
+              }}
+            >
+              {h.text}
+            </a>
+          </li>
+        ))}
       </ul>
+      <a
+        href="#"
+        className="mt-6 inline-block text-xs transition-colors hover:opacity-80"
+        style={{ color: 'var(--muted-text)', textDecoration: 'none' }}
+        onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+      >
+        ↑ {m.backToTop}
+      </a>
     </nav>
   );
 }

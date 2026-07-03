@@ -4,6 +4,11 @@ description: 各平台的系统要求。
 order: 5
 ---
 
+## Android
+
+- **相机权限**：配对扫码时需要相机权限。
+- **APK 安装**：从 [GitHub Releases](https://github.com/yuler/airvoice/releases/latest) 下载安装。如系统提示，请允许安装未知来源应用。
+
 ## macOS
 
 - **辅助功能权限**：运行二进制文件的终端应用需要辅助功能权限。

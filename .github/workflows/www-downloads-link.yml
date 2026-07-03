@@ -1,0 +1,138 @@
+name: Sync WWW Download Tag
+
+# After CLI / Desktop / Android release workflows finish, check whether all
+# platform assets exist on the GitHub Release, then bump TAG in downloads.ts.
+on:
+  workflow_run:
+    workflows:
+      - CLI Release
+      - Desktop Release
+      - Android Release
+    types:
+      - completed
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to sync (e.g. v0.3.2)'
+        required: true
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: sync-www-downloads-${{ github.event.workflow_run.head_sha || github.event.inputs.tag || github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push')
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Resolve tag and version
+        id: meta
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ github.event.inputs.tag }}"
+          else
+            SHA="${{ github.event.workflow_run.head_sha }}"
+            TAG=$(git tag --points-at "$SHA" | grep '^v' | head -1 || true)
+          fi
+
+          if [ -z "$TAG" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "No release tag found, skipping."
+            exit 0
+          fi
+
+          VERSION="${TAG#v}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+          echo "Resolved tag=$TAG version=$VERSION"
+
+      - name: Check release assets
+        id: assets
+        if: steps.meta.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.meta.outputs.tag }}
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          REQUIRED=(
+            "airvoice-cli-darwin-arm64"
+            "airvoice-cli-darwin-amd64"
+            "airvoice-cli-linux-amd64"
+            "airvoice-cli-windows-amd64.exe"
+            "Airvoice-Desktop-${VERSION}-macOS.zip"
+            "Airvoice-Desktop-${VERSION}-Linux.tar.gz"
+            "Airvoice-Desktop-${VERSION}-Windows.zip"
+            "airvoice-android-${VERSION}.apk"
+          )
+
+          ASSETS=$(gh release view "$TAG" --json assets --jq '.assets[].name' 2>/dev/null || true)
+          if [ -z "$ASSETS" ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "Release $TAG not found or has no assets yet."
+            exit 0
+          fi
+
+          MISSING=0
+          for asset in "${REQUIRED[@]}"; do
+            if ! echo "$ASSETS" | grep -qxF "$asset"; then
+              echo "Missing asset: $asset"
+              MISSING=$((MISSING + 1))
+            fi
+          done
+
+          if [ "$MISSING" -gt 0 ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "$MISSING asset(s) still missing; waiting for other platform releases."
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+            echo "All required release assets are present."
+          fi
+
+      - name: Update downloads.ts on main
+        id: update
+        if: steps.meta.outputs.skip != 'true' && steps.assets.outputs.ready == 'true'
+        env:
+          TAG: ${{ steps.meta.outputs.tag }}
+        run: |
+          git fetch origin main
+          git checkout main
+          git pull --ff-only origin main
+
+          FILE=www/src/lib/downloads.ts
+          CURRENT=$(grep -oP "(?<=const TAG = ')[^']+" "$FILE" || true)
+          if [ "$CURRENT" = "$TAG" ]; then
+            echo "TAG already set to $TAG, nothing to do."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          sed -i "s/const TAG = '[^']*'/const TAG = '${TAG}'/" "$FILE"
+          echo "Updated TAG: $CURRENT -> $TAG"
+          grep "const TAG" "$FILE"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "$FILE"
+          git commit -m "🔖 [www]: Sync download links to ${TAG}"
+          git push origin main
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      # GITHUB_TOKEN pushes do not trigger other workflows; deploy explicitly.
+      - name: Trigger WWW Deploy
+        if: steps.update.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run www-deploy.yml --ref main

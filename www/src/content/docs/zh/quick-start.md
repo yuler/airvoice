@@ -4,7 +4,7 @@ description: 安装 Airvoice 并开始使用。
 order: 2
 ---
 
-Airvoice 由两部分组成：**桌面端服务器**（CLI）和 **iOS 客户端**。两者必须在同一 Wi‑Fi 下。
+Airvoice 由两部分组成：**桌面端服务器**（CLI）和 **手机客户端**（Android 或 iOS）。两者必须在同一 Wi‑Fi 下。
 
 ## 1. 安装 CLI
 
@@ -27,6 +27,8 @@ mise install
 go install github.com/yuler/airvoice/cli@latest
 ```
 
+也可以从 [GitHub Releases](https://github.com/yuler/airvoice/releases/latest) 下载对应平台的二进制文件。
+
 ## 2. 启动服务器
 
 ```bash
@@ -35,9 +37,19 @@ airvoice serve
 
 终端会打印一个二维码。保持此进程运行。
 
-## 3. 安装 iOS 应用
+## 3. 安装手机应用
 
-我们没有 Apple 开发者账号，所以你需要通过 Mac 从源代码构建。这是免费的 — 只需要一个普通的 Apple ID。
+根据你的手机平台选择：
+
+### Android {#android}
+
+1. 从 [GitHub Releases](https://github.com/yuler/airvoice/releases/latest) 下载 `airvoice-android-*.apk`。
+2. 安装 APK（如系统提示，请允许安装未知来源应用）。
+3. 打开 Airvoice，扫描终端中的二维码。
+
+### iOS {#ios}
+
+我们没有 Apple 开发者账号，所以你需要通过 Mac 从源代码构建。这是免费的 — 只需要一个普通的 Apple ID。应用**未上架 App Store**。
 
 **前提条件：**
 
@@ -46,26 +58,26 @@ airvoice serve
 - 运行 **iOS 17+** 的 iPhone
 - USB 数据线
 
-### 第一步 — 在 iPhone 上开启开发者模式
+#### 第一步 — 在 iPhone 上开启开发者模式
 
 在 iPhone 上：**设置 → 隐私与安全性 → 开发者模式** → 打开 → 提示时重启。
 
 > 没看到选项？先把 iPhone 连接到打开了 Xcode 的 Mac。
 
-### 第二步 — 获取源代码
+#### 第二步 — 获取源代码
 
 ```bash
 git clone https://github.com/yuler/airvoice.git
 cd airvoice
 ```
 
-### 第三步 — 在 Xcode 中打开
+#### 第三步 — 在 Xcode 中打开
 
 ```bash
 open ios/Airvoice.xcodeproj
 ```
 
-### 第四步 — 配置签名
+#### 第四步 — 配置签名
 
 在 Xcode 中：
 
@@ -73,19 +85,19 @@ open ios/Airvoice.xcodeproj
 2. 在 **Signing & Capabilities** 下：勾选 **Automatically manage signing**
 3. **Team** 选择你的 Apple ID（如果没有登录会提示）
 
-### 第五步 — 构建并安装
+#### 第五步 — 构建并安装
 
 1. USB 连接 iPhone，解锁，点击 **信任此电脑**
 2. 在 Xcode 顶部选择你的 iPhone
 3. 按 `Cmd + R` 构建并安装
 
-### 第六步 — 信任开发者证书
+#### 第六步 — 信任开发者证书
 
 首次在 iPhone 上：**设置 → 通用 → VPN 与设备管理** → 找到你的 Apple ID → 点击 **信任**。
 
-### 第七步 — 连接
+#### 第七步 — 连接
 
-1. 确保 iPhone 和 Mac 在同一 Wi‑Fi
+1. 确保 iPhone 和电脑在同一 Wi‑Fi
 2. 在 iPhone 上打开 Airvoice
 3. 扫描终端中的二维码
 

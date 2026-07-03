@@ -1,7 +1,7 @@
-import React from 'react';
+import type { WorksEverywhereMessages } from '../../i18n/messages';
 
 interface WorksEverywhereProps {
-  lang: 'en' | 'zh';
+  m: WorksEverywhereMessages;
 }
 
 function AppleIcon() {
@@ -56,9 +56,7 @@ function UbuntuIcon() {
   );
 }
 
-export default function WorksEverywhere({ lang }: WorksEverywhereProps) {
-  const isZh = lang === 'zh';
-  
+export default function WorksEverywhere({ m }: WorksEverywhereProps) {
   const platforms = [
     { icon: <AppleIcon />, name: 'iOS' },
     { icon: <AndroidIcon />, name: 'Android' },
@@ -68,12 +66,17 @@ export default function WorksEverywhere({ lang }: WorksEverywhereProps) {
   ];
 
   return (
-    <section className="py-12 md:py-16" style={{ background: 'var(--background-secondary)' }}>
+    <section
+      className="py-12 md:py-16"
+      style={{ background: 'var(--background-secondary)', borderTop: '1px solid var(--border-default)' }}
+    >
       <div className="mx-auto max-w-6xl px-4 md:px-6">
-        <h2 className="text-center text-2xl font-bold mb-10 text-kumo-default" style={{ color: 'var(--primary-text)', letterSpacing: '-0.02em' }}>
-          {isZh ? '多平台运行' : 'Works everywhere'}
+        <h2
+          className="text-center text-2xl font-bold mb-10"
+          style={{ color: 'var(--primary-text)', letterSpacing: '-0.02em' }}
+        >
+          {m.title}
         </h2>
-        
         <div className="flex flex-wrap justify-center gap-4">
           {platforms.map((p) => (
             <div

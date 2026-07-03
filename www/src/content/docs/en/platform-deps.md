@@ -4,6 +4,11 @@ description: System requirements for each platform.
 order: 5
 ---
 
+## Android
+
+- **Camera permission**: Required for QR code scanning during pairing.
+- **Install from APK**: Download from [GitHub Releases](https://github.com/yuler/airvoice/releases/latest). Allow installation from unknown sources if prompted.
+
 ## macOS
 
 - **Accessibility API Permission**: The terminal application running the binary requires Accessibility permission.

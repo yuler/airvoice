@@ -6,7 +6,7 @@ order: 1
 
 ## Why This Exists
 
-I work at a desk with a tower PC and a Mac mini — neither has a built-in microphone. Bluetooth headsets are unreliable, and I didn't want to buy a dedicated mic just for occasional voice input.
+I work daily with a Linux machine and a Mac mini. Voice input support on Linux is poor, and the Mac mini has no built-in microphone — you need a separate voice input device. I didn't want to buy a dedicated mic for occasional dictation, and Bluetooth headsets are unreliable.
 
 My phone already has an excellent microphone with great noise cancellation. And I already use voice keyboards like 豆包输入法 (Doubao IME) on my phone every day. The question was: **how do I get the text from my phone's voice keyboard into whatever app has focus on my desktop?**
 
@@ -15,11 +15,11 @@ That's all Airvoice does. It's a bridge.
 ## How It Works
 
 ```
-iPhone (voice keyboard)  →  LAN WebSocket  →  Desktop (paste at cursor)
+Phone (Android or iPhone, voice keyboard)  →  LAN WebSocket  →  Desktop (paste at cursor)
 ```
 
 1. **Desktop:** A Go CLI starts a WebSocket server on your local network and prints a QR code.
-2. **iPhone:** The iOS app connects by scanning the QR code. It provides a text field where you use any voice keyboard (豆包输入法, 微信输入法, etc.) to dictate.
+2. **Phone:** The Android or iOS app connects by scanning the QR code. It provides a text field where you use any voice keyboard (豆包输入法, 微信输入法, etc.) to dictate.
 3. **When you dismiss the keyboard** (or after 1.5 seconds of idle), the text is sent over LAN and pasted at your cursor position.
 
 No cloud. No accounts. No data leaves your local network. The speech recognition is done entirely by the voice keyboard on your phone — Airvoice doesn't include its own STT engine.
@@ -28,7 +28,7 @@ No cloud. No accounts. No data leaves your local network. The speech recognition
 
 Airvoice is for a **very specific scenario**:
 
-- You use a desktop without a built-in microphone (tower PC, Mac mini, headless server)
+- Your Mac mini or other desktop has no built-in microphone and needs a separate voice input device
 - You want to dictate text into any app (editor, terminal, browser, chat) using your phone
 - You care about privacy and want LAN-only, no-cloud communication
 - You're on Linux where most commercial voice input tools don't work well
@@ -52,7 +52,7 @@ For most people, these tools are a better fit:
 | Topic | Decision |
 |-------|----------|
 | Product name | **Airvoice** |
-| Mobile | iOS SwiftUI, iOS 17+ |
+| Mobile | Android (Kotlin/Compose) + iOS (SwiftUI, iOS 17+) |
 | Desktop | Go CLI (`airvoice serve`) |
 | Pairing | QR code with one-time token |
 | Send mode | Auto-send when keyboard dismisses or text idle 1.5s |

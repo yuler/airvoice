@@ -1,24 +1,27 @@
 ---
 import { getCollection, render } from 'astro:content';
 import DocsLayout from '../../layouts/DocsLayout.astro';
+import type { Locale } from '../../i18n/ui';
 
 export async function getStaticPaths() {
-  const docs = await getCollection('docs', ({ id }) => id.startsWith('en/'));
+  const docs = await getCollection('docs', ({ id }) => id.startsWith('zh/'));
   return docs.map(doc => ({
-    params: { slug: doc.id.replace('en/', '') },
+    params: { slug: doc.id.replace('zh/', '') },
     props: { doc },
   }));
 }
 
 const { doc } = Astro.props;
 const { Content, headings } = await render(doc);
+const lang = Astro.currentLocale as Locale;
 ---
 
 <DocsLayout
   title={doc.data.title}
   description={doc.data.description}
-  lang="en"
+  lang={lang}
   headings={headings}
+  currentSlug={doc.id.replace('zh/', '')}
 >
   <Content />
 </DocsLayout>
