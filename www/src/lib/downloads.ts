@@ -1,5 +1,7 @@
-const TAG = 'v0.3.1';
-const VERSION = TAG.replace(/^v/, '');
+import versionRaw from '../../../VERSION?raw';
+
+const VERSION = versionRaw.trim();
+const TAG = `v${VERSION}`;
 const BASE = `https://github.com/yuler/airvoice/releases/download/${TAG}`;
 export const RELEASES = 'https://github.com/yuler/airvoice/releases/latest';
 export const ANDROID_APK_URL = `${BASE}/airvoice-android-${VERSION}.apk`;

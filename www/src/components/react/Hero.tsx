@@ -1,6 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import Lightbox from './Lightbox';
-import { getDownloadUrls, type DownloadUrls } from '../../lib/downloads';
 import type { HeroMessages } from '../../i18n/messages';
 
 interface HeroProps {
@@ -9,45 +8,17 @@ interface HeroProps {
   base?: string;
 }
 
-function useScrollReveal(threshold = 0.1) {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    el.style.opacity = '0';
-    el.style.transform = 'translateY(20px)';
-    el.style.transition = 'opacity 0.7s ease, transform 0.7s ease';
-    const obs = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          el.style.opacity = '1';
-          el.style.transform = 'translateY(0)';
-          obs.disconnect();
-        }
-      },
-      { threshold }
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, [threshold]);
-  return ref;
-}
-
 function TerminalWindow() {
-  const bg = '#ffffff';
-  const fg = '#374151';
-  const labelColor = '#6b7280';
-
   return (
     <div
-      className="rounded-2xl overflow-hidden shadow-2xl w-[210px] sm:w-[270px]"
-      style={{ background: bg, border: '1px solid #e5e7eb' }}
+      className="rounded-2xl overflow-hidden w-[210px] sm:w-[270px]"
+      style={{ background: '#000000', border: '1px solid #2e2e2e' }}
     >
-      <div className="flex items-center gap-1 sm:gap-1.5 px-2.5 py-2 sm:px-4 sm:py-3 border-b" style={{ borderColor: '#e5e7eb' }}>
+      <div className="flex items-center gap-1 sm:gap-1.5 px-2.5 py-2 sm:px-4 sm:py-3 border-b" style={{ background: '#0d0e15', borderColor: '#2e2e2e' }}>
         <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full" style={{ background: '#ff5f57' }} />
         <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full" style={{ background: '#febc2e' }} />
         <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full" style={{ background: '#28c840' }} />
-        <span className="ml-1 sm:ml-2 text-[7px] sm:text-[9px] text-gray-400 font-mono">airvoice</span>
+        <span className="ml-1 sm:ml-2 text-[7px] sm:text-[9px] font-mono" style={{ color: '#666666' }}>airvoice</span>
       </div>
       <div className="p-2.5 sm:p-4 flex flex-col items-start">
         <div className="mb-2.5 sm:mb-4 w-full flex justify-center sm:justify-start">
@@ -55,18 +26,19 @@ function TerminalWindow() {
             src={`${import.meta.env.BASE_URL || '/'}qrcode.svg`.replace(/\/+/g, '/')}
             alt="https://github.com/yuler/airvoice"
             className="w-[140px] h-[140px] sm:w-[200px] sm:h-[200px] block"
+            style={{ filter: 'invert(1)' }}
           />
         </div>
         <div className="w-full font-mono text-[7px] sm:text-[9px] leading-relaxed space-y-0.5 sm:space-y-1 text-left truncate-children">
           <div className="truncate">
-            <span style={{ color: labelColor }}>Token:</span>{' '}
-            <span style={{ color: fg }}>277129e4-35ea-40af-a122-13a5839e5e1f</span>
+            <span style={{ color: '#666666' }}>Token:</span>{' '}
+            <span style={{ color: '#ededed' }}>277129e4-35ea-40af-a122-13a5839e5e1f</span>
           </div>
           <div className="truncate">
-            <span style={{ color: labelColor }}>WebSocket URL:</span>{' '}
-            <span style={{ color: fg }}>ws://192.168.20.189:7654/ws</span>
+            <span style={{ color: '#666666' }}>WebSocket URL:</span>{' '}
+            <span style={{ color: '#ededed' }}>ws://192.168.20.189:7654/ws</span>
           </div>
-          <div className="pt-1 sm:pt-2 truncate" style={{ color: labelColor }}>
+          <div className="pt-1 sm:pt-2 truncate" style={{ color: '#666666' }}>
             [airvoice] waiting for phone connection...
           </div>
         </div>
@@ -79,7 +51,7 @@ function DesktopWindow({ base }: { base: string }) {
   return (
     <div
       className="rounded-2xl overflow-hidden w-[150px] sm:w-[170px]"
-      style={{ border: '1px solid var(--border-default)' }}
+      style={{ border: '1px solid #2e2e2e' }}
     >
       <Lightbox
         src={`${base || '/'}desktop.png`.replace(/\/+/g, '/')}
@@ -94,7 +66,7 @@ function MobilePhone({ base }: { base: string }) {
   return (
     <div
       className="rounded-2xl overflow-hidden w-[150px] sm:w-[170px] lg:w-[220px]"
-      style={{ border: '1px solid var(--border-default)' }}
+      style={{ border: '1px solid #2e2e2e' }}
     >
       <Lightbox
         src={`${base || '/'}phone.jpg`.replace(/\/+/g, '/')}
@@ -151,34 +123,22 @@ function BookOpenIcon() {
 
 export default function Hero({ m, docsUrl, base = import.meta.env.BASE_URL || '/' }: HeroProps) {
   const [activeTab, setActiveTab] = useState<'cli' | 'desktop'>('cli');
-  const [urls, setUrls] = useState<DownloadUrls>({
-    cli: 'https://github.com/yuler/airvoice/releases/latest',
-    desktop: 'https://github.com/yuler/airvoice/releases/latest',
-    mobile: 'https://github.com/yuler/airvoice/releases/latest',
-  });
-
-  useEffect(() => {
-    setUrls(getDownloadUrls());
-  }, []);
-
-  const leftRef = useScrollReveal(0.1);
-  const rightRef = useScrollReveal(0.05);
 
   const statuses = [
-    { color: 'var(--status-success)', label: m.statusConnected, pulse: true },
-    { color: 'var(--status-warning)', label: m.statusConnecting },
-    { color: 'var(--status-error)', label: m.statusError },
-    { color: 'var(--status-neutral)', label: m.statusOffline },
+    { color: '#00ac3a', label: m.statusConnected, pulse: true },
+    { color: '#ffae00', label: m.statusConnecting },
+    { color: '#e2162a', label: m.statusError },
+    { color: '#8f8f8f', label: m.statusOffline },
   ];
 
   return (
     <section
       className="py-14 md:py-20 lg:py-24 border-b"
-      style={{ background: 'var(--background-primary)', borderColor: 'var(--border-default)' }}
+      style={{ background: '#000000', borderColor: '#2e2e2e' }}
     >
       <div className="mx-auto max-w-6xl px-4 md:px-6">
         <div className="flex flex-col gap-10 lg:flex-row lg:items-center lg:gap-16">
-          <div ref={leftRef} className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0">
             <div className="mb-5">
               <span style={{
                 border: '1px solid #006efe',
@@ -195,11 +155,11 @@ export default function Hero({ m, docsUrl, base = import.meta.env.BASE_URL || '/
             </div>
             <h1
               className="text-5xl font-bold leading-tight md:text-6xl"
-              style={{ color: 'var(--primary-text)', letterSpacing: '-0.04em' }}
+              style={{ color: '#ededed', letterSpacing: '-0.04em' }}
             >
               {m.title}
             </h1>
-            <p className="mt-5 text-base leading-relaxed" style={{ color: 'var(--secondary-text)', maxWidth: '440px' }}>
+            <p className="mt-5 text-base leading-relaxed" style={{ color: '#a0a0a0', maxWidth: '440px' }}>
               {m.subtitle}
             </p>
             <div className="mt-8 flex flex-row gap-3">
@@ -213,8 +173,8 @@ export default function Hero({ m, docsUrl, base = import.meta.env.BASE_URL || '/
               </a>
               <a
                 href={docsUrl}
-                className="inline-flex items-center justify-center gap-1.5 rounded-full border px-4 text-xs font-bold transition-colors hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer"
-                style={{ borderColor: 'var(--border-default)', color: 'var(--primary-text)', height: '40px', minWidth: '136px' }}
+                className="inline-flex items-center justify-center gap-1.5 rounded-full border px-4 text-xs font-bold transition-colors hover:bg-white/10 cursor-pointer"
+                style={{ borderColor: '#2e2e2e', color: '#ededed', height: '40px', minWidth: '136px' }}
               >
                 <BookOpenIcon />
                 {m.docs}
@@ -222,7 +182,7 @@ export default function Hero({ m, docsUrl, base = import.meta.env.BASE_URL || '/
             </div>
             <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2">
               {statuses.map((s) => (
-                <span key={s.label} className="flex items-center gap-1.5 text-sm" style={{ color: 'var(--secondary-text)' }}>
+                <span key={s.label} className="flex items-center gap-1.5 text-sm" style={{ color: '#a0a0a0' }}>
                   {s.pulse
                     ? <span className="av-pulse-dot" style={{ background: s.color }} />
                     : <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: s.color }} />
@@ -232,7 +192,7 @@ export default function Hero({ m, docsUrl, base = import.meta.env.BASE_URL || '/
               ))}
             </div>
           </div>
-          <div ref={rightRef} className="flex-1 min-w-0 flex flex-col items-center justify-center">
+          <div className="flex-1 min-w-0 flex flex-col items-center justify-center">
             <div className="hidden lg:block w-full">
               <DesktopHeroVisual activeTab={activeTab} base={base} />
             </div>
@@ -242,7 +202,7 @@ export default function Hero({ m, docsUrl, base = import.meta.env.BASE_URL || '/
             <div className="w-full max-w-[540px] flex justify-center mt-6">
               <div
                 className="inline-flex rounded-full p-1"
-                style={{ background: 'var(--background-secondary)', border: '1px solid var(--border-default)' }}
+                style={{ background: '#0d0e15', border: '1px solid #2e2e2e' }}
               >
                 {(['cli', 'desktop'] as const).map((tab) => (
                   <button
@@ -252,7 +212,7 @@ export default function Hero({ m, docsUrl, base = import.meta.env.BASE_URL || '/
                     style={
                       activeTab === tab
                         ? { backgroundColor: '#006efe', color: '#ffffff', boxShadow: '0 1px 3px rgba(0,110,254,0.35)' }
-                        : { backgroundColor: 'transparent', color: 'var(--secondary-text)' }
+                        : { backgroundColor: 'transparent', color: '#666666' }
                     }
                   >
                     {tab === 'cli' ? m.tabCli : m.tabDesktop}
