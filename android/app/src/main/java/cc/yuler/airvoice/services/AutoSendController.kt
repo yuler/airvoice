@@ -8,8 +8,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -93,8 +92,9 @@ class AutoSendController(
         startCountdown()
         debounceJob = scope.launch {
             delay(1500L)
+            if (!isActive) return@launch
             _countdownActive.value = false
-            withContext(NonCancellable) {
+            scope.launch {
                 attemptSend(textFlow.value, SendTrigger.AUTO)
             }
         }
