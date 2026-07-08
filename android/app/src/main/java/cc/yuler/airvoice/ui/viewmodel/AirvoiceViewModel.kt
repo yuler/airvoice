@@ -19,7 +19,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 enum class Screen {
-    ONBOARDING,
     SCANNER,
     HOME
 }
@@ -30,8 +29,6 @@ class AirvoiceViewModel(application: Application) : AndroidViewModel(application
     val connectionManager = ConnectionManager(client)
     private val vibratorHelper = VibratorHelper(application)
 
-    private val _hasSeenOnboarding = MutableStateFlow(false)
-    val hasSeenOnboarding: StateFlow<Boolean> = _hasSeenOnboarding.asStateFlow()
 
     private val _appTheme = MutableStateFlow("light")
     val appTheme: StateFlow<String> = _appTheme.asStateFlow()
@@ -56,7 +53,6 @@ class AirvoiceViewModel(application: Application) : AndroidViewModel(application
     init {
         viewModelScope.launch {
             // Read settings on startup
-            _hasSeenOnboarding.value = storage.hasSeenOnboardingFlow.first()
             _appTheme.value = storage.themeFlow.first()
             
             val conn = storage.connectionInfoFlow.first()
@@ -83,12 +79,6 @@ class AirvoiceViewModel(application: Application) : AndroidViewModel(application
         autoSendController.triggerImmediateSend()
     }
 
-    fun completeOnboarding() {
-        viewModelScope.launch {
-            storage.saveHasSeenOnboarding(true)
-            _hasSeenOnboarding.value = true
-        }
-    }
 
     fun toggleTheme() {
         viewModelScope.launch {
