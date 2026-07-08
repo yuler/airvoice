@@ -33,7 +33,7 @@ fun MainScreen(viewModel: AirvoiceViewModel) {
     val toastMessage by viewModel.toastMessage.collectAsState()
     val isToastError by viewModel.isToastError.collectAsState()
 
-    var currentScreen by remember { mutableStateOf(Screen.HOME) }
+    var currentScreen by rememberSaveable { mutableStateOf(Screen.HOME) }
 
 
 
