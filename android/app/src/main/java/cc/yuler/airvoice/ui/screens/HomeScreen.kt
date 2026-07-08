@@ -309,6 +309,22 @@ fun HomeScreen(
                       }
 
                       InputMethodTipsView()
+
+                      val context = LocalContext.current
+                      val versionName = remember {
+                          try {
+                              context.packageManager.getPackageInfo(context.packageName, 0).versionName
+                          } catch (e: Exception) {
+                              "0.3.1"
+                          }
+                      }
+                      Text(
+                          text = "v$versionName",
+                          fontSize = 11.sp,
+                          fontWeight = FontWeight.Medium,
+                          color = secondaryTextColor().copy(alpha = 0.6f),
+                          modifier = Modifier.padding(top = 4.dp)
+                      )
                   }
               }
           }
