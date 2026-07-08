@@ -268,6 +268,12 @@ struct HomeView: View {
             .disabled(connection.state != .connected || autoSend.inFlight)
 
             InputMethodTipsView(theme: theme)
+
+            Text("v\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.3.1")")
+                .font(.system(size: 11, weight: .medium, design: .rounded))
+                .foregroundColor(theme.secondaryText.opacity(0.6))
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.top, 4)
         }
         .padding(.horizontal, 20)
         .padding(.bottom, 20)
