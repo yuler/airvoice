@@ -216,7 +216,7 @@ final class HomeViewModel: ObservableObject {
             if shouldRetry,
                let retryContent,
                !retryContent.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                Task { [weak self] @MainActor in
+                Task { @MainActor [weak self] in
                     try? await Task.sleep(nanoseconds: 400_000_000)
                     guard let self else { return }
                     guard connection.state == .connected, !autoSend.inFlight else { return }
