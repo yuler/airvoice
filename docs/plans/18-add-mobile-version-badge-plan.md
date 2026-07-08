@@ -17,7 +17,7 @@
 
 - [ ] **Step 1: Update HomeView.swift to append version text at bottomControls**
 
-Modify [HomeView.swift](file:///home/yule/Sides/airvoice/ios/Airvoice/Views/HomeView.swift) around line 270-275 to add the version badge at the bottom of `bottomControls`:
+Modify [HomeView.swift](/ios/Airvoice/Views/HomeView.swift) around line 270-275 to add the version badge at the bottom of `bottomControls`:
 ```swift
             InputMethodTipsView(theme: theme)
 
@@ -48,7 +48,7 @@ git commit -m "feat(ios): add version badge at the bottom of HomeView"
 
 - [ ] **Step 1: Update HomeScreen.kt to append version text at bottom controls**
 
-Modify [HomeScreen.kt](file:///home/yule/Sides/airvoice/android/app/src/main/java/cc/yuler/airvoice/ui/screens/HomeScreen.kt) around line 311-314 to fetch the versionName dynamically and add the Text composable at the bottom:
+Modify [HomeScreen.kt](/android/app/src/main/java/cc/yuler/airvoice/ui/screens/HomeScreen.kt) around line 311-314 to fetch the versionName dynamically and add the Text composable at the bottom:
 ```kotlin
                           }
                       }

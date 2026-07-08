@@ -26,7 +26,7 @@ rm ios/Airvoice/Views/OnboardingView.swift
 
 - [ ] **Step 2: Update ContentView.swift to directly load HomeView**
 
-Modify [ContentView.swift](file:///home/yule/Sides/airvoice/ios/Airvoice/Views/ContentView.swift) to:
+Modify [ContentView.swift](/ios/Airvoice/Views/ContentView.swift) to:
 ```swift
 import SwiftUI
 
@@ -43,7 +43,7 @@ struct ContentView: View {
 
 - [ ] **Step 3: Remove file references from project.pbxproj**
 
-In [project.pbxproj](file:///home/yule/Sides/airvoice/ios/Airvoice.xcodeproj/project.pbxproj), delete the following 4 lines:
+In [project.pbxproj](/ios/Airvoice.xcodeproj/project.pbxproj), delete the following 4 lines:
 1. In `PBXBuildFile` section:
    ```swift
    6F6274C1DA308E1986F13E93 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C653CDEEA8D67BDEFB5DBCE7 /* OnboardingView.swift */; };
@@ -80,7 +80,7 @@ git commit -m "refactor(ios): remove onboarding view and references"
 
 - [ ] **Step 1: Remove onboarding storage logic in StorageManager.kt**
 
-In [StorageManager.kt](file:///home/yule/Sides/airvoice/android/app/src/main/java/cc/yuler/airvoice/services/StorageManager.kt):
+In [StorageManager.kt](/android/app/src/main/java/cc/yuler/airvoice/services/StorageManager.kt):
 1. Remove line 27:
    ```kotlin
            private val KEY_HAS_SEEN_ONBOARDING = booleanPreferencesKey("has_seen_onboarding")
@@ -102,7 +102,7 @@ In [StorageManager.kt](file:///home/yule/Sides/airvoice/android/app/src/main/jav
 
 - [ ] **Step 2: Remove onboarding test in StorageManagerTest.kt**
 
-In [StorageManagerTest.kt](file:///home/yule/Sides/airvoice/android/app/src/test/java/cc/yuler/airvoice/services/StorageManagerTest.kt), remove the following test function (lines 51-56):
+In [StorageManagerTest.kt](/android/app/src/test/java/cc/yuler/airvoice/services/StorageManagerTest.kt), remove the following test function (lines 51-56):
 ```kotlin
     @Test
     fun testSaveOnboarding() = runBlocking {
@@ -114,7 +114,7 @@ In [StorageManagerTest.kt](file:///home/yule/Sides/airvoice/android/app/src/test
 
 - [ ] **Step 3: Remove onboarding references in AirvoiceViewModel.kt**
 
-In [AirvoiceViewModel.kt](file:///home/yule/Sides/airvoice/android/app/src/main/java/cc/yuler/airvoice/ui/viewmodel/AirvoiceViewModel.kt):
+In [AirvoiceViewModel.kt](/android/app/src/main/java/cc/yuler/airvoice/ui/viewmodel/AirvoiceViewModel.kt):
 1. Remove `ONBOARDING` from `Screen` enum (line 22):
    ```kotlin
    enum class Screen {
@@ -166,7 +166,7 @@ rm android/app/src/main/java/cc/yuler/airvoice/ui/screens/OnboardingScreen.kt
 
 - [ ] **Step 2: Remove onboarding view and transition logic in MainScreen.kt**
 
-In [MainScreen.kt](file:///home/yule/Sides/airvoice/android/app/src/main/java/cc/yuler/airvoice/ui/screens/MainScreen.kt):
+In [MainScreen.kt](/android/app/src/main/java/cc/yuler/airvoice/ui/screens/MainScreen.kt):
 1. Remove state collect (line 31):
    ```kotlin
        val hasSeenOnboarding by viewModel.hasSeenOnboarding.collectAsState()

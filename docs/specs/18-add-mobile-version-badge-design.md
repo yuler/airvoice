@@ -6,11 +6,11 @@ This design document details adding a version badge to the home screens of both 
 ## Proposed Solution
 
 ### iOS (SwiftUI)
-- In [HomeView.swift](file:///home/yule/Sides/airvoice/ios/Airvoice/Views/HomeView.swift), inside the `bottomControls` `VStack`, append a centered `Text` below `InputMethodTipsView`.
+- In [HomeView.swift](/ios/Airvoice/Views/HomeView.swift), inside the `bottomControls` `VStack`, append a centered `Text` below `InputMethodTipsView`.
 - Retrieve the version dynamically using `Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.3.1"`.
 
 ### Android (Jetpack Compose)
-- In [HomeScreen.kt](file:///home/yule/Sides/airvoice/android/app/src/main/java/cc/yuler/airvoice/ui/screens/HomeScreen.kt), inside the bottom controls `Column`, append a centered `Text` below `InputMethodTipsView()`.
+- In [HomeScreen.kt](/android/app/src/main/java/cc/yuler/airvoice/ui/screens/HomeScreen.kt), inside the bottom controls `Column`, append a centered `Text` below `InputMethodTipsView()`.
 - Retrieve the version dynamically using the Android `packageManager` to get `getPackageInfo(packageName, 0).versionName`.
 
 ---
@@ -18,8 +18,8 @@ This design document details adding a version badge to the home screens of both 
 ## Architectural & Code Changes
 
 ### Files to Modify
-- [HomeView.swift](file:///home/yule/Sides/airvoice/ios/Airvoice/Views/HomeView.swift)
-- [HomeScreen.kt](file:///home/yule/Sides/airvoice/android/app/src/main/java/cc/yuler/airvoice/ui/screens/HomeScreen.kt)
+- [HomeView.swift](/ios/Airvoice/Views/HomeView.swift)
+- [HomeScreen.kt](/android/app/src/main/java/cc/yuler/airvoice/ui/screens/HomeScreen.kt)
 
 ---
 
