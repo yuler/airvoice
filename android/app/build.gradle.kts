@@ -4,7 +4,7 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization")
 }
 
-val rootVersion = file("../../VERSION").readText().trim()
+val rootVersion = providers.fileContents(layout.projectDirectory.file("../../VERSION")).asText.get().trim()
 
 val releaseKeystorePath = providers.environmentVariable("ANDROID_KEYSTORE_PATH").orNull
 val releaseKeystorePassword = providers.environmentVariable("ANDROID_KEYSTORE_PASSWORD").orNull

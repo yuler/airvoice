@@ -30,9 +30,8 @@ versions[CLI]="${cli_ver:-$MISSING}"
 ios_ver=$(awk '/CFBundleShortVersionString/{f=1;next} f&&/<string>/{gsub(/.*<string>|<\/string>.*/,"");print;exit}' ios/Airvoice/Info.plist)
 versions[iOS]="${ios_ver:-$MISSING}"
 
-# Android
-android_ver=$(sed -n 's/.*versionName = "\(.*\)"/\1/p' android/app/build.gradle.kts)
-versions[Android]="${android_ver:-$MISSING}"
+# Android (reads from VERSION at build time)
+versions[Android]="$canonical"
 
 # Desktop (wails.json)
 desktop_ver=$(python3 -c "import json; print(json.load(open('desktop/wails.json'))['info']['productVersion'])")
