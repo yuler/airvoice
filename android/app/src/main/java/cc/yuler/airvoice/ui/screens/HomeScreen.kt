@@ -315,18 +315,20 @@ fun HomeScreen(
                       val versionName = remember(context) {
                           try {
                               @Suppress("DEPRECATION")
-                              context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "0.3.1"
+                              context.packageManager.getPackageInfo(context.packageName, 0).versionName
                           } catch (e: Exception) {
-                              "0.3.1"
+                              null
                           }
                       }
-                      Text(
-                          text = "v$versionName",
-                          fontSize = 11.sp,
-                          fontWeight = FontWeight.Medium,
-                          color = secondaryTextColor().copy(alpha = 0.6f),
-                          modifier = Modifier.padding(top = 4.dp)
-                      )
+                      versionName?.let {
+                          Text(
+                              text = "v$it",
+                              fontSize = 11.sp,
+                              fontWeight = FontWeight.Medium,
+                              color = secondaryTextColor().copy(alpha = 0.6f),
+                              modifier = Modifier.padding(top = 4.dp)
+                          )
+                      }
                   }
               }
           }
