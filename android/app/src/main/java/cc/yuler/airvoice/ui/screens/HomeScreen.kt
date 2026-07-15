@@ -2,8 +2,7 @@ package cc.yuler.airvoice.ui.screens
 
 import android.content.Intent
 import android.net.Uri
-import android.content.pm.PackageManager
-import android.os.Build
+
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -313,18 +312,10 @@ fun HomeScreen(
                       InputMethodTipsView()
 
                       val context = LocalContext.current
-                      val versionName = remember {
+                      val versionName = remember(context) {
                           try {
-                              val packageInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                  context.packageManager.getPackageInfo(
-                                      context.packageName,
-                                      PackageManager.PackageInfoFlags.of(0)
-                                  )
-                              } else {
-                                  @Suppress("DEPRECATION")
-                                  context.packageManager.getPackageInfo(context.packageName, 0)
-                              }
-                              packageInfo.versionName ?: "0.3.1"
+                              @Suppress("DEPRECATION")
+                              context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "0.3.1"
                           } catch (e: Exception) {
                               "0.3.1"
                           }
