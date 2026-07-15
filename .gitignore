@@ -12,6 +12,9 @@ node_modules
 .mise/
 .mise/pkgconfig/
 
+# mimocode
+.mimocode/
+
 # macOS / Xcode
 *.xcuserstate
 xcuserdata/
