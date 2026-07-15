@@ -33,4 +33,4 @@ gum_info "Android build.gradle.kts reads VERSION at build time"
 sedi "s/const version = \".*\"/const version = \"$canonical\"/" "$ROOT/cli/main.go"
 gum_info "CLI main.go → $canonical"
 
-gum_ok "All platforms synced to $canonical"
+gum_info "All platforms synced to $canonical"
