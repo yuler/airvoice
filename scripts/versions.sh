@@ -31,7 +31,7 @@ ios_ver=$(awk '/CFBundleShortVersionString/{f=1;next} f&&/<string>/{gsub(/.*<str
 versions[iOS]="${ios_ver:-$MISSING}"
 
 # Android (reads from VERSION at build time)
-versions[Android]="$canonical"
+versions[Android]=$(tr -d '[:space:]' < VERSION)
 
 # Desktop (wails.json)
 desktop_ver=$(python3 -c "import json; print(json.load(open('desktop/wails.json'))['info']['productVersion'])")
