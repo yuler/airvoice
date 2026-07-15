@@ -2,6 +2,7 @@ package cc.yuler.airvoice.ui.screens
 
 import android.content.Intent
 import android.net.Uri
+
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -309,6 +310,25 @@ fun HomeScreen(
                       }
 
                       InputMethodTipsView()
+
+                      val context = LocalContext.current
+                      val versionName = remember(context) {
+                          try {
+                              @Suppress("DEPRECATION")
+                              context.packageManager.getPackageInfo(context.packageName, 0).versionName
+                          } catch (e: Exception) {
+                              null
+                          }
+                      }
+                      versionName?.let {
+                          Text(
+                              text = "v$it",
+                              fontSize = 11.sp,
+                              fontWeight = FontWeight.Medium,
+                              color = secondaryTextColor().copy(alpha = 0.6f),
+                              modifier = Modifier.padding(top = 4.dp)
+                          )
+                      }
                   }
               }
           }

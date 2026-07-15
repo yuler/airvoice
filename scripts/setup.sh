@@ -60,6 +60,7 @@ fi
 # ── iOS (macOS only) ──
 if [[ "$(uname -s)" == "Darwin" ]]; then
   if [[ ! -d "$IOS_PROJECT" ]]; then
+    "$ROOT/scripts/sync-version.sh"
     gum spin --spinner dot --title "Generating Xcode project…" -- \
       xcodegen generate --spec ios/project.yml --project ios/
   fi

@@ -268,6 +268,14 @@ struct HomeView: View {
             .disabled(connection.state != .connected || autoSend.inFlight)
 
             InputMethodTipsView(theme: theme)
+
+            if let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String {
+                Text("v\(version)")
+                    .font(.system(size: 11, weight: .medium, design: .rounded))
+                    .foregroundColor(theme.secondaryText.opacity(0.6))
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.top, 4)
+            }
         }
         .padding(.horizontal, 20)
         .padding(.bottom, 20)

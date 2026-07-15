@@ -48,10 +48,4 @@ class StorageManagerTest {
         assertEquals("dark", storageManager.themeFlow.first())
     }
 
-    @Test
-    fun testSaveOnboarding() = runBlocking {
-        assertFalse(storageManager.hasSeenOnboardingFlow.first())
-        storageManager.saveHasSeenOnboarding(true)
-        assertTrue(storageManager.hasSeenOnboardingFlow.first())
-    }
 }

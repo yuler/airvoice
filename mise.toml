@@ -69,11 +69,11 @@ dir = "./www"
 
 [tasks."ios:dev"]
 description = "Build and run iOS app in simulator"
-run = "xcodegen generate && xcodebuild -project ios/Airvoice.xcodeproj -scheme Airvoice -destination 'platform=iOS Simulator,name=iPhone 16' build"
+run = "./scripts/sync-version.sh && xcodegen generate && xcodebuild -project ios/Airvoice.xcodeproj -scheme Airvoice -destination 'platform=iOS Simulator,name=iPhone 16' build"
 
 [tasks."ios:build"]
 description = "Build iOS app for device"
-run = "xcodegen generate && xcodebuild -project ios/Airvoice.xcodeproj -scheme Airvoice -sdk iphoneos build"
+run = "./scripts/sync-version.sh && xcodegen generate && xcodebuild -project ios/Airvoice.xcodeproj -scheme Airvoice -sdk iphoneos build"
 
 [tasks."ios:clean"]
 description = "Clean iOS build outputs"

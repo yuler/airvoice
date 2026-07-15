@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -28,30 +29,21 @@ import cc.yuler.airvoice.ui.viewmodel.Screen
 
 @Composable
 fun MainScreen(viewModel: AirvoiceViewModel) {
-    val hasSeenOnboarding by viewModel.hasSeenOnboarding.collectAsState()
+
     val appTheme by viewModel.appTheme.collectAsState()
     val toastMessage by viewModel.toastMessage.collectAsState()
     val isToastError by viewModel.isToastError.collectAsState()
 
-    var currentScreen by remember { mutableStateOf(Screen.HOME) }
+    var currentScreen by rememberSaveable { mutableStateOf(Screen.HOME) }
 
-    LaunchedEffect(hasSeenOnboarding) {
-        currentScreen = if (hasSeenOnboarding) Screen.HOME else Screen.ONBOARDING
-    }
+
 
     val isDark = appTheme == "dark"
 
     CompositionLocalProvider(LocalIsDarkTheme provides isDark) {
         Box(modifier = Modifier.fillMaxSize()) {
             when (currentScreen) {
-                Screen.ONBOARDING -> OnboardingScreen(
-                    onStartScanning = {
-                        viewModel.completeOnboarding()
-                    },
-                    onToggleTheme = {
-                        viewModel.toggleTheme()
-                    }
-                )
+
                 Screen.SCANNER -> QRScannerScreen(
                     onQrCodeScanned = { payload ->
                         viewModel.pairAndConnect(payload)

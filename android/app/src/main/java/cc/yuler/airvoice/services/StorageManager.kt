@@ -24,7 +24,6 @@ class StorageManager(private val context: Context) {
         private val KEY_WS = stringPreferencesKey("ws_url")
         private val KEY_TOKEN = stringPreferencesKey("token")
         private val KEY_THEME = stringPreferencesKey("app_theme")
-        private val KEY_HAS_SEEN_ONBOARDING = booleanPreferencesKey("has_seen_onboarding")
     }
 
     val connectionInfoFlow: Flow<ConnectionInfo> = context.dataStore.data
@@ -35,9 +34,6 @@ class StorageManager(private val context: Context) {
         .handleIOException()
         .map { prefs -> prefs[KEY_THEME] ?: "light" }
 
-    val hasSeenOnboardingFlow: Flow<Boolean> = context.dataStore.data
-        .handleIOException()
-        .map { prefs -> prefs[KEY_HAS_SEEN_ONBOARDING] ?: false }
 
     suspend fun saveConnection(wsUrl: String, token: String) {
         context.dataStore.edit { prefs ->
@@ -59,9 +55,5 @@ class StorageManager(private val context: Context) {
         }
     }
 
-    suspend fun saveHasSeenOnboarding(completed: Boolean) {
-        context.dataStore.edit { prefs ->
-            prefs[KEY_HAS_SEEN_ONBOARDING] = completed
-        }
-    }
+
 }
