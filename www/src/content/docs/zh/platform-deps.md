@@ -9,6 +9,19 @@ order: 5
 - **相机权限**：配对扫码时需要相机权限。
 - **APK 安装**：从 [GitHub Releases](https://github.com/yuler/airvoice/releases/latest) 下载安装。如系统提示，请允许安装未知来源应用。
 
+## Desktop（Linux AppImage）
+
+优先从 [GitHub Releases](https://github.com/yuler/airvoice/releases/latest) 下载 `Airvoice-Desktop-*-Linux-x86_64.AppImage`。AppImage 已打包 WebKitGTK，**不需要**系统安装 `webkit2gtk-4.0` / `webkit2gtk-4.1`。
+
+赋予可执行权限后运行：
+
+```bash
+chmod +x Airvoice-Desktop-*-Linux-x86_64.AppImage
+./Airvoice-Desktop-*-Linux-x86_64.AppImage
+```
+
+使用 Desktop 或 CLI 时，剪贴板 / 模拟按键仍需要下方 X11 或 Wayland 工具。
+
 ## macOS
 
 - **辅助功能权限**：运行二进制文件的终端应用需要辅助功能权限。
