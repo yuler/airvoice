@@ -80,7 +80,7 @@ done < <(find /usr -type f \( \
 
 for want in WebKitWebProcess WebKitNetworkProcess libwebkit2gtkinjectedbundle.so; do
   ok=0
-  for path in "${found[@]:-}"; do
+  for path in "${found[@]+"${found[@]}"}"; do
     [[ "$(basename "$path")" == "$want" ]] && ok=1 && break
   done
   [[ "$ok" -eq 1 ]] || { echo "required WebKit file not found: $want" >&2; exit 1; }
@@ -100,12 +100,15 @@ mkdir -p "$TOOLS"
 LINUXDEPLOY="$TOOLS/linuxdeploy-$ARCH.AppImage"
 APPIMAGETOOL="$TOOLS/appimagetool-$ARCH.AppImage"
 curl -fsSL -o "$LINUXDEPLOY" \
-  "https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-$ARCH.AppImage"
+  "https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-$ARCH.AppImage" \
+  || { echo "failed to download linuxdeploy" >&2; exit 1; }
 curl -fsSL -o "$APPIMAGETOOL" \
-  "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-$ARCH.AppImage"
+  "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-$ARCH.AppImage" \
+  || { echo "failed to download appimagetool" >&2; exit 1; }
 chmod +x "$LINUXDEPLOY" "$APPIMAGETOOL"
 curl -fsSL -o "$TOOLS/linuxdeploy-plugin-gtk.sh" \
-  "https://raw.githubusercontent.com/linuxdeploy/linuxdeploy-plugin-gtk/master/linuxdeploy-plugin-gtk.sh"
+  "https://raw.githubusercontent.com/linuxdeploy/linuxdeploy-plugin-gtk/master/linuxdeploy-plugin-gtk.sh" \
+  || { echo "failed to download linuxdeploy-plugin-gtk" >&2; exit 1; }
 chmod +x "$TOOLS/linuxdeploy-plugin-gtk.sh"
 
 export DEPLOY_GTK_VERSION=3
@@ -124,11 +127,9 @@ export APPIMAGE_EXTRACT_AND_RUN=1
     --plugin gtk
 )
 
-# Same-length rewrite: hardcoded "/usr/..." helper paths become "././..." relative to AppDir.
-# Requires AppRun to `cd` into AppDir before exec.
-while IFS= read -r -d '' so; do
-  sed -i 's|/usr|././|g' "$so"
-done < <(find "$APPDIR" -type f \( -name 'libwebkit2gtk-*.so*' -o -name 'libjavascriptcoregtk-*.so*' \) -print0)
+# WebKit helper discovery: WEBKIT_EXEC_PATH (set in AppRun) directs WebKit to
+# find WebKitWebProcess / WebKitNetworkProcess / WebKitGPUProcess inside the
+# AppDir, so no binary patching of .so files is needed.
 
 # linuxdeploy may overwrite AppRun; restore ours before packing.
 write_apprun
