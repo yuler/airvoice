@@ -59,6 +59,10 @@ func TestLinuxPasters(t *testing.T) {
 	})
 
 	t.Run("waylandPaster success", func(t *testing.T) {
+		origIsHyprland := isHyprland
+		isHyprland = func() bool { return false }
+		defer func() { isHyprland = origIsHyprland }()
+
 		runCommand = func(name string, stdin string, args ...string) error {
 			calls = append(calls, commandCall{name: name, stdin: stdin, args: args})
 			return nil
@@ -75,6 +79,33 @@ func TestLinuxPasters(t *testing.T) {
 		expected := []commandCall{
 			{name: "wl-copy", stdin: "hello world", args: nil},
 			{name: "ydotool", stdin: "", args: []string{"key", "CTRL+v"}},
+		}
+		if !reflect.DeepEqual(calls, expected) {
+			t.Errorf("got calls %+v, expected %+v", calls, expected)
+		}
+	})
+
+	t.Run("waylandPaster hyprland success", func(t *testing.T) {
+		origIsHyprland := isHyprland
+		isHyprland = func() bool { return true }
+		defer func() { isHyprland = origIsHyprland }()
+
+		runCommand = func(name string, stdin string, args ...string) error {
+			calls = append(calls, commandCall{name: name, stdin: stdin, args: args})
+			return nil
+		}
+		calls = nil
+		p := &waylandPaster{}
+		if p.Name() != "wayland-hyprland" {
+			t.Errorf("expected wayland-hyprland, got %s", p.Name())
+		}
+		err := p.Paste("hello world")
+		if err != nil {
+			t.Fatalf("Paste failed: %v", err)
+		}
+		expected := []commandCall{
+			{name: "wl-copy", stdin: "hello world", args: nil},
+			{name: "hyprctl", stdin: "", args: []string{"dispatch", "sendshortcut", "CTRL, V, activewindow"}},
 		}
 		if !reflect.DeepEqual(calls, expected) {
 			t.Errorf("got calls %+v, expected %+v", calls, expected)
@@ -101,23 +132,29 @@ func TestLinuxPasters(t *testing.T) {
 		origWaylandDisplay := os.Getenv("WAYLAND_DISPLAY")
 		origDisplay := os.Getenv("DISPLAY")
 		origLookPath := lookPath
+		origDetectLookPath := detectLookPath
+		origIsHyprland := isHyprland
 		defer func() {
 			goos = origGOOS
 			os.Setenv("XDG_SESSION_TYPE", origSessionType)
 			os.Setenv("WAYLAND_DISPLAY", origWaylandDisplay)
 			os.Setenv("DISPLAY", origDisplay)
 			lookPath = origLookPath
+			detectLookPath = origDetectLookPath
+			isHyprland = origIsHyprland
 		}()
 
 		goos = "linux"
 		os.Unsetenv("XDG_SESSION_TYPE")
 		os.Unsetenv("WAYLAND_DISPLAY")
 		os.Unsetenv("DISPLAY")
+		isHyprland = func() bool { return false }
 
-		// Mock lookPath to succeed
-		lookPath = func(file string) (string, error) {
+		mockLookPath := func(file string) (string, error) {
 			return "/usr/bin/" + file, nil
 		}
+		lookPath = mockLookPath
+		detectLookPath = mockLookPath
 
 		// Wayland
 		os.Setenv("XDG_SESSION_TYPE", "wayland")
@@ -129,19 +166,48 @@ func TestLinuxPasters(t *testing.T) {
 			t.Errorf("expected wayland, got %s", p.Name())
 		}
 
-		// Wayland with missing ydotool
-		lookPath = func(file string) (string, error) {
+		// Wayland with missing wl-clipboard tools
+		mockMissing := func(file string) (string, error) {
 			return "", errors.New("not found")
+		}
+		lookPath = mockMissing
+		detectLookPath = mockMissing
+		_, err = New()
+		if err == nil {
+			t.Error("expected error on wayland when wl-clipboard tools are missing, got nil")
+		}
+
+		// Restore mock
+		lookPath = mockLookPath
+		detectLookPath = mockLookPath
+
+		// Hyprland Wayland
+		isHyprland = func() bool { return true }
+		p, err = New()
+		if err != nil {
+			t.Fatalf("New failed on hyprland wayland: %v", err)
+		}
+		if p.Name() != "wayland-hyprland" {
+			t.Errorf("expected wayland-hyprland, got %s", p.Name())
+		}
+
+		// Hyprland Wayland with missing hyprctl
+		lookPath = func(file string) (string, error) {
+			if file == "hyprctl" {
+				return "", errors.New("not found")
+			}
+			return "/usr/bin/" + file, nil
 		}
 		_, err = New()
 		if err == nil {
-			t.Error("expected error on wayland when ydotool is missing, got nil")
+			t.Error("expected error on hyprland wayland when hyprctl is missing, got nil")
 		}
 
 		// Restore mock
 		lookPath = func(file string) (string, error) {
 			return "/usr/bin/" + file, nil
 		}
+		isHyprland = func() bool { return false }
 
 		// X11
 		os.Setenv("XDG_SESSION_TYPE", "x11")
@@ -155,6 +221,9 @@ func TestLinuxPasters(t *testing.T) {
 
 		// Unknown
 		os.Setenv("XDG_SESSION_TYPE", "unknown")
+		detectLookPath = func(file string) (string, error) {
+			return "", errors.New("not found")
+		}
 		_, err = New()
 		if err == nil {
 			t.Error("expected error on unknown session, got nil")

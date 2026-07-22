@@ -11,12 +11,18 @@ func TestDetectSession(t *testing.T) {
 	origSessionType := os.Getenv("XDG_SESSION_TYPE")
 	origWaylandDisplay := os.Getenv("WAYLAND_DISPLAY")
 	origDisplay := os.Getenv("DISPLAY")
+	origDetectLookPath := detectLookPath
 	defer func() {
 		goos = origGOOS
 		os.Setenv("XDG_SESSION_TYPE", origSessionType)
 		os.Setenv("WAYLAND_DISPLAY", origWaylandDisplay)
 		os.Setenv("DISPLAY", origDisplay)
+		detectLookPath = origDetectLookPath
 	}()
+
+	detectLookPath = func(file string) (string, error) {
+		return "", os.ErrNotExist
+	}
 
 	tests := []struct {
 		name     string
@@ -54,6 +60,18 @@ func TestDetectSession(t *testing.T) {
 			want:     SessionX11,
 		},
 		{
+			name:     "linux wayland by wl-clipboard tools",
+			targetOS: "linux",
+			env:      map[string]string{"DISPLAY": ":0"},
+			want:     SessionWayland,
+		},
+		{
+			name:     "linux X11 stays X11 when session type is x11",
+			targetOS: "linux",
+			env:      map[string]string{"DISPLAY": ":0", "XDG_SESSION_TYPE": "x11"},
+			want:     SessionX11,
+		},
+		{
 			name:     "linux unknown",
 			targetOS: "linux",
 			want:     SessionUnknown,
@@ -73,6 +91,19 @@ func TestDetectSession(t *testing.T) {
 			os.Unsetenv("DISPLAY")
 			for k, v := range tt.env {
 				os.Setenv(k, v)
+			}
+
+			if tt.name == "linux wayland by wl-clipboard tools" {
+				detectLookPath = func(file string) (string, error) {
+					if file == "wl-copy" || file == "wl-paste" {
+						return "/usr/bin/" + file, nil
+					}
+					return "", os.ErrNotExist
+				}
+			} else {
+				detectLookPath = func(file string) (string, error) {
+					return "", os.ErrNotExist
+				}
 			}
 
 			got := DetectSession()
