@@ -46,8 +46,8 @@ Airvoice-Desktop-${VERSION}-Linux-x86_64.AppImage
 
 **Assets (committed):**
 
-- `desktop/build/linux/Airvoice.desktop` — Name/Exec/Icon/Categories for AppImage
-- App icon — reuse `desktop/tray_icon.png` or a dedicated PNG under `desktop/build/linux/`
+- `desktop/packaging/linux/Airvoice.desktop` — Name/Exec/Icon/Categories for AppImage
+- App icon — `desktop/packaging/linux/airvoice.png` (from `desktop/tray_icon.png`; not under `desktop/build/`, which is gitignored)
 
 **AppDir layout:**
 

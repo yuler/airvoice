@@ -21,8 +21,8 @@
 
 | File | Responsibility |
 |------|----------------|
-| `desktop/build/linux/Airvoice.desktop` | FreeDesktop metadata for AppImage |
-| `desktop/build/linux/airvoice.png` | App icon (copy of tray icon) |
+| `desktop/packaging/linux/Airvoice.desktop` | FreeDesktop metadata for AppImage |
+| `desktop/packaging/linux/airvoice.png` | App icon (copy of tray icon) |
 | `desktop/scripts/package-appimage.sh` | Stage AppDir, bundle deps, emit AppImage |
 | `.github/workflows/desktop-release.yml` | Call packager; collect `.AppImage` only |
 | `www/src/lib/downloads.ts` | Linux desktop download URL |
@@ -34,15 +34,15 @@
 ### Task 1: Desktop metadata assets
 
 **Files:**
-- Create: `desktop/build/linux/Airvoice.desktop`
-- Create: `desktop/build/linux/airvoice.png` (copied from `desktop/tray_icon.png`)
+- Create: `desktop/packaging/linux/Airvoice.desktop`
+- Create: `desktop/packaging/linux/airvoice.png` (copied from `desktop/tray_icon.png`)
 
 **Interfaces:**
 - Produces: desktop file with `Name=Airvoice`, `Exec=Airvoice`, `Icon=airvoice`; PNG named `airvoice.png`
 
 - [ ] **Step 1: Create the desktop file**
 
-Create `desktop/build/linux/Airvoice.desktop`:
+Create `desktop/packaging/linux/Airvoice.desktop`:
 
 ```desktop
 [Desktop Entry]
@@ -59,13 +59,16 @@ StartupNotify=true
 - [ ] **Step 2: Copy the app icon**
 
 ```bash
-cp desktop/tray_icon.png desktop/build/linux/airvoice.png
+mkdir -p desktop/packaging/linux
+cp desktop/tray_icon.png desktop/packaging/linux/airvoice.png
 ```
+
+Note: do **not** use `desktop/build/linux/` — `desktop/build/` is gitignored (Wails build output).
 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add desktop/build/linux/Airvoice.desktop desktop/build/linux/airvoice.png
+git add desktop/packaging/linux/Airvoice.desktop desktop/packaging/linux/airvoice.png
 git commit -m "$(cat <<'EOF'
 📦 [desktop]: Add Linux AppImage desktop entry and icon
 
@@ -115,7 +118,7 @@ done
 [[ -f "$BINARY" ]] || { echo "binary not found: $BINARY" >&2; exit 1; }
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DESKTOP_DIR="$(cd "$SCRIPT_DIR/../build/linux" && pwd)"
+DESKTOP_DIR="$(cd "$SCRIPT_DIR/../packaging/linux" && pwd)"
 DESKTOP_FILE="$DESKTOP_DIR/Airvoice.desktop"
 ICON_FILE="$DESKTOP_DIR/airvoice.png"
 [[ -f "$DESKTOP_FILE" ]] || { echo "missing $DESKTOP_FILE" >&2; exit 1; }
