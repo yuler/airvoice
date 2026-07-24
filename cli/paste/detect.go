@@ -22,7 +22,7 @@ var goos = runtime.GOOS
 var detectLookPath = exec.LookPath
 
 func hasWlClipboardTools() bool {
-	if runtime.GOOS != "linux" {
+	if goos != "linux" {
 		return false
 	}
 	_, err1 := detectLookPath("wl-copy")
