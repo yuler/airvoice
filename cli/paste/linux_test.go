@@ -28,8 +28,8 @@ func TestLinuxPasters(t *testing.T) {
 	t.Run("x11Paster success", func(t *testing.T) {
 		calls = nil
 		p := &x11Paster{}
-		if p.Name() != "x11" {
-			t.Errorf("expected x11, got %s", p.Name())
+		if p.Name() != "x11 (xclip + xdotool)" {
+			t.Errorf("expected x11 (xclip + xdotool), got %s", p.Name())
 		}
 		err := p.Paste("hello world")
 		if err != nil {
@@ -69,8 +69,8 @@ func TestLinuxPasters(t *testing.T) {
 		}
 		calls = nil
 		p := &waylandPaster{}
-		if p.Name() != "wayland" {
-			t.Errorf("expected wayland, got %s", p.Name())
+		if p.Name() != "wayland (wl-copy + ydotool)" {
+			t.Errorf("expected wayland (wl-copy + ydotool), got %s", p.Name())
 		}
 		err := p.Paste("hello world")
 		if err != nil {
@@ -90,14 +90,18 @@ func TestLinuxPasters(t *testing.T) {
 		isHyprland = func() bool { return true }
 		defer func() { isHyprland = origIsHyprland }()
 
+		origActiveWindowClass := activeWindowClass
+		activeWindowClass = func() string { return "firefox" }
+		defer func() { activeWindowClass = origActiveWindowClass }()
+
 		runCommand = func(name string, stdin string, args ...string) error {
 			calls = append(calls, commandCall{name: name, stdin: stdin, args: args})
 			return nil
 		}
 		calls = nil
 		p := &waylandPaster{}
-		if p.Name() != "wayland-hyprland" {
-			t.Errorf("expected wayland-hyprland, got %s", p.Name())
+		if p.Name() != "wayland-hyprland (wl-copy + hyprctl sendshortcut)" {
+			t.Errorf("expected wayland-hyprland (wl-copy + hyprctl sendshortcut), got %s", p.Name())
 		}
 		err := p.Paste("hello world")
 		if err != nil {
@@ -106,6 +110,34 @@ func TestLinuxPasters(t *testing.T) {
 		expected := []commandCall{
 			{name: "wl-copy", stdin: "hello world", args: nil},
 			{name: "hyprctl", stdin: "", args: []string{"dispatch", "sendshortcut", "CTRL, V, activewindow"}},
+		}
+		if !reflect.DeepEqual(calls, expected) {
+			t.Errorf("got calls %+v, expected %+v", calls, expected)
+		}
+	})
+
+	t.Run("waylandPaster hyprland terminal uses Ctrl+Shift+V", func(t *testing.T) {
+		origIsHyprland := isHyprland
+		isHyprland = func() bool { return true }
+		defer func() { isHyprland = origIsHyprland }()
+
+		origActiveWindowClass := activeWindowClass
+		activeWindowClass = func() string { return "Alacritty" }
+		defer func() { activeWindowClass = origActiveWindowClass }()
+
+		runCommand = func(name string, stdin string, args ...string) error {
+			calls = append(calls, commandCall{name: name, stdin: stdin, args: args})
+			return nil
+		}
+		calls = nil
+		p := &waylandPaster{}
+		err := p.Paste("hello world")
+		if err != nil {
+			t.Fatalf("Paste failed: %v", err)
+		}
+		expected := []commandCall{
+			{name: "wl-copy", stdin: "hello world", args: nil},
+			{name: "hyprctl", stdin: "", args: []string{"dispatch", "sendshortcut", "CTRL SHIFT, V, activewindow"}},
 		}
 		if !reflect.DeepEqual(calls, expected) {
 			t.Errorf("got calls %+v, expected %+v", calls, expected)
@@ -162,8 +194,8 @@ func TestLinuxPasters(t *testing.T) {
 		if err != nil {
 			t.Fatalf("New failed on wayland: %v", err)
 		}
-		if p.Name() != "wayland" {
-			t.Errorf("expected wayland, got %s", p.Name())
+		if p.Name() != "wayland (wl-copy + ydotool)" {
+			t.Errorf("expected wayland (wl-copy + ydotool), got %s", p.Name())
 		}
 
 		// Wayland with missing wl-clipboard tools
@@ -187,8 +219,8 @@ func TestLinuxPasters(t *testing.T) {
 		if err != nil {
 			t.Fatalf("New failed on hyprland wayland: %v", err)
 		}
-		if p.Name() != "wayland-hyprland" {
-			t.Errorf("expected wayland-hyprland, got %s", p.Name())
+		if p.Name() != "wayland-hyprland (wl-copy + hyprctl sendshortcut)" {
+			t.Errorf("expected wayland-hyprland (wl-copy + hyprctl sendshortcut), got %s", p.Name())
 		}
 
 		// Hyprland Wayland with missing hyprctl
@@ -215,8 +247,8 @@ func TestLinuxPasters(t *testing.T) {
 		if err != nil {
 			t.Fatalf("New failed on x11: %v", err)
 		}
-		if p.Name() != "x11" {
-			t.Errorf("expected x11, got %s", p.Name())
+		if p.Name() != "x11 (xclip + xdotool)" {
+			t.Errorf("expected x11 (xclip + xdotool), got %s", p.Name())
 		}
 
 		// Unknown

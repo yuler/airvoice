@@ -17,5 +17,5 @@ func (x *x11Paster) Paste(text string) error {
 }
 
 func (x *x11Paster) Name() string {
-	return "x11"
+	return "x11 (xclip + xdotool)"
 }

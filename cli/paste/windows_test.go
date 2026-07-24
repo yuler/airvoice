@@ -28,8 +28,8 @@ func TestWindowsPaster(t *testing.T) {
 	t.Run("windowsPaster success", func(t *testing.T) {
 		calls = nil
 		p := &windowsPaster{}
-		if p.Name() != "windows" {
-			t.Errorf("expected windows, got %s", p.Name())
+		if p.Name() != "windows (Set-Clipboard + SendKeys)" {
+			t.Errorf("expected windows (Set-Clipboard + SendKeys), got %s", p.Name())
 		}
 		text := "hello world"
 		err := p.Paste(text)

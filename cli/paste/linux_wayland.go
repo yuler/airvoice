@@ -3,8 +3,10 @@
 package paste
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"time"
 )
 
@@ -20,6 +22,55 @@ func detectHyprland() bool {
 	return os.Getenv("XDG_CURRENT_DESKTOP") == "Hyprland"
 }
 
+// terminalClasses is a set of window class names that are terminals.
+var terminalClasses = map[string]bool{
+	"Alacritty":         true,
+	"kitty":             true,
+	"foot":              true,
+	"wezterm":           true,
+	"gnome-terminal":    true,
+	"konsole":           true,
+	"xfce4-terminal":    true,
+	"tilix":             true,
+	"terminator":        true,
+	"Terminal":          true,
+	"io.github.cellbots.Terminal": true,
+}
+
+// isTerminalWindow reports whether the given window class looks like a terminal.
+func isTerminalWindow(class string) bool {
+	if terminalClasses[class] {
+		return true
+	}
+	for c := range terminalClasses {
+		if len(class) > len(c) && class[:len(c)+1] == c+"." {
+			return true
+		}
+	}
+	return false
+}
+
+// hyprctlWindow is the JSON shape returned by hyprctl activewindow -j.
+type hyprctlWindow struct {
+	Class string `json:"class"`
+}
+
+// activeWindowClass returns the window class of the currently focused window.
+// Returns empty string on any failure.
+var activeWindowClass = detectActiveWindowClass
+
+func detectActiveWindowClass() string {
+	out, err := exec.Command("hyprctl", "activewindow", "-j").Output()
+	if err != nil {
+		return ""
+	}
+	var w hyprctlWindow
+	if err := json.Unmarshal(out, &w); err != nil {
+		return ""
+	}
+	return w.Class
+}
+
 func (w *waylandPaster) Paste(text string) error {
 	if err := runCommand("wl-copy", text); err != nil {
 		return err
@@ -27,7 +78,11 @@ func (w *waylandPaster) Paste(text string) error {
 	time.Sleep(80 * time.Millisecond)
 
 	if isHyprland() {
-		return runCommand("hyprctl", "", "dispatch", "sendshortcut", "CTRL, V, activewindow")
+		modifiers := "CTRL, V"
+		if isTerminalWindow(activeWindowClass()) {
+			modifiers = "CTRL SHIFT, V"
+		}
+		return runCommand("hyprctl", "", "dispatch", "sendshortcut", modifiers+", activewindow")
 	}
 
 	ensureYdotoolSocket()
@@ -56,7 +111,7 @@ func ensureYdotoolSocket() {
 
 func (w *waylandPaster) Name() string {
 	if isHyprland() {
-		return "wayland-hyprland"
+		return "wayland-hyprland (wl-copy + hyprctl sendshortcut)"
 	}
-	return "wayland"
+	return "wayland (wl-copy + ydotool)"
 }

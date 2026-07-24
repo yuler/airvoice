@@ -29,8 +29,8 @@ func TestDarwinPasters(t *testing.T) {
 	t.Run("darwinPaster success", func(t *testing.T) {
 		calls = nil
 		p := &darwinPaster{}
-		if p.Name() != "darwin" {
-			t.Errorf("expected darwin, got %s", p.Name())
+		if p.Name() != "darwin (pbcopy + osascript)" {
+			t.Errorf("expected darwin (pbcopy + osascript), got %s", p.Name())
 		}
 		err := p.Paste("hello world")
 		if err != nil {
@@ -70,8 +70,8 @@ func TestDarwinPasters(t *testing.T) {
 		if err != nil {
 			t.Fatalf("New failed on darwin: %v", err)
 		}
-		if p.Name() != "darwin" {
-			t.Errorf("expected darwin, got %s", p.Name())
+		if p.Name() != "darwin (pbcopy + osascript)" {
+			t.Errorf("expected darwin (pbcopy + osascript), got %s", p.Name())
 		}
 
 		goos = "windows"

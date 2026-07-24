@@ -47,7 +47,7 @@ func (w *windowsPaster) Paste(text string) error {
 }
 
 func (w *windowsPaster) Name() string {
-	return "windows"
+	return "windows (Set-Clipboard + SendKeys)"
 }
 
 func formatWindowsKeystrokeError(err error) error {
