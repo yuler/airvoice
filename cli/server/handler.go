@@ -73,13 +73,15 @@ func (s *Server) handleConnection(conn *websocket.Conn) {
 			go func(inbound protocol.Inbound) {
 				var outbound protocol.Outbound
 				var err error
+				method := "none"
 				if s.cfg.Paster != nil {
+					method = s.cfg.Paster.Name()
 					err = s.cfg.Paster.Paste(inbound.Content)
 				} else {
 					err = errors.New("paster not initialized")
 				}
 				if err != nil {
-					logStatus("paste failed id=%s: %v", inbound.ID, err)
+					logStatus("paste failed id=%s method=%s: %v", inbound.ID, method, err)
 					outbound = protocol.Outbound{
 						Type:    "ack",
 						ID:      inbound.ID,
@@ -87,7 +89,7 @@ func (s *Server) handleConnection(conn *websocket.Conn) {
 						Message: err.Error(),
 					}
 				} else {
-					logStatus("paste ok id=%s backend=%s", inbound.ID, s.cfg.Paster.Name())
+					logStatus("paste ok id=%s method=%s", inbound.ID, method)
 					outbound = protocol.Outbound{
 						Type: "ack",
 						ID:   inbound.ID,

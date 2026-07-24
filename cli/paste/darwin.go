@@ -33,7 +33,7 @@ func (d *darwinPaster) Paste(text string) error {
 }
 
 func (d *darwinPaster) Name() string {
-	return "darwin"
+	return "darwin (pbcopy + osascript)"
 }
 
 func formatDarwinKeystrokeError(err error) error {

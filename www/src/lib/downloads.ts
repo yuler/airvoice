@@ -83,7 +83,7 @@ export function getDesktopDownloadUrl(os: DesktopOS): string {
     case 'macos':
       return `${BASE}/Airvoice-Desktop-${VERSION}-macOS.zip`;
     case 'linux':
-      return `${BASE}/Airvoice-Desktop-${VERSION}-Linux.tar.gz`;
+      return `${BASE}/Airvoice-Desktop-${VERSION}-Linux-x86_64.AppImage`;
     default:
       return `${BASE}/Airvoice-Desktop-${VERSION}-Windows.zip`;
   }
@@ -106,7 +106,7 @@ export function getDownloadUrls(iosDocsUrl = 'docs/quick-start/#ios'): DownloadU
     desktop = `${BASE}/Airvoice-Desktop-${VERSION}-macOS.zip`;
   } else if (isLinux) {
     cli = `${BASE}/airvoice-cli-linux-amd64`;
-    desktop = `${BASE}/Airvoice-Desktop-${VERSION}-Linux.tar.gz`;
+    desktop = `${BASE}/Airvoice-Desktop-${VERSION}-Linux-x86_64.AppImage`;
   }
 
   if (isAndroid) {

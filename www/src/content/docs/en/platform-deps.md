@@ -9,6 +9,19 @@ order: 5
 - **Camera permission**: Required for QR code scanning during pairing.
 - **Install from APK**: Download from [GitHub Releases](https://github.com/yuler/airvoice/releases/latest). Allow installation from unknown sources if prompted.
 
+## Desktop (Linux AppImage)
+
+Prefer the `Airvoice-Desktop-*-Linux-x86_64.AppImage` from [GitHub Releases](https://github.com/yuler/airvoice/releases/latest). It bundles WebKitGTK, so you do **not** need system `webkit2gtk-4.0` / `webkit2gtk-4.1` for the Desktop app.
+
+Make it executable and run:
+
+```bash
+chmod +x Airvoice-Desktop-*-Linux-x86_64.AppImage
+./Airvoice-Desktop-*-Linux-x86_64.AppImage
+```
+
+Clipboard / paste automation still needs the X11 or Wayland tools below when using Desktop or CLI.
+
 ## macOS
 
 - **Accessibility API Permission**: The terminal application running the binary requires Accessibility permission.
@@ -25,16 +38,21 @@ sudo apt install xclip xdotool
 
 ## Linux (Wayland)
 
-Requires `wl-clipboard` for clipboard access and `ydotool` for keyboard emulation:
+Requires `wl-clipboard` for clipboard access. Keystroke injection depends on the compositor:
+
+- **Hyprland:** uses `hyprctl dispatch sendshortcut` (no `ydotool`). Terminals get Ctrl+Shift+V.
+- **Other Wayland:** needs `ydotool`:
 
 ```bash
 sudo apt install wl-clipboard ydotool
 ```
 
-Ensure the `ydotoold` service is enabled and running:
+Ensure the `ydotoold` / `ydotool` user service is enabled and running:
 
 ```bash
 systemctl --user enable --now ydotoold
+# Arch / Omarchy often use:
+# systemctl --user enable --now ydotool.service
 ```
 
 ## Windows

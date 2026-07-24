@@ -86,6 +86,36 @@ jobs:
         working-directory: desktop
         run: wails build --platform ${{ matrix.platform }}/${{ matrix.arch }}
 
+      - name: Package Linux AppImage
+        if: matrix.platform == 'linux'
+        working-directory: desktop
+        run: |
+          ./scripts/package-appimage.sh \
+            --binary build/bin/Airvoice \
+            --version "${{ steps.version.outputs.version }}" \
+            --output-dir release
+
+      - name: Verify Linux AppImage contents
+        if: matrix.platform == 'linux'
+        working-directory: desktop
+        run: |
+          set -euo pipefail
+          APPIMAGE=$(readlink -f release/Airvoice-Desktop-*-Linux-*.AppImage)
+          test -x "$APPIMAGE"
+          file "$APPIMAGE" | grep -qi 'executable\|ELF'
+          VERIFY_DIR=$(mktemp -d)
+          trap 'rm -rf "$VERIFY_DIR"' EXIT
+          (
+            cd "$VERIFY_DIR"
+            APPIMAGE_EXTRACT_AND_RUN=1 "$APPIMAGE" --appimage-extract
+            test -x squashfs-root/AppRun
+            test -f squashfs-root/usr/bin/Airvoice
+            find squashfs-root -name WebKitWebProcess | grep -q .
+            find squashfs-root -name WebKitNetworkProcess | grep -q .
+            find squashfs-root -type d \( -name 'webkit2gtk-4.0' -o -name 'webkit2gtk-4.1' \) | grep -q .
+            echo "AppImage extract checks passed"
+          )
+
       - name: Collect artifacts
         shell: bash
         working-directory: desktop
@@ -101,12 +131,10 @@ jobs:
               [ -f "build/bin/Airvoice.dmg" ] && cp build/bin/Airvoice.dmg "release/Airvoice-Desktop-${VERSION}-macOS.dmg"
               ;;
             linux)
-              if [ -f "build/bin/Airvoice" ]; then
-                chmod +x build/bin/Airvoice
-                tar czf "release/Airvoice-Desktop-${VERSION}-Linux.tar.gz" -C build/bin Airvoice
+              if ! ls release/Airvoice-Desktop-*-Linux-*.AppImage >/dev/null 2>&1; then
+                echo "Expected AppImage missing in release/" >&2
+                exit 1
               fi
-              [ -f "build/bin/Airvoice-amd64.deb" ] && cp build/bin/Airvoice-amd64.deb "release/Airvoice-Desktop-${VERSION}-Linux-amd64.deb"
-              [ -f "build/bin/Airvoice.deb" ] && cp build/bin/Airvoice.deb "release/Airvoice-Desktop-${VERSION}-Linux.deb"
               ;;
             windows)
               [ -f "build/bin/Airvoice.exe" ] && tar czf "release/Airvoice-Desktop-${VERSION}-Windows.zip" -C build/bin Airvoice.exe

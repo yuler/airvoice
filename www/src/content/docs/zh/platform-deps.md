@@ -9,6 +9,19 @@ order: 5
 - **相机权限**：配对扫码时需要相机权限。
 - **APK 安装**：从 [GitHub Releases](https://github.com/yuler/airvoice/releases/latest) 下载安装。如系统提示，请允许安装未知来源应用。
 
+## Desktop（Linux AppImage）
+
+优先从 [GitHub Releases](https://github.com/yuler/airvoice/releases/latest) 下载 `Airvoice-Desktop-*-Linux-x86_64.AppImage`。AppImage 已打包 WebKitGTK，**不需要**系统安装 `webkit2gtk-4.0` / `webkit2gtk-4.1`。
+
+赋予可执行权限后运行：
+
+```bash
+chmod +x Airvoice-Desktop-*-Linux-x86_64.AppImage
+./Airvoice-Desktop-*-Linux-x86_64.AppImage
+```
+
+使用 Desktop 或 CLI 时，剪贴板 / 模拟按键仍需要下方 X11 或 Wayland 工具。
+
 ## macOS
 
 - **辅助功能权限**：运行二进制文件的终端应用需要辅助功能权限。
@@ -25,16 +38,21 @@ sudo apt install xclip xdotool
 
 ## Linux（Wayland）
 
-需要 `wl-clipboard` 访问剪贴板，`ydotool` 模拟键盘输入：
+需要 `wl-clipboard` 访问剪贴板。按键注入取决于合成器：
+
+- **Hyprland：** 使用 `hyprctl dispatch sendshortcut`（不需要 `ydotool`）。终端窗口会发送 Ctrl+Shift+V。
+- **其他 Wayland：** 需要 `ydotool`：
 
 ```bash
 sudo apt install wl-clipboard ydotool
 ```
 
-确保 `ydotoold` 服务已启用并运行：
+确保 `ydotoold` / `ydotool` 用户服务已启用并运行：
 
 ```bash
 systemctl --user enable --now ydotoold
+# Arch / Omarchy 常见为：
+# systemctl --user enable --now ydotool.service
 ```
 
 ## Windows

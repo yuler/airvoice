@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Airvoice
+Comment=Speak on your phone, type on your desktop
+Exec=Airvoice
+Icon=airvoice
+Categories=Utility;Network;
+Terminal=false
+StartupNotify=true

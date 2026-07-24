@@ -13,10 +13,14 @@ func New() (Paster, error) {
 	session := DetectSession()
 	switch session {
 	case SessionWayland:
-		if _, err := lookPath("wl-copy"); err != nil {
-			return nil, fmt.Errorf("wl-clipboard (wl-copy) is not installed. Please install it first (e.g. 'sudo apt install wl-clipboard')")
+		if !hasWlClipboardTools() {
+			return nil, fmt.Errorf("wl-clipboard (wl-copy and wl-paste) is not installed. Please install it first (e.g. 'sudo apt install wl-clipboard')")
 		}
-		if _, err := lookPath("ydotool"); err != nil {
+		if isHyprland() {
+			if _, err := lookPath("hyprctl"); err != nil {
+				return nil, fmt.Errorf("hyprctl is not installed. Please install it first (e.g. 'sudo pacman -S hyprland')")
+			}
+		} else if _, err := lookPath("ydotool"); err != nil {
 			return nil, fmt.Errorf("ydotool is not installed. Please install it first (e.g. 'sudo apt install ydotool' or 'yay -S ydotool')")
 		}
 		return &waylandPaster{}, nil

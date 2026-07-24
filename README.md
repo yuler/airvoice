@@ -77,7 +77,9 @@ mise run menu
 
 ### 3. Desktop GUI (Optional)
 
-For a native GUI instead of CLI:
+On Linux, prefer the self-contained AppImage from [GitHub Releases](https://github.com/yuler/airvoice/releases/latest) (`Airvoice-Desktop-*-Linux-x86_64.AppImage`) — it bundles WebKitGTK, so you do not need system `webkit2gtk`.
+
+For a native GUI instead of CLI (dev / from source):
 
 ```bash
 cd desktop
@@ -138,9 +140,62 @@ sudo apt install xclip xdotool
 ```
 
 ### Linux (Wayland)
-Requires `wl-clipboard` for clipboard access and `ydotool` for keyboard emulation:
-*   Install the dependencies (e.g., `sudo apt install wl-clipboard ydotool`).
-*   Ensure the `ydotoold` service is enabled and running, and your user has permission to write to `/dev/uinput` (or run `ydotool` with appropriate privileges).
+Requires `wl-clipboard` for clipboard access. Keystroke injection depends on the compositor:
+*   **Hyprland:** uses `hyprctl dispatch sendshortcut` (no `ydotool` required). Install Hyprland / `hyprctl` as usual.
+*   **Other Wayland:** needs `ydotool`. Install deps (e.g. `sudo apt install wl-clipboard ydotool`, or on Arch `sudo pacman -S wl-clipboard ydotool`), enable the user service (`ydotool.service` on Arch; some distros name it `ydotoold`), and ensure your user can write `/dev/uinput` (usually via the `input` group). See [Q&A](#qa) if paste fails.
+
+---
+
+## Q&A
+
+### Text arrives on the PC but nothing pastes (Linux Wayland)
+
+Airvoice pastes in two steps: `wl-copy` puts text on the clipboard, then a keystroke injector sends Ctrl+V (Ctrl+Shift+V in terminals on Hyprland). If the phone / Desktop shows success for the text but nothing appears at the cursor, clipboard usually worked and **keystroke injection failed**.
+
+**On Hyprland:** confirm `hyprctl` works (`hyprctl activewindow -j`). Paste does not use `ydotool`.
+
+**On other Wayland compositors:**
+
+**1. Is `ydotoold` running?**
+
+```bash
+# Arch / Omarchy
+systemctl --user enable --now ydotool.service
+systemctl --user status ydotool.service
+
+# Debian / Ubuntu (unit name may be ydotoold)
+systemctl --user enable --now ydotoold
+```
+
+**2. Can your user open `/dev/uinput`?**
+
+You should be in the `input` group, and the device should be `root:input` mode `660`:
+
+```bash
+groups                    # expect: input
+ls -l /dev/uinput         # expect: crw-rw---- root input
+
+# If permissions are wrong (common: crw------- root root):
+sudo chgrp input /dev/uinput
+sudo chmod 660 /dev/uinput
+sudo udevadm control --reload-rules
+sudo udevadm trigger --name-match=uinput
+systemctl --user restart ydotool.service   # or ydotoold
+```
+
+**3. Quick verify**
+
+```bash
+wl-copy "airvoice-test"
+# focus a text field, then:
+ydotool key CTRL+v
+```
+
+If that pastes, send again from the phone. If keystroke injection still fails, text remains on the clipboard — press Ctrl+V (or Super+V on Omarchy) manually.
+
+### First paste times out, second paste works (Linux Wayland / ydotool)
+
+Applies when using `ydotool` (not Hyprland). Often a cold `ydotool` / `ydotoold` start: the first Ctrl+V hangs past the phone’s ack timeout, while a second send succeeds once the daemon is warm. Keep `ydotool.service` enabled so it is already running before you connect.
 
 ---
 

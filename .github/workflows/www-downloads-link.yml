@@ -73,7 +73,7 @@ jobs:
             "airvoice-cli-linux-amd64"
             "airvoice-cli-windows-amd64.exe"
             "Airvoice-Desktop-${VERSION}-macOS.zip"
-            "Airvoice-Desktop-${VERSION}-Linux.tar.gz"
+            "Airvoice-Desktop-${VERSION}-Linux-x86_64.AppImage"
             "Airvoice-Desktop-${VERSION}-Windows.zip"
             "airvoice-android-${VERSION}.apk"
           )

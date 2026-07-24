@@ -11,18 +11,25 @@ func TestDetectSession(t *testing.T) {
 	origSessionType := os.Getenv("XDG_SESSION_TYPE")
 	origWaylandDisplay := os.Getenv("WAYLAND_DISPLAY")
 	origDisplay := os.Getenv("DISPLAY")
+	origDetectLookPath := detectLookPath
 	defer func() {
 		goos = origGOOS
 		os.Setenv("XDG_SESSION_TYPE", origSessionType)
 		os.Setenv("WAYLAND_DISPLAY", origWaylandDisplay)
 		os.Setenv("DISPLAY", origDisplay)
+		detectLookPath = origDetectLookPath
 	}()
 
+	detectLookPath = func(file string) (string, error) {
+		return "", os.ErrNotExist
+	}
+
 	tests := []struct {
-		name     string
-		targetOS string
-		env      map[string]string
-		want     SessionType
+		name           string
+		targetOS       string
+		env            map[string]string
+		wlClipboard    bool
+		want           SessionType
 	}{
 		{
 			name:     "darwin",
@@ -54,6 +61,25 @@ func TestDetectSession(t *testing.T) {
 			want:     SessionX11,
 		},
 		{
+			name:        "linux DISPLAY stays X11 even with wl-clipboard",
+			targetOS:    "linux",
+			env:         map[string]string{"DISPLAY": ":0"},
+			wlClipboard: true,
+			want:        SessionX11,
+		},
+		{
+			name:        "linux wayland by wl-clipboard without DISPLAY",
+			targetOS:    "linux",
+			wlClipboard: true,
+			want:        SessionWayland,
+		},
+		{
+			name:     "linux X11 stays X11 when session type is x11",
+			targetOS: "linux",
+			env:      map[string]string{"DISPLAY": ":0", "XDG_SESSION_TYPE": "x11"},
+			want:     SessionX11,
+		},
+		{
 			name:     "linux unknown",
 			targetOS: "linux",
 			want:     SessionUnknown,
@@ -73,6 +99,19 @@ func TestDetectSession(t *testing.T) {
 			os.Unsetenv("DISPLAY")
 			for k, v := range tt.env {
 				os.Setenv(k, v)
+			}
+
+			if tt.wlClipboard {
+				detectLookPath = func(file string) (string, error) {
+					if file == "wl-copy" || file == "wl-paste" {
+						return "/usr/bin/" + file, nil
+					}
+					return "", os.ErrNotExist
+				}
+			} else {
+				detectLookPath = func(file string) (string, error) {
+					return "", os.ErrNotExist
+				}
 			}
 
 			got := DetectSession()
