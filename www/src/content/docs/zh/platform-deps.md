@@ -38,16 +38,21 @@ sudo apt install xclip xdotool
 
 ## Linux（Wayland）
 
-需要 `wl-clipboard` 访问剪贴板，`ydotool` 模拟键盘输入：
+需要 `wl-clipboard` 访问剪贴板。按键注入取决于合成器：
+
+- **Hyprland：** 使用 `hyprctl dispatch sendshortcut`（不需要 `ydotool`）。终端窗口会发送 Ctrl+Shift+V。
+- **其他 Wayland：** 需要 `ydotool`：
 
 ```bash
 sudo apt install wl-clipboard ydotool
 ```
 
-确保 `ydotoold` 服务已启用并运行：
+确保 `ydotoold` / `ydotool` 用户服务已启用并运行：
 
 ```bash
 systemctl --user enable --now ydotoold
+# Arch / Omarchy 常见为：
+# systemctl --user enable --now ydotool.service
 ```
 
 ## Windows

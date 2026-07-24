@@ -25,10 +25,11 @@ func TestDetectSession(t *testing.T) {
 	}
 
 	tests := []struct {
-		name     string
-		targetOS string
-		env      map[string]string
-		want     SessionType
+		name           string
+		targetOS       string
+		env            map[string]string
+		wlClipboard    bool
+		want           SessionType
 	}{
 		{
 			name:     "darwin",
@@ -60,10 +61,17 @@ func TestDetectSession(t *testing.T) {
 			want:     SessionX11,
 		},
 		{
-			name:     "linux wayland by wl-clipboard tools",
-			targetOS: "linux",
-			env:      map[string]string{"DISPLAY": ":0"},
-			want:     SessionWayland,
+			name:        "linux DISPLAY stays X11 even with wl-clipboard",
+			targetOS:    "linux",
+			env:         map[string]string{"DISPLAY": ":0"},
+			wlClipboard: true,
+			want:        SessionX11,
+		},
+		{
+			name:        "linux wayland by wl-clipboard without DISPLAY",
+			targetOS:    "linux",
+			wlClipboard: true,
+			want:        SessionWayland,
 		},
 		{
 			name:     "linux X11 stays X11 when session type is x11",
@@ -93,7 +101,7 @@ func TestDetectSession(t *testing.T) {
 				os.Setenv(k, v)
 			}
 
-			if tt.name == "linux wayland by wl-clipboard tools" {
+			if tt.wlClipboard {
 				detectLookPath = func(file string) (string, error) {
 					if file == "wl-copy" || file == "wl-paste" {
 						return "/usr/bin/" + file, nil

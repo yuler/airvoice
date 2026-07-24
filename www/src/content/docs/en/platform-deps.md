@@ -38,16 +38,21 @@ sudo apt install xclip xdotool
 
 ## Linux (Wayland)
 
-Requires `wl-clipboard` for clipboard access and `ydotool` for keyboard emulation:
+Requires `wl-clipboard` for clipboard access. Keystroke injection depends on the compositor:
+
+- **Hyprland:** uses `hyprctl dispatch sendshortcut` (no `ydotool`). Terminals get Ctrl+Shift+V.
+- **Other Wayland:** needs `ydotool`:
 
 ```bash
 sudo apt install wl-clipboard ydotool
 ```
 
-Ensure the `ydotoold` service is enabled and running:
+Ensure the `ydotoold` / `ydotool` user service is enabled and running:
 
 ```bash
 systemctl --user enable --now ydotoold
+# Arch / Omarchy often use:
+# systemctl --user enable --now ydotool.service
 ```
 
 ## Windows

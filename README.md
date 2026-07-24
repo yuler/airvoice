@@ -77,7 +77,9 @@ mise run menu
 
 ### 3. Desktop GUI (Optional)
 
-For a native GUI instead of CLI:
+On Linux, prefer the self-contained AppImage from [GitHub Releases](https://github.com/yuler/airvoice/releases/latest) (`Airvoice-Desktop-*-Linux-x86_64.AppImage`) — it bundles WebKitGTK, so you do not need system `webkit2gtk`.
+
+For a native GUI instead of CLI (dev / from source):
 
 ```bash
 cd desktop
@@ -138,9 +140,9 @@ sudo apt install xclip xdotool
 ```
 
 ### Linux (Wayland)
-Requires `wl-clipboard` for clipboard access and `ydotool` for keyboard emulation:
-*   Install the dependencies (e.g. `sudo apt install wl-clipboard ydotool`, or on Arch `sudo pacman -S wl-clipboard ydotool`).
-*   Enable the user service (`ydotool.service` on Arch; some distros name it `ydotoold`) and ensure your user can write `/dev/uinput` (usually via the `input` group). See [Q&A](#qa) if paste fails.
+Requires `wl-clipboard` for clipboard access. Keystroke injection depends on the compositor:
+*   **Hyprland:** uses `hyprctl dispatch sendshortcut` (no `ydotool` required). Install Hyprland / `hyprctl` as usual.
+*   **Other Wayland:** needs `ydotool`. Install deps (e.g. `sudo apt install wl-clipboard ydotool`, or on Arch `sudo pacman -S wl-clipboard ydotool`), enable the user service (`ydotool.service` on Arch; some distros name it `ydotoold`), and ensure your user can write `/dev/uinput` (usually via the `input` group). See [Q&A](#qa) if paste fails.
 
 ---
 
@@ -148,7 +150,11 @@ Requires `wl-clipboard` for clipboard access and `ydotool` for keyboard emulatio
 
 ### Text arrives on the PC but nothing pastes (Linux Wayland)
 
-Airvoice pastes in two steps: `wl-copy` puts text on the clipboard, then `ydotool` injects Ctrl+V. If the phone / Desktop shows success for the text but nothing appears at the cursor, clipboard usually worked and **keystroke injection failed**.
+Airvoice pastes in two steps: `wl-copy` puts text on the clipboard, then a keystroke injector sends Ctrl+V (Ctrl+Shift+V in terminals on Hyprland). If the phone / Desktop shows success for the text but nothing appears at the cursor, clipboard usually worked and **keystroke injection failed**.
+
+**On Hyprland:** confirm `hyprctl` works (`hyprctl activewindow -j`). Paste does not use `ydotool`.
+
+**On other Wayland compositors:**
 
 **1. Is `ydotoold` running?**
 
@@ -187,9 +193,9 @@ ydotool key CTRL+v
 
 If that pastes, send again from the phone. If keystroke injection still fails, text remains on the clipboard — press Ctrl+V (or Super+V on Omarchy) manually.
 
-### First paste times out, second paste works (Linux Wayland)
+### First paste times out, second paste works (Linux Wayland / ydotool)
 
-Often a cold `ydotool` / `ydotoold` start: the first Ctrl+V hangs past the phone’s ack timeout, while a second send succeeds once the daemon is warm. Keep `ydotool.service` enabled so it is already running before you connect.
+Applies when using `ydotool` (not Hyprland). Often a cold `ydotool` / `ydotoold` start: the first Ctrl+V hangs past the phone’s ack timeout, while a second send succeeds once the daemon is warm. Keep `ydotool.service` enabled so it is already running before you connect.
 
 ---
 

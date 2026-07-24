@@ -95,6 +95,27 @@ jobs:
             --version "${{ steps.version.outputs.version }}" \
             --output-dir release
 
+      - name: Verify Linux AppImage contents
+        if: matrix.platform == 'linux'
+        working-directory: desktop
+        run: |
+          set -euo pipefail
+          APPIMAGE=$(readlink -f release/Airvoice-Desktop-*-Linux-*.AppImage)
+          test -x "$APPIMAGE"
+          file "$APPIMAGE" | grep -qi 'executable\|ELF'
+          VERIFY_DIR=$(mktemp -d)
+          trap 'rm -rf "$VERIFY_DIR"' EXIT
+          (
+            cd "$VERIFY_DIR"
+            APPIMAGE_EXTRACT_AND_RUN=1 "$APPIMAGE" --appimage-extract
+            test -x squashfs-root/AppRun
+            test -f squashfs-root/usr/bin/Airvoice
+            find squashfs-root -name WebKitWebProcess | grep -q .
+            find squashfs-root -name WebKitNetworkProcess | grep -q .
+            find squashfs-root -type d \( -name 'webkit2gtk-4.0' -o -name 'webkit2gtk-4.1' \) | grep -q .
+            echo "AppImage extract checks passed"
+          )
+
       - name: Collect artifacts
         shell: bash
         working-directory: desktop

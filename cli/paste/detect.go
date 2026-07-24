@@ -41,13 +41,13 @@ func DetectSession() SessionType {
 		if os.Getenv("XDG_SESSION_TYPE") == "wayland" || os.Getenv("WAYLAND_DISPLAY") != "" {
 			return SessionWayland
 		}
-		// Prefer wl-clipboard when both tools are installed (typical Wayland desktop).
-		if hasWlClipboardTools() && os.Getenv("XDG_SESSION_TYPE") != "x11" {
-			return SessionWayland
-		}
-		if os.Getenv("DISPLAY") != "" || os.Getenv("XDG_SESSION_TYPE") == "x11" {
+		// DISPLAY alone means X11 (or XWayland with missing Wayland env). Do not
+		// prefer Wayland just because wl-clipboard is installed — that breaks
+		// pure X11 sessions that also have wl-clipboard for other reasons.
+		if os.Getenv("XDG_SESSION_TYPE") == "x11" || os.Getenv("DISPLAY") != "" {
 			return SessionX11
 		}
+		// Last resort: wl-clipboard present and no DISPLAY (some Wayland setups).
 		if hasWlClipboardTools() {
 			return SessionWayland
 		}
