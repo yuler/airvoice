@@ -65,9 +65,12 @@ jobs:
       - name: Install Linux dependencies
         if: matrix.platform == 'linux'
         run: |
-          # azure.archive.ubuntu.com mirrors often hang on GitHub runners; use archive.ubuntu.com
-          sudo sed -i 's|azure.archive.ubuntu.com|archive.ubuntu.com|g' /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null || true
-          sudo apt-get update -o Acquire::Retries=5 -o Acquire::http::Timeout=15 -o Acquire::https::Timeout=15
+          # azure.archive.ubuntu.com mirrors are flaky on GitHub runners; prefer archive.ubuntu.com
+          if [ -f /etc/apt/apt-mirrors.txt ]; then
+            sudo sh -c 'printf "https://archive.ubuntu.com/ubuntu/\tpriority:1\n" > /etc/apt/apt-mirrors.txt; printf "https://security.ubuntu.com/ubuntu/\tpriority:2\n" >> /etc/apt/apt-mirrors.txt'
+          fi
+          sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu/|https://archive.ubuntu.com/ubuntu/|g' /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null || true
+          sudo apt-get update -o Acquire::Retries=3 -o Acquire::http::Timeout=10 -o Acquire::https::Timeout=10
           sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf libxdo-dev
 
       - name: Version tag
