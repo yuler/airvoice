@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"time"
@@ -24,6 +25,11 @@ func main() {
 }
 
 func run(args []string) int {
+	if len(args) > 0 && isHelp(args[0]) {
+		writeUsage(os.Stdout)
+		return 0
+	}
+
 	if len(args) == 0 || strings.HasPrefix(args[0], "-") {
 		return serveFn(args)
 	}
@@ -49,7 +55,8 @@ func run(args []string) int {
 }
 
 func runSettings() int {
-	s, err := config.EnsureToken(config.Path())
+	path := config.Path()
+	s, err := config.EnsureToken(path)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		return 1
@@ -59,6 +66,7 @@ func runSettings() int {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		return 1
 	}
+	fmt.Println(path)
 	fmt.Println(string(data))
 	return 0
 }
@@ -77,6 +85,7 @@ func runServer(args []string) int {
 	var port int
 	fs := flag.NewFlagSet("airvoice", flag.ContinueOnError)
 	fs.SetOutput(os.Stderr)
+	fs.Usage = func() { writeUsage(os.Stderr) }
 	fs.IntVar(&port, "port", 7654, "port to listen on")
 	fs.IntVar(&port, "p", 7654, "port to listen on (shorthand)")
 	if err := fs.Parse(args); err != nil {
@@ -142,11 +151,20 @@ func runServer(args []string) int {
 	return 0
 }
 
+func isHelp(arg string) bool {
+	return arg == "help" || arg == "--help" || arg == "-h"
+}
+
 func printUsage() {
-	fmt.Fprintf(os.Stderr, "Usage:\n")
-	fmt.Fprintf(os.Stderr, "  airvoice [--port 7654]\n")
-	fmt.Fprintf(os.Stderr, "  airvoice settings\n")
-	fmt.Fprintf(os.Stderr, "  airvoice token refresh\n")
-	fmt.Fprintf(os.Stderr, "  airvoice doctor\n")
-	fmt.Fprintf(os.Stderr, "  airvoice version\n")
+	writeUsage(os.Stderr)
+}
+
+func writeUsage(w io.Writer) {
+	fmt.Fprintf(w, "Usage:\n")
+	fmt.Fprintf(w, "  airvoice [--port 7654]\n")
+	fmt.Fprintf(w, "  airvoice settings\n")
+	fmt.Fprintf(w, "  airvoice token refresh\n")
+	fmt.Fprintf(w, "  airvoice doctor\n")
+	fmt.Fprintf(w, "  airvoice version\n")
+	fmt.Fprintf(w, "  airvoice help\n")
 }

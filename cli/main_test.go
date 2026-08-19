@@ -36,6 +36,35 @@ func TestRunDefaultsToServe(t *testing.T) {
 	}
 }
 
+func TestRunHelpListsCommands(t *testing.T) {
+	orig := serveFn
+	serveFn = func(args []string) int {
+		t.Fatalf("serve should not start for help, args=%v", args)
+		return 0
+	}
+	defer func() { serveFn = orig }()
+
+	for _, args := range [][]string{{"help"}, {"--help"}, {"-h"}} {
+		stdout := captureStdout(t, func() {
+			if code := run(args); code != 0 {
+				t.Fatalf("run(%v) code=%d, want 0", args, code)
+			}
+		})
+		for _, want := range []string{
+			"airvoice [--port 7654]",
+			"airvoice settings",
+			"airvoice token refresh",
+			"airvoice doctor",
+			"airvoice version",
+			"airvoice help",
+		} {
+			if !strings.Contains(stdout, want) {
+				t.Fatalf("run(%v) missing %q in:\n%s", args, want, stdout)
+			}
+		}
+	}
+}
+
 func TestRunServeIsUnknown(t *testing.T) {
 	stderr := captureStderr(t, func() {
 		if code := run([]string{"serve"}); code != 1 {
@@ -55,19 +84,27 @@ func TestRunSettingsPrintsJSON(t *testing.T) {
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
 
+	wantPath := filepath.Join(home, ".airvoice", "settings.json")
 	stdout := captureStdout(t, func() {
 		if code := run([]string{"settings"}); code != 0 {
 			t.Fatalf("code = %d", code)
 		}
 	})
+	if !strings.Contains(stdout, wantPath) {
+		t.Fatalf("stdout missing settings path %q:\n%s", wantPath, stdout)
+	}
+	idx := strings.Index(stdout, "{")
+	if idx < 0 {
+		t.Fatalf("stdout missing JSON:\n%s", stdout)
+	}
 	var s config.Settings
-	if err := json.Unmarshal([]byte(stdout), &s); err != nil {
+	if err := json.Unmarshal([]byte(stdout[idx:]), &s); err != nil {
 		t.Fatalf("stdout not JSON: %q err=%v", stdout, err)
 	}
 	if s.Token == "" {
 		t.Fatal("expected token in settings output")
 	}
-	if _, err := os.Stat(filepath.Join(home, ".airvoice", "settings.json")); err != nil {
+	if _, err := os.Stat(wantPath); err != nil {
 		t.Fatal(err)
 	}
 }
