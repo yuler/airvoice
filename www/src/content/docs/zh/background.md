@@ -53,8 +53,8 @@ Airvoice 是一个**非常小众的工具**，只适合以下场景：
 |------|------|
 | 产品名称 | **Airvoice** |
 | 移动端 | Android（Kotlin/Compose）+ iOS（SwiftUI, iOS 17+） |
-| 桌面端 | Go CLI (`airvoice serve`) |
-| 配对 | QR 码 + 一次性 token |
+| 桌面端 | Go CLI (`airvoice`) |
+| 配对 | QR 码 + 持久 token（可刷新） |
 | 发送模式 | 键盘消失或文本空闲 1.5 秒时自动发送 |
 | 多行 | 原样粘贴，保留 `\n` |
 | Linux | 支持 X11 + Wayland |

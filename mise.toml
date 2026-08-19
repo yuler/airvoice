@@ -29,7 +29,7 @@ run = "./scripts/bump.sh"
 [tasks."cli:dev"]
 description = "Build and run airvoice server (default dev workflow)"
 depends = ["cli:build"]
-run = "./bin/airvoice serve"
+run = "./bin/airvoice"
 
 [tasks."cli:build"]
 description = "Build Go CLI to bin/airvoice"

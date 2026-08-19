@@ -34,8 +34,8 @@ Longer term the same transport layer can support PC-triggered recording, Apple W
 |-------|----------|
 | Product name | **Airvoice** |
 | Mobile | iOS SwiftUI, iOS 17+ |
-| Desktop | Go CLI (`airvoice serve`) |
-| Pairing | QR code with one-time token (no mDNS in MVP) |
+| Desktop | Go CLI (`airvoice`) |
+| Pairing | QR code with persisted token (refresh to rotate; no mDNS in MVP) |
 | Send mode | Auto-send when keyboard dismisses or text idle 1.5 s |
 | Multi-line | Paste as-is, preserve `\n` |
 | Linux | X11 + Wayland in MVP |
@@ -44,7 +44,7 @@ Longer term the same transport layer can support PC-triggered recording, Apple W
 ## Interaction model
 
 ```text
-[PC]  airvoice serve  →  QR in terminal
+[PC]  airvoice  →  QR in terminal
 [iOS] Scan QR  →  WebSocket connected
 [iOS] Tap 说话  →  focus TextEditor, show IME keyboard
 [iOS] Tap mic on 豆包/微信  →  dictate  →  confirm on IME

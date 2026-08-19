@@ -32,7 +32,7 @@ Or download a binary from [GitHub Releases](https://github.com/yuler/airvoice/re
 ## 2. Start the Server
 
 ```bash
-airvoice serve
+airvoice
 ```
 
 A QR code appears in your terminal. Keep it running.
