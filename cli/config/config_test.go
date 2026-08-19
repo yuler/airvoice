@@ -10,9 +10,11 @@ import (
 )
 
 func TestPathUsesHomeAirvoice(t *testing.T) {
-	t.Setenv("HOME", "/tmp/airvoice-home-test")
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
 	got := Path()
-	want := filepath.Join("/tmp/airvoice-home-test", ".airvoice", "settings.json")
+	want := filepath.Join(home, ".airvoice", "settings.json")
 	if got != want {
 		t.Fatalf("Path() = %q, want %q", got, want)
 	}

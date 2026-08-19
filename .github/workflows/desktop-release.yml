@@ -87,7 +87,7 @@ jobs:
 
       - name: Build (${{ matrix.artifact }})
         working-directory: desktop
-        run: wails build --platform ${{ matrix.platform }}/${{ matrix.arch }}
+        run: wails build --platform ${{ matrix.platform }}/${{ matrix.arch }} -tags webkit2_41
 
       - name: Package Linux AppImage
         if: matrix.platform == 'linux'
