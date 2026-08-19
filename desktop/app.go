@@ -3,16 +3,16 @@ package main
 import (
 	"context"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 
-	"github.com/google/uuid"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
+	"github.com/yuler/airvoice/cli/config"
 	"github.com/yuler/airvoice/cli/pairing"
 	"github.com/yuler/airvoice/cli/paste"
 	"github.com/yuler/airvoice/cli/server"
@@ -27,6 +27,7 @@ type ConnectionStatus struct {
 }
 
 type Settings struct {
+	Token     string `json:"token,omitempty"`
 	Port      int    `json:"port"`
 	AutoStart bool   `json:"autoStart"`
 	Language  string `json:"language"`
@@ -61,18 +62,19 @@ func NewApp() (*App, error) {
 		return nil, fmt.Errorf("failed to initialize history store: %w", err)
 	}
 
-	settingsPath := filepath.Join(homeDir, ".airvoice", "settings.json")
+	settingsPath := config.Path()
 
 	app := &App{
 		history:      history,
-		token:        uuid.New().String(),
 		port:         7655,
 		settingsPath: settingsPath,
 		settings:     Settings{Port: 7655, Language: "zh-CN"},
 		status:       ConnectionStatus{State: "disconnected"},
 	}
 
-	app.loadSettings()
+	if err := app.loadSettings(); err != nil {
+		return nil, err
+	}
 
 	return app, nil
 }
@@ -93,6 +95,14 @@ func (a *App) startup(ctx context.Context) {
 			Message: fmt.Sprintf("Failed to start server: %v\n\nPlease check your settings and port occupancy.", err),
 		})
 	}
+
+	a.mu.RLock()
+	token := a.token
+	path := a.settingsPath
+	a.mu.RUnlock()
+	go config.WatchToken(ctx, path, time.Second, token, func(newToken string) {
+		a.applyToken(newToken, true)
+	})
 }
 
 func (a *App) GetPairingLink() (string, error) {
@@ -120,28 +130,37 @@ func (a *App) GetPairingLink() (string, error) {
 	return string(payloadBytes), nil
 }
 
-// RefreshPairing generates a new pairing token and invalidates pending connections.
+// RefreshPairing generates a new pairing token, persists it, and disconnects clients.
 func (a *App) RefreshPairing() error {
-	a.mu.Lock()
-	if a.status.State == "connected" {
-		a.mu.Unlock()
-		return fmt.Errorf("cannot refresh pairing while connected")
+	s, err := config.RotateToken(a.settingsPath)
+	if err != nil {
+		return err
 	}
-	newToken := uuid.New().String()
+	a.applyToken(s.Token, true)
+	return nil
+}
+
+func (a *App) applyToken(newToken string, disconnect bool) {
+	a.mu.Lock()
+	if newToken == "" || newToken == a.token {
+		a.mu.Unlock()
+		return
+	}
 	a.token = newToken
 	srv := a.server
 	a.mu.Unlock()
 
 	if srv != nil {
 		srv.SetToken(newToken)
-		srv.DisconnectClients()
+		if disconnect {
+			srv.DisconnectClients()
+		}
 	}
 
 	if a.ctx != nil {
 		runtime.EventsEmit(a.ctx, "log_added", " [airvoice] pairing token refreshed")
+		runtime.EventsEmit(a.ctx, "pairing_changed")
 	}
-
-	return nil
 }
 
 func (a *App) GetQRCode() (string, error) {
@@ -311,20 +330,28 @@ func (a *App) StopServer() error {
 	return nil
 }
 
-func (a *App) loadSettings() {
-	data, err := os.ReadFile(a.settingsPath)
+func (a *App) loadSettings() error {
+	s, err := config.EnsureToken(a.settingsPath)
 	if err != nil {
-		return
+		return fmt.Errorf("failed to load settings: %w", err)
 	}
-	var s Settings
-	if err := json.Unmarshal(data, &s); err != nil {
-		return
+	port := s.Port
+	if port < 1024 || port > 65535 {
+		port = 7655
 	}
-	if s.Port < 1024 || s.Port > 65535 {
-		s.Port = 7655
+	lang := s.Language
+	if lang == "" {
+		lang = "zh-CN"
 	}
-	a.settings = s
-	a.port = s.Port
+	a.settings = Settings{
+		Token:     s.Token,
+		Port:      port,
+		AutoStart: s.AutoStart,
+		Language:  lang,
+	}
+	a.token = s.Token
+	a.port = port
+	return nil
 }
 
 func (a *App) GetSettings() Settings {
@@ -340,6 +367,7 @@ func (a *App) SaveSettings(s Settings) error {
 
 	a.mu.RLock()
 	portChanged := a.port != s.Port
+	token := a.token
 	a.mu.RUnlock()
 
 	if portChanged {
@@ -348,21 +376,30 @@ func (a *App) SaveSettings(s Settings) error {
 		}
 	}
 
-	a.mu.Lock()
-	a.settings = s
-	a.port = s.Port
-	a.mu.Unlock()
-
-	data, err := json.MarshalIndent(s, "", "  ")
-	if err != nil {
-		return fmt.Errorf("failed to marshal settings: %w", err)
-	}
-	if err := os.MkdirAll(filepath.Dir(a.settingsPath), 0700); err != nil {
-		return fmt.Errorf("failed to create settings dir: %w", err)
-	}
-	if err := os.WriteFile(a.settingsPath, data, 0600); err != nil {
+	if err := config.Save(a.settingsPath, config.Settings{
+		Token:     token,
+		Port:      s.Port,
+		AutoStart: s.AutoStart,
+		Language:  s.Language,
+	}); err != nil {
 		return err
 	}
+
+	disk, err := config.Load(a.settingsPath)
+	if err != nil {
+		return err
+	}
+
+	a.mu.Lock()
+	a.settings = Settings{
+		Token:     disk.Token,
+		Port:      s.Port,
+		AutoStart: s.AutoStart,
+		Language:  s.Language,
+	}
+	a.port = s.Port
+	a.token = disk.Token
+	a.mu.Unlock()
 
 	if portChanged && a.ctx != nil {
 		_ = a.StopServer()

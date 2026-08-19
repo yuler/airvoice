@@ -32,7 +32,7 @@ go install github.com/yuler/airvoice/cli@latest
 ## 2. 启动服务器
 
 ```bash
-airvoice serve
+airvoice
 ```
 
 终端会打印一个二维码。保持此进程运行。

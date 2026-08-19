@@ -39,6 +39,8 @@ airvoice/
 │   │   ├── lanip.go             # pick LAN IPv4
 │   │   ├── qr.go                # terminal QR
 │   │   └── lanip_test.go
+│   ├── config/
+│   │   └── config.go            # ~/.airvoice/settings.json (token + desktop settings)
 │   ├── server/
 │   │   ├── server.go            # HTTP mux, ListenAndServe
 │   │   ├── handler.go           # /ws upgrade, message dispatch
@@ -80,7 +82,8 @@ airvoice/
 
 | Package | Responsibility |
 |---------|----------------|
-| `cli` (`main`) | Entry: `serve`, `version`; wires pairing + server + paste |
+| `cli` (`main`) | Entry: default server, `settings`, `token refresh`, `version`; wires pairing + server + paste |
+| `cli/config` | `~/.airvoice/settings.json` load/save, persistent pairing token, token poll |
 | `cli/protocol` | Inbound/outbound JSON message types |
 | `cli/pairing` | LAN IP, QR payload marshal, terminal QR render |
 | `cli/server` | `/health`, `/ws`, token auth, hello/text/ping handlers, single-client hub |
@@ -128,7 +131,7 @@ Transport: **WebSocket**, JSON text frames, LAN only.
 { "v": 1, "ws": "ws://192.168.1.42:7383/ws", "token": "uuid" }
 ```
 
-iOS connects to `ws` with `?token=<token>` query param. Token rotates each `airvoice serve` session.
+iOS connects to `ws` with `?token=<token>` query param. Token is persisted in `~/.airvoice/settings.json` until `airvoice token refresh` or the desktop refresh control.
 
 ### Client → server
 
@@ -177,7 +180,7 @@ On `ack ok`: haptic, toast「已发送到电脑」, clear field. On error: keep 
 
 ## Security (MVP)
 
-- One-time token per `serve` session
+- Pairing token persisted on the host (`~/.airvoice/settings.json`); refresh disconnects clients
 - Single active phone connection
 - No TLS on LAN (trusted network assumption)
 - No cloud, no accounts

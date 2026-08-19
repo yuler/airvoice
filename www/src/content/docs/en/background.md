@@ -53,8 +53,8 @@ For most people, these tools are a better fit:
 |-------|----------|
 | Product name | **Airvoice** |
 | Mobile | Android (Kotlin/Compose) + iOS (SwiftUI, iOS 17+) |
-| Desktop | Go CLI (`airvoice serve`) |
-| Pairing | QR code with one-time token |
+| Desktop | Go CLI (`airvoice`) |
+| Pairing | QR code with persisted token (refresh to rotate) |
 | Send mode | Auto-send when keyboard dismisses or text idle 1.5s |
 | Multi-line | Paste as-is, preserve `\n` |
 | Linux | X11 + Wayland supported |

@@ -171,6 +171,63 @@ func TestRefreshPairing(t *testing.T) {
 	if linkBefore == linkAfter {
 		t.Fatal("pairing link should change after RefreshPairing")
 	}
+
+	disk, err := os.ReadFile(app.settingsPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Contains(disk, []byte(app.token)) {
+		t.Fatal("refreshed token should be persisted")
+	}
 }
 
+func TestRefreshPairingWhileConnected(t *testing.T) {
+	app := newTestApp(t)
+	app.status.State = "connected"
+	if err := app.RefreshPairing(); err != nil {
+		t.Fatalf("RefreshPairing while connected: %v", err)
+	}
+}
 
+func TestNewAppReusesPersistedToken(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+
+	app1, err := NewApp()
+	if err != nil {
+		t.Fatal(err)
+	}
+	token := app1.token
+
+	app2, err := NewApp()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if app2.token != token {
+		t.Fatalf("token not reused: %q vs %q", app2.token, token)
+	}
+}
+
+func TestSaveSettingsPreservesToken(t *testing.T) {
+	app := newTestApp(t)
+	token := app.token
+	if err := app.SaveSettings(Settings{Port: 7655, Language: "en-US"}); err != nil {
+		t.Fatal(err)
+	}
+	if app.token != token {
+		t.Fatalf("token changed on SaveSettings: %q vs %q", app.token, token)
+	}
+}
+
+func newTestApp(t *testing.T) *App {
+	t.Helper()
+	tmpDir := t.TempDir()
+	t.Setenv("HOME", tmpDir)
+	t.Setenv("USERPROFILE", tmpDir)
+	app, err := NewApp()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return app
+}

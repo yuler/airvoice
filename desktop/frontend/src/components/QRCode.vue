@@ -6,16 +6,25 @@ import { useToast } from '../composables/useToast'
 import RefreshIcon from './icons/RefreshIcon.vue'
 
 const qrCodeData = ref<string>('')
-const pairingLink = ref<string>('')
+const pairingToken = ref<string>('')
 const error = ref<string>('')
 const refreshing = ref(false)
 const { t } = useI18n()
 const { show } = useToast()
 
+function tokenFromLink(link: string): string {
+  try {
+    const parsed = JSON.parse(link) as { token?: string }
+    return parsed.token || ''
+  } catch {
+    return ''
+  }
+}
+
 async function loadQRCode() {
   try {
     qrCodeData.value = await GetQRCode()
-    pairingLink.value = await GetPairingLink()
+    pairingToken.value = tokenFromLink(await GetPairingLink())
   } catch (e) {
     error.value = t('qr.error')
     console.error(e)
@@ -46,6 +55,7 @@ onMounted(() => {
   const runtime = (window as any).runtime
   if (runtime && runtime.EventsOn) {
     runtime.EventsOn('server_restarted', loadQRCode)
+    runtime.EventsOn('pairing_changed', loadQRCode)
   }
 })
 
@@ -53,6 +63,7 @@ onUnmounted(() => {
   const runtime = (window as any).runtime
   if (runtime && runtime.EventsOff) {
     runtime.EventsOff('server_restarted', loadQRCode)
+    runtime.EventsOff('pairing_changed', loadQRCode)
   }
 })
 </script>
@@ -69,6 +80,14 @@ onUnmounted(() => {
       <img :src="qrCodeData" alt="QR Code" class="block w-full h-full" style="image-rendering: pixelated;" />
     </div>
     <div v-else class="text-secondary-text">{{ t('qr.loading') }}</div>
+
+    <p
+      v-if="pairingToken"
+      class="max-w-full px-4 text-center font-mono text-sm text-secondary-text break-all select-all"
+      :title="t('qr.tokenHint')"
+    >
+      {{ pairingToken }}
+    </p>
     
     <button
       type="button"

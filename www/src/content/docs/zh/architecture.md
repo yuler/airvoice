@@ -29,7 +29,8 @@ order: 4
 
 | 包 | 职责 |
 |---|------|
-| `cli` (`main`) | 入口：`serve`, `version`；连接配对 + 服务器 + 粘贴 |
+| `cli` (`main`) | 入口：默认启动服务、`settings`、`token refresh`、`version`；连接配对 + 服务器 + 粘贴 |
+| `cli/config` | `~/.airvoice/settings.json` 读写、持久配对 token |
 | `cli/protocol` | 入站/出站 JSON 消息类型 |
 | `cli/pairing` | 局域网 IP、QR payload 序列化、终端 QR 渲染 |
 | `cli/server` | `/health`, `/ws`, token 认证, hello/text/ping 处理器, 单客户端 hub |

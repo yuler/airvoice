@@ -29,7 +29,8 @@ order: 4
 
 | Package | Responsibility |
 |---------|----------------|
-| `cli` (`main`) | Entry: `serve`, `version`; wires pairing + server + paste |
+| `cli` (`main`) | Entry: default server, `settings`, `token refresh`, `version`; wires pairing + server + paste |
+| `cli/config` | `~/.airvoice/settings.json` load/save, persistent pairing token |
 | `cli/protocol` | Inbound/outbound JSON message types |
 | `cli/pairing` | LAN IP, QR payload marshal, terminal QR render |
 | `cli/server` | `/health`, `/ws`, token auth, hello/text/ping handlers, single-client hub |

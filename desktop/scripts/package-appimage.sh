@@ -83,15 +83,15 @@ HERE="$(dirname "$(readlink -f "$0")")"
 cd "$HERE"
 export PATH="$HERE/usr/bin:${PATH:-}"
 export LD_LIBRARY_PATH="$HERE/usr/lib:$HERE/usr/lib/x86_64-linux-gnu:$HERE/usr/lib/aarch64-linux-gnu:${LD_LIBRARY_PATH:-}"
-# Prefer webkit2gtk-4.0 (Wails v2 link target), then 4.1.
+# Prefer webkit2gtk-4.1 (current Wails build target), then 4.0.
 WEBKIT_EXEC_PATH=""
 for candidate in \
-  "$HERE/usr/lib/x86_64-linux-gnu/webkit2gtk-4.0" \
-  "$HERE/usr/lib/aarch64-linux-gnu/webkit2gtk-4.0" \
-  "$HERE/usr/lib/webkit2gtk-4.0" \
   "$HERE/usr/lib/x86_64-linux-gnu/webkit2gtk-4.1" \
   "$HERE/usr/lib/aarch64-linux-gnu/webkit2gtk-4.1" \
-  "$HERE/usr/lib/webkit2gtk-4.1"
+  "$HERE/usr/lib/webkit2gtk-4.1" \
+  "$HERE/usr/lib/x86_64-linux-gnu/webkit2gtk-4.0" \
+  "$HERE/usr/lib/aarch64-linux-gnu/webkit2gtk-4.0" \
+  "$HERE/usr/lib/webkit2gtk-4.0"
 do
   if [[ -d "$candidate" ]]; then
     WEBKIT_EXEC_PATH="$candidate"
@@ -164,7 +164,7 @@ download_verify \
   "linuxdeploy-plugin-gtk"
 chmod +x "$TOOLS/linuxdeploy-plugin-gtk.sh"
 
-export DEPLOY_GTK_VERSION=3
+export DEPLOY_GTK_VERSION=4
 export NO_STRIP=1
 export PATH="$TOOLS:$PATH"
 export APPIMAGE_EXTRACT_AND_RUN=1
