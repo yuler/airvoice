@@ -16,7 +16,7 @@ import (
 	"github.com/yuler/airvoice/cli/server"
 )
 
-const version = "0.3.3"
+const version = "0.4.0"
 
 var serveFn = runServer
 

@@ -25,7 +25,7 @@ android {
         applicationId = "cc.yuler.airvoice"
         minSdk = 26
         targetSdk = 34
-        versionCode = 303
+        versionCode = 400
         versionName = rootVersion
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
