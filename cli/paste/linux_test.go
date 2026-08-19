@@ -109,7 +109,7 @@ func TestLinuxPasters(t *testing.T) {
 		}
 		expected := []commandCall{
 			{name: "wl-copy", stdin: "hello world", args: nil},
-			{name: "hyprctl", stdin: "", args: []string{"dispatch", "sendshortcut", "CTRL, V, activewindow"}},
+			{name: "hyprctl", stdin: "", args: []string{"dispatch", `hl.dsp.send_shortcut({ mods = "CTRL", key = "V", window = "activewindow" })`}},
 		}
 		if !reflect.DeepEqual(calls, expected) {
 			t.Errorf("got calls %+v, expected %+v", calls, expected)
@@ -137,7 +137,7 @@ func TestLinuxPasters(t *testing.T) {
 		}
 		expected := []commandCall{
 			{name: "wl-copy", stdin: "hello world", args: nil},
-			{name: "hyprctl", stdin: "", args: []string{"dispatch", "sendshortcut", "CTRL SHIFT, V, activewindow"}},
+			{name: "hyprctl", stdin: "", args: []string{"dispatch", `hl.dsp.send_shortcut({ mods = "CTRL,SHIFT", key = "V", window = "activewindow" })`}},
 		}
 		if !reflect.DeepEqual(calls, expected) {
 			t.Errorf("got calls %+v, expected %+v", calls, expected)

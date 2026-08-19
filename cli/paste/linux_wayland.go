@@ -78,11 +78,12 @@ func (w *waylandPaster) Paste(text string) error {
 	time.Sleep(80 * time.Millisecond)
 
 	if isHyprland() {
-		modifiers := "CTRL, V"
+		mods := "CTRL"
 		if isTerminalWindow(activeWindowClass()) {
-			modifiers = "CTRL SHIFT, V"
+			mods = "CTRL,SHIFT"
 		}
-		return runCommand("hyprctl", "", "dispatch", "sendshortcut", modifiers+", activewindow")
+		luaExpr := fmt.Sprintf(`hl.dsp.send_shortcut({ mods = "%s", key = "V", window = "activewindow" })`, mods)
+		return runCommand("hyprctl", "", "dispatch", luaExpr)
 	}
 
 	ensureYdotoolSocket()
