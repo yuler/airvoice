@@ -24,6 +24,7 @@ mise install
 
 ```
 airvoice/
+├── VERSION       # Canonical product version (semver)
 ├── cli/          # Go CLI — WebSocket server + keystroke injection
 ├── android/      # Android Kotlin/Compose app
 ├── ios/          # iOS SwiftUI app
@@ -46,6 +47,7 @@ airvoice/
 | Build iOS (device) | `mise run ios:build` |
 | Docs dev server | `mise run www:dev` |
 | Build docs | `mise run www:build` |
+| Bump version | `mise bump` |
 
 ## Android Development
 
@@ -80,3 +82,7 @@ cp ios/Signing.xcconfig.example ios/Signing.xcconfig
 ```
 
 Edit `ios/Signing.xcconfig` and set `DEVELOPMENT_TEAM` to your Apple Team ID (find it in Xcode → Settings → Accounts).
+
+## Version
+
+The product version lives only in the repo-root `VERSION` file. Apps and CI read it at build time — do not copy it into `package.json` or other source files. Release with `mise bump`.

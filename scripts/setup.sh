@@ -13,7 +13,8 @@ gum spin --spinner dot --title "Installing mise tools (go, node, gum, swift)…"
 
 # ── CLI (Go) ──
 mkdir -p bin
-gum spin --spinner dot --title "Building CLI…" -- go build -o bin/airvoice ./cli
+gum spin --spinner dot --title "Building CLI…" -- \
+  go build -ldflags="-s -w -X main.version=$(tr -d '[:space:]' < VERSION)" -o bin/airvoice ./cli
 
 # ── WWW (Astro) ──
 if [[ -d "$ROOT/www" ]]; then
@@ -60,7 +61,7 @@ fi
 # ── iOS (macOS only) ──
 if [[ "$(uname -s)" == "Darwin" ]]; then
   if [[ ! -d "$IOS_PROJECT" ]]; then
-    "$ROOT/scripts/sync-version.sh"
+    load_app_version
     gum spin --spinner dot --title "Generating Xcode project…" -- \
       xcodegen generate --spec ios/project.yml --project ios/
   fi

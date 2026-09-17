@@ -16,13 +16,9 @@ PKG_CONFIG_PATH = "./.mise/pkgconfig"
 description = "Install mise tools and platform dependencies"
 run = "./scripts/setup.sh"
 
-[tasks.versions]
-description = "Show versions for all platforms (reads from VERSION file)"
-run = "./scripts/versions.sh"
-
 [tasks.bump]
-description = "Bump version across all platforms (patch | minor | major | X.Y.Z)"
-run = "./scripts/bump.sh" 
+description = "Bump VERSION (patch | minor | major | X.Y.Z)"
+run = "bash scripts/bump.sh" 
 
 # -- CLI (Go) --
 
@@ -33,7 +29,7 @@ run = "./bin/airvoice"
 
 [tasks."cli:build"]
 description = "Build Go CLI to bin/airvoice"
-run = "go build -o bin/airvoice ./cli"
+run = 'go build -ldflags="-s -w -X main.version=$(tr -d "[:space:]" < VERSION)" -o bin/airvoice ./cli'
 
 [tasks."cli:clean"]
 description = "Remove built CLI binary"
@@ -69,11 +65,11 @@ dir = "./www"
 
 [tasks."ios:dev"]
 description = "Build and run iOS app in simulator"
-run = "./scripts/sync-version.sh && xcodegen generate && xcodebuild -project ios/Airvoice.xcodeproj -scheme Airvoice -destination 'platform=iOS Simulator,name=iPhone 16' build"
+run = "./scripts/ios-xcodegen.sh && xcodebuild -project ios/Airvoice.xcodeproj -scheme Airvoice -destination 'platform=iOS Simulator,name=iPhone 16' build"
 
 [tasks."ios:build"]
 description = "Build iOS app for device"
-run = "./scripts/sync-version.sh && xcodegen generate && xcodebuild -project ios/Airvoice.xcodeproj -scheme Airvoice -sdk iphoneos build"
+run = "./scripts/ios-xcodegen.sh && xcodebuild -project ios/Airvoice.xcodeproj -scheme Airvoice -sdk iphoneos build"
 
 [tasks."ios:clean"]
 description = "Clean iOS build outputs"
@@ -91,18 +87,15 @@ run = "go install github.com/wailsapp/wails/v2/cmd/wails@latest"
 
 [tasks."desktop:dev"]
 description = "Run desktop app in dev mode"
-run = "wails dev"
-dir = "./desktop"
+run = "./scripts/with-wails-version.sh wails dev"
 
 [tasks."desktop:build"]
 description = "Build desktop app"
-run = "wails build"
-dir = "./desktop"
+run = "./scripts/with-wails-version.sh wails build"
 
 [tasks."desktop:build:prod"]
 description = "Build desktop app (production)"
-run = "wails build -production"
-dir = "./desktop"
+run = "./scripts/with-wails-version.sh wails build -production"
 
 [tasks."desktop:clean"]
 description = "Clean desktop build outputs"

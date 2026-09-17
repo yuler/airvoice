@@ -82,15 +82,13 @@ On Linux, prefer the self-contained AppImage from [GitHub Releases](https://gith
 For a native GUI instead of CLI (dev / from source):
 
 ```bash
-cd desktop
-wails dev
+mise desktop:dev
 ```
 
 Or build a production binary:
 
 ```bash
-cd desktop && wails build
-./build/bin/Airvoice.app/Contents/MacOS/Airvoice
+mise desktop:build
 ```
 
 ### 4. Connect the iOS Client
@@ -119,6 +117,7 @@ Then on the same Wi‑Fi:
 | `mise run test` | `go test ./cli/...` |
 | `mise run serve` | Alias for `dev` |
 | `mise run ios:device` | Build & install on physical iOS device (macOS) |
+| `mise bump` | Bump the repo-root `VERSION` file (optionally commit + tag) |
 
 Scripts live in `scripts/` (gum UI); `mise.toml` wires them as tasks.
 

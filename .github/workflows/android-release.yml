@@ -4,9 +4,6 @@ on:
   push:
     tags:
       - 'v*'
-    paths:
-      - 'android/**'
-      - '.github/workflows/android-release.yml'
   workflow_dispatch:
 
 permissions:
@@ -58,10 +55,16 @@ jobs:
         id: version
         shell: bash
         run: |
+          APP_VERSION=$(tr -d '[:space:]' < VERSION)
           if [[ "${{ github.ref_type }}" == "tag" ]]; then
-            echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+            TAG="${GITHUB_REF_NAME#v}"
+            if [[ "$TAG" != "$APP_VERSION" ]]; then
+              echo "Tag v$TAG does not match VERSION file ($APP_VERSION)" >&2
+              exit 1
+            fi
+            echo "version=$APP_VERSION" >> "$GITHUB_OUTPUT"
           else
-            echo "version=0.0.0-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+            echo "version=${APP_VERSION}-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Collect APK

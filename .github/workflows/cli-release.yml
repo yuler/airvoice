@@ -28,31 +28,38 @@ jobs:
       - name: Determine tag
         id: tag
         run: |
+          APP_VERSION=$(tr -d '[:space:]' < VERSION)
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "version=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+            TAG="${{ github.event.inputs.tag }}"
           else
-            echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+            TAG="${GITHUB_REF#refs/tags/}"
           fi
+          if [ "$TAG" != "v${APP_VERSION}" ]; then
+            echo "Release tag $TAG does not match VERSION file (v${APP_VERSION})" >&2
+            exit 1
+          fi
+          echo "version=$TAG" >> $GITHUB_OUTPUT
+          echo "app_version=$APP_VERSION" >> $GITHUB_OUTPUT
 
       - name: Build binaries
         run: |
-          VERSION="${{ steps.tag.outputs.version }}"
+          APP_VERSION="${{ steps.tag.outputs.app_version }}"
           mkdir -p dist
 
           # macOS ARM64 (Apple Silicon)
-          GOOS=darwin GOARCH=arm64 go build -ldflags "-s -w -X main.version=${VERSION#v}" -o dist/airvoice-cli-darwin-arm64 ./cli
+          GOOS=darwin GOARCH=arm64 go build -ldflags "-s -w -X main.version=${APP_VERSION}" -o dist/airvoice-cli-darwin-arm64 ./cli
 
           # macOS AMD64 (Intel)
-          GOOS=darwin GOARCH=amd64 go build -ldflags "-s -w -X main.version=${VERSION#v}" -o dist/airvoice-cli-darwin-amd64 ./cli
+          GOOS=darwin GOARCH=amd64 go build -ldflags "-s -w -X main.version=${APP_VERSION}" -o dist/airvoice-cli-darwin-amd64 ./cli
 
           # Linux ARM64
-          GOOS=linux GOARCH=arm64 go build -ldflags "-s -w -X main.version=${VERSION#v}" -o dist/airvoice-cli-linux-arm64 ./cli
+          GOOS=linux GOARCH=arm64 go build -ldflags "-s -w -X main.version=${APP_VERSION}" -o dist/airvoice-cli-linux-arm64 ./cli
 
           # Linux AMD64
-          GOOS=linux GOARCH=amd64 go build -ldflags "-s -w -X main.version=${VERSION#v}" -o dist/airvoice-cli-linux-amd64 ./cli
+          GOOS=linux GOARCH=amd64 go build -ldflags "-s -w -X main.version=${APP_VERSION}" -o dist/airvoice-cli-linux-amd64 ./cli
 
           # Windows AMD64
-          GOOS=windows GOARCH=amd64 go build -ldflags "-s -w -X main.version=${VERSION#v}" -o dist/airvoice-cli-windows-amd64.exe ./cli
+          GOOS=windows GOARCH=amd64 go build -ldflags "-s -w -X main.version=${APP_VERSION}" -o dist/airvoice-cli-windows-amd64.exe ./cli
 
       - name: Generate checksums
         run: |
@@ -76,7 +83,7 @@ jobs:
       - name: Update Homebrew formula
         run: |
           VERSION="${{ steps.tag.outputs.version }}"
-          VERSION_NUM="${VERSION#v}"
+          VERSION_NUM="${{ steps.tag.outputs.app_version }}"
 
           SHA256_ARM64=$(sha256sum dist/airvoice-cli-darwin-arm64 | cut -d' ' -f1)
           SHA256_AMD64=$(sha256sum dist/airvoice-cli-darwin-amd64 | cut -d' ' -f1)

@@ -26,5 +26,10 @@ export default defineConfig({
   integrations: [react()],
   vite: {
     plugins: [tailwind()],
+    server: {
+      fs: {
+        allow: ['..'],
+      },
+    },
   },
 });

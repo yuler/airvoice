@@ -19,3 +19,9 @@ Do not put plans outside `docs/plans/`, or design specs under `docs/plans/` or `
 ## Git commit messages
 
 When committing, use the [git-commit](https://github.com/yuler/skills/tree/main/skills/git-commit) skill to generate the message from the staged diff.
+
+## Version
+
+All product version strings come from the [`VERSION`](VERSION) file at the repo root. Inject it at build time (Go `-ldflags`, Android Gradle, Xcode `APP_VERSION` / `APP_BUILD`, Wails via `scripts/with-wails-version.sh`, www `VERSION?raw` import). Do not duplicate the version in `package.json`, `wails.json`, Info.plist, or source constants.
+
+Bump with `mise bump` (`patch` | `minor` | `major` | `X.Y.Z`). That command updates only `VERSION`, then optionally commits and tags `vX.Y.Z`.

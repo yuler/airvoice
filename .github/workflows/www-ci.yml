@@ -5,11 +5,13 @@ on:
     branches: [main]
     paths:
       - 'www/**'
+      - 'VERSION'
       - '.github/workflows/www-ci.yml'
   pull_request:
     branches: [main]
     paths:
       - 'www/**'
+      - 'VERSION'
       - '.github/workflows/www-ci.yml'
   workflow_dispatch:
 

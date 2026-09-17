@@ -6,6 +6,14 @@ plugins {
 
 val rootVersion = providers.fileContents(layout.projectDirectory.file("../../VERSION")).asText.get().trim()
 
+fun versionCodeFrom(semver: String): Int {
+    val core = semver.substringBefore("-")
+    val parts = core.split(".")
+    require(parts.size >= 3) { "VERSION must be X.Y.Z, got: $semver" }
+    val code = parts[0].toInt() * 10000 + parts[1].toInt() * 100 + parts[2].toInt()
+    return maxOf(code, 1)
+}
+
 val releaseKeystorePath = providers.environmentVariable("ANDROID_KEYSTORE_PATH").orNull
 val releaseKeystorePassword = providers.environmentVariable("ANDROID_KEYSTORE_PASSWORD").orNull
 val releaseKeyAlias = providers.environmentVariable("ANDROID_KEY_ALIAS").orNull
@@ -25,7 +33,7 @@ android {
         applicationId = "cc.yuler.airvoice"
         minSdk = 26
         targetSdk = 34
-        versionCode = 400
+        versionCode = versionCodeFrom(rootVersion)
         versionName = rootVersion
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
