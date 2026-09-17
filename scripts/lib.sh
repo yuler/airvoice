@@ -203,7 +203,7 @@ hint_ios_build_failure() {
   elif [[ -f "$log" ]] && grep -q 'No Accounts' "$log"; then
     gum_info "请在 Xcode → Settings → Accounts 登录 Apple ID。"
   elif [[ -f "$log" ]] && grep -qE 'No profiles for|No code signature|requires a development team|Signing for' "$log"; then
-    gum_info "真机安装需要签名：在 ios/Signing.xcconfig 填写 DEVELOPMENT_TEAM（参考 Signing.xcconfig.example），然后重新 xcodegen generate。"
+    gum_info "真机安装需要签名：在 ios/Signing.xcconfig 填写 DEVELOPMENT_TEAM（参考 Signing.xcconfig.example），然后重新运行 ./scripts/ios-xcodegen.sh。"
   elif [[ -f "$log" ]] && grep -qE 'not installed|Unable to find a destination' "$log"; then
     gum_info "Xcode 缺少 iOS 平台支持：xcodebuild -downloadPlatform iOS"
     gum_info "若 iPhone 系统比 Xcode 新，请升级 Xcode。"

@@ -3,7 +3,10 @@ name: WWW Deploy
 on:
   push:
     branches: [main]
-    paths: ['www/**']
+    paths:
+      - 'www/**'
+      - 'VERSION'
+      - '.github/workflows/www-deploy.yml'
   workflow_dispatch:
 
 permissions:

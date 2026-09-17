@@ -24,4 +24,8 @@ When committing, use the [git-commit](https://github.com/yuler/skills/tree/main/
 
 All product version strings come from the [`VERSION`](VERSION) file at the repo root. Inject it at build time (Go `-ldflags`, Android Gradle, Xcode `APP_VERSION` / `APP_BUILD`, Wails via `scripts/with-wails-version.sh`, www `VERSION?raw` import). Do not duplicate the version in `package.json`, `wails.json`, Info.plist, or source constants.
 
+iOS `CFBundleVersion` and Android `versionCode` are `major * 10000 + minor * 100 + patch` from `VERSION`. A second store/TestFlight binary for the same marketing version needs a `VERSION` bump (or a formula change); there is no separate monotonic build counter.
+
+Do not run `xcodegen` alone: `ios/project.yml` needs `APP_VERSION` / `APP_BUILD` from `load_app_version`. Use `./scripts/ios-xcodegen.sh` (or `mise setup` / `mise ios:dev`).
+
 Bump with `mise bump` (`patch` | `minor` | `major` | `X.Y.Z`). That command updates only `VERSION`, then optionally commits and tags `vX.Y.Z`.

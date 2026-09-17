@@ -61,9 +61,8 @@ fi
 # ── iOS (macOS only) ──
 if [[ "$(uname -s)" == "Darwin" ]]; then
   if [[ ! -d "$IOS_PROJECT" ]]; then
-    load_app_version
     gum spin --spinner dot --title "Generating Xcode project…" -- \
-      xcodegen generate --spec ios/project.yml --project ios/
+      bash -c "source \"$ROOT/scripts/lib.sh\" && generate_xcode_project"
   fi
 
   if [[ ! -f ios/Signing.xcconfig ]]; then

@@ -67,10 +67,10 @@ Open the project in Xcode:
 open ios/Airvoice.xcodeproj
 ```
 
-The project uses [XcodeGen](https://github.com/yonaskolb/XcodeGen) to generate `project.yml`. If you modify project settings, edit `ios/project.yml` and regenerate:
+The project uses [XcodeGen](https://github.com/yonaskolb/XcodeGen) to generate `project.yml`. If you modify project settings, edit `ios/project.yml` and regenerate with `./scripts/ios-xcodegen.sh` (exports `APP_VERSION` / `APP_BUILD` from `VERSION`). Do not run `xcodegen` alone.
 
 ```bash
-xcodegen generate
+./scripts/ios-xcodegen.sh
 ```
 
 ### Signing
@@ -86,3 +86,5 @@ Edit `ios/Signing.xcconfig` and set `DEVELOPMENT_TEAM` to your Apple Team ID (fi
 ## Version
 
 The product version lives only in the repo-root `VERSION` file. Apps and CI read it at build time — do not copy it into `package.json` or other source files. Release with `mise bump`.
+
+iOS `CFBundleVersion` and Android `versionCode` are derived as `major * 10000 + minor * 100 + patch`. Releasing another binary with the same marketing version requires bumping `VERSION`.
