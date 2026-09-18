@@ -7,6 +7,7 @@ on:
       - 'cli/**'
       - 'go.mod'
       - 'go.sum'
+      - 'VERSION'
       - '.github/workflows/cli-ci.yml'
   pull_request:
     branches: [main]
@@ -14,6 +15,7 @@ on:
       - 'cli/**'
       - 'go.mod'
       - 'go.sum'
+      - 'VERSION'
       - '.github/workflows/cli-ci.yml'
   workflow_dispatch:
 

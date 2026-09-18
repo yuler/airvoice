@@ -16,7 +16,8 @@ import (
 	"github.com/yuler/airvoice/cli/server"
 )
 
-const version = "0.4.0"
+// version is injected at build time from the repo-root VERSION file via -ldflags.
+var version = "dev"
 
 var serveFn = runServer
 

@@ -24,6 +24,7 @@ mise install
 
 ```
 airvoice/
+├── VERSION       # 产品版本唯一来源（semver）
 ├── cli/          # Go CLI — WebSocket 服务器 + 按键注入
 ├── android/      # Android Kotlin/Compose 应用
 ├── ios/          # iOS SwiftUI 应用
@@ -46,6 +47,7 @@ airvoice/
 | 构建 iOS（真机） | `mise run ios:build` |
 | 文档开发服务器 | `mise run www:dev` |
 | 构建文档 | `mise run www:build` |
+| 升版本 | `mise bump` |
 
 ## Android 开发
 
@@ -65,10 +67,10 @@ APK 输出路径：`android/app/build/outputs/apk/debug/app-debug.apk`。正式�
 open ios/Airvoice.xcodeproj
 ```
 
-项目使用 [XcodeGen](https://github.com/yonaskolb/XcodeGen) 生成 `project.yml`。修改项目设置后，编辑 `ios/project.yml` 并重新生成：
+项目使用 [XcodeGen](https://github.com/yonaskolb/XcodeGen) 生成 `project.yml`。修改项目设置后，编辑 `ios/project.yml`，用 `./scripts/ios-xcodegen.sh` 重新生成（会从 `VERSION` 导出 `APP_VERSION` / `APP_BUILD`）。不要单独跑 `xcodegen`。
 
 ```bash
-xcodegen generate
+./scripts/ios-xcodegen.sh
 ```
 
 ### 代码签名
@@ -80,3 +82,9 @@ cp ios/Signing.xcconfig.example ios/Signing.xcconfig
 ```
 
 编辑 `ios/Signing.xcconfig`，将 `DEVELOPMENT_TEAM` 设置为你的 Apple Team ID（在 Xcode → 设置 → 账户中查看）。
+
+## 版本
+
+产品版本只写在仓库根目录的 `VERSION` 文件里。各端和 CI 在构建时读取，不要再抄到 `package.json` 或其他源码里。发版用 `mise bump`。
+
+iOS `CFBundleVersion` 和 Android `versionCode` 由 `major * 10000 + minor * 100 + patch` 算出。同一营销版本再打一包商店包需要先改 `VERSION`。

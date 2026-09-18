@@ -41,6 +41,7 @@ else
   export IOS_SIGN_TEAM="$team"
 fi
 
+generate_xcode_project
 mkdir -p "$IOS_DERIVED"
 
 if ! build_ios_app_for_device "$udid"; then
