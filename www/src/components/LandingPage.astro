@@ -7,6 +7,7 @@ import WorksEverywhere from './react/WorksEverywhere';
 import Footer from './react/Footer';
 import GetStarted from './react/GetStarted';
 import HowItWorks from './react/HowItWorks';
+import IntroVideo from './react/IntroVideo';
 import { useTranslations, useTranslatedPath, getLangTogglePath } from '../i18n/utils';
 import {
   headerMessages,
@@ -37,6 +38,7 @@ const langToggle = getLangTogglePath(currentPath, lang);
     client:load
   />
   <Hero m={heroMessages(t)} docsUrl={path('/docs/quick-start/')} client:load />
+  <IntroVideo title={t('intro.title')} label={t('intro.watch')} client:load />
   <HowItWorks m={howItWorksMessages(t)} client:load />
   <GetStarted
     m={getStartedMessages(t)}

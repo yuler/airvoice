@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import IntroVideo from './IntroVideo';
 import Lightbox from './Lightbox';
 import type { HeroMessages } from '../../i18n/messages';
 
@@ -183,7 +182,6 @@ export default function Hero({ m, docsUrl, base = import.meta.env.BASE_URL || '/
                 <BookOpenIcon />
                 {m.docs}
               </a>
-              <IntroVideo label={m.watch} base={base} />
             </div>
             <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2">
               {statuses.map((s) => (

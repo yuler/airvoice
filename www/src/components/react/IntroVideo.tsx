@@ -1,19 +1,20 @@
 import { useRef } from 'react';
 
 interface IntroVideoProps {
+  title: string;
   label: string;
-  base: string;
+  base?: string;
 }
 
 function PlayIcon() {
   return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <svg className="w-8 h-8 md:w-10 md:h-10 translate-x-[2px]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
       <path d="M8 5.14v13.72a1 1 0 0 0 1.52.85l10.92-6.86a1 1 0 0 0 0-1.7L9.52 4.29A1 1 0 0 0 8 5.14z" />
     </svg>
   );
 }
 
-export default function IntroVideo({ label, base }: IntroVideoProps) {
+export default function IntroVideo({ title, label, base = import.meta.env.BASE_URL || '/' }: IntroVideoProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const asset = (name: string) => `${base || '/'}${name}`.replace(/\/+/g, '/');
@@ -26,16 +27,36 @@ export default function IntroVideo({ label, base }: IntroVideoProps) {
   const close = () => dialogRef.current?.close();
 
   return (
-    <>
-      <button
-        type="button"
-        onClick={open}
-        className="inline-flex items-center justify-center gap-1.5 rounded-full border px-4 text-xs font-bold transition-colors hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer"
-        style={{ borderColor: 'var(--border-default)', color: 'var(--primary-text)', background: 'transparent', height: '40px', minWidth: '136px' }}
-      >
-        <PlayIcon />
-        {label}
-      </button>
+    <section className="py-16 md:py-20" style={{ background: 'var(--background-primary)' }}>
+      <div className="mx-auto max-w-4xl px-4 md:px-6">
+        <h2
+          className="mb-10 text-center text-2xl font-bold"
+          style={{ color: 'var(--primary-text)', letterSpacing: '-0.02em' }}
+        >
+          {title}
+        </h2>
+        <button
+          type="button"
+          onClick={open}
+          aria-label={label}
+          className="group relative block w-full overflow-hidden rounded-2xl cursor-pointer"
+          style={{ border: '1px solid var(--border-default)', background: '#000' }}
+        >
+          <img
+            src={asset('intro-poster.jpg')}
+            alt=""
+            loading="lazy"
+            className="block w-full h-auto aspect-video object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+          />
+          <span className="absolute inset-0 bg-black/20 transition-colors group-hover:bg-black/30" />
+          <span
+            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center w-20 h-20 md:w-28 md:h-28 rounded-full text-white shadow-2xl transition-transform duration-300 group-hover:scale-110 group-active:scale-95"
+            style={{ background: '#006efe' }}
+          >
+            <PlayIcon />
+          </span>
+        </button>
+      </div>
 
       <dialog
         ref={dialogRef}
@@ -62,6 +83,6 @@ export default function IntroVideo({ label, base }: IntroVideoProps) {
           </button>
         </div>
       </dialog>
-    </>
+    </section>
   );
 }
