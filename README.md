@@ -5,7 +5,7 @@ Speak on your phone, type on your Mac or Linux PC — via LAN, no cloud.
 **Airvoice is a bridge, not a speech engine.** Use dictation on your iOS device; the desktop CLI acts as a server that receives and types the recognized text at your cursor.
 
 <p align="center">
-  <a href="www/public/intro.mp4"><img src="www/public/intro-poster.jpg" alt="Airvoice intro: speak on your phone, the text lands at the cursor on your computer" width="800"></a>
+  <video src="https://github.com/user-attachments/assets/2c580fe6-aea6-4b26-8b63-633846a8432b" width="800" controls autoplay muted loop playsinline poster="www/public/intro-poster.jpg"></video>
 </p>
 
 ---
