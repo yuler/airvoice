@@ -53,5 +53,4 @@ www/.astro
 www/dist
 
 # Intro video
-intro-video/out/
 intro-video/public/audio/

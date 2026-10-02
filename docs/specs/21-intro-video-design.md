@@ -2,7 +2,7 @@
 
 ## Description
 
-A short launch-style intro video for the README: speak on the phone, the text lands at the cursor on the computer. It follows the Rails Studio intro strategy (Remotion, code-rendered, synthesized music + SFX, `mise intro:*` tasks, MP4 uploaded as a GitHub attachment) with one difference: Airvoice spans a native phone app and a desktop, which headless capture cannot record. Every device UI is rebuilt in React instead.
+A short launch-style intro video for the README and the www hero: speak on the phone, the text lands at the cursor on the computer. It follows the Rails Studio intro strategy (Remotion, code-rendered, synthesized music + SFX, `mise intro:*` tasks) with two differences: the MP4 is committed under `www/public/` so README and www share it, and Airvoice spans a native phone app and a desktop, which headless capture cannot record. Every device UI is rebuilt in React instead.
 
 ---
 
@@ -11,7 +11,7 @@ A short launch-style intro video for the README: speak on the phone, the text la
 | Topic       | Decision                                                                                          |
 | ----------- | ------------------------------------------------------------------------------------------------- |
 | Deliverable | One 16:9 master, ~25s, 1920×1080 @ 60fps, H.264, < 6MB                                            |
-| Placement   | README only. www hero embed is a separate task (it changes www layout, governed by `DESIGN.md`)   |
+| Placement   | README poster link + www hero "Watch intro" button that opens the video in a dialog              |
 | Copy        | English only; all strings in `intro-video/src/strings.ts` so a zh variant is cheap later          |
 | Theme       | Light UI on a soft light gradient; `#006efe` the only accent; tokens from `DESIGN.md`             |
 | Type        | Inter (UI) + JetBrains Mono (terminal)                                                            |
@@ -21,8 +21,8 @@ A short launch-style intro video for the README: speak on the phone, the text la
 | Delivery    | Text appears at the caret as a **paste** (that is what Airvoice does), with a short highlight     |
 | Audio       | Synthesized music + click/whoosh/pop/typing SFX, plus one cloned-voice line (local OmniVoice)     |
 | Location    | `intro-video/` (Remotion, npm); `mise run intro:voice`, `intro:studio`, `intro:render`            |
-| Publishing  | MP4 gitignored; uploaded via GitHub web UI (`user-attachments`), URL in README; no Release        |
-| Poster      | `materials/intro-poster.jpg`, frame from the hero shot with text on both devices                  |
+| Publishing  | Render to `www/public/intro.mp4` and commit it; README and www both use that one file             |
+| Poster      | `www/public/intro-poster.jpg`, frame from the hero shot with text on both devices                 |
 
 ## Storyboard
 
@@ -42,5 +42,5 @@ Spoken line: "Hey team, the release build is ready for review." (cloned from `yu
 
 ## Out of scope
 
-- www hero embed, 1:1 / 9:16 social cuts, Chinese variant.
+- Inline autoplay in the www hero, 1:1 / 9:16 social cuts, Chinese variant.
 - Real screen capture of iOS, Android, or the Wails desktop app.

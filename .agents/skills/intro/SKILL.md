@@ -1,6 +1,6 @@
 ---
 name: intro
-description: Render and publish the Airvoice README intro video (Remotion, rebuilt device UIs, synthesized audio, cloned voice line). Use when the user asks to update the intro video, README hero video, launch video, materials/intro-poster.jpg, or mise intro:voice / intro:studio / intro:render.
+description: Render and publish the Airvoice intro video (Remotion, rebuilt device UIs, synthesized audio, cloned voice line) used by the README and the www hero. Use when the user asks to update the intro video, launch video, www/public/intro.mp4 or intro-poster.jpg, or mise intro:voice / intro:studio / intro:render.
 ---
 
 # Intro
@@ -21,10 +21,10 @@ From the repo root:
 ```bash
 mise run intro:voice    # re-clone the spoken line → intro-video/public/voice.wav (committed)
 mise run intro:studio   # preview in Remotion Studio
-mise run intro:render   # audio + intro-video/out/intro.mp4 + materials/intro-poster.jpg
+mise run intro:render   # audio + www/public/intro.mp4 + www/public/intro-poster.jpg
 ```
 
-Publish: upload `intro-video/out/intro.mp4` through the GitHub web UI (drag into an issue or PR comment), then put the `user-attachments` URL in the README `<video>` tag, with `materials/intro-poster.jpg` as the poster. Do not create a GitHub Release for it. The MP4 is not committed.
+Publish by committing both files. They are the single copy: `README.md` links the poster to `www/public/intro.mp4`, and the www hero "Watch intro" button (`www/src/components/react/IntroVideo.tsx`) plays `/intro.mp4`. Pushing to `main` redeploys www because the files live under `www/`. Do not create a GitHub Release or a `user-attachments` upload for it.
 
 ## Layout
 

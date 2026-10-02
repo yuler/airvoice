@@ -1,5 +1,7 @@
 # Intro Video Implementation Plan
 
+> **Update:** Publishing changed after this plan ran. The MP4 and poster now render to `www/public/intro.mp4` and `www/public/intro-poster.jpg` and are committed; README links the poster to that MP4, and the www hero has a "Watch intro" button (`IntroVideo.tsx`). The publishing steps below are superseded; see `docs/specs/21-intro-video-design.md`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Ship a ~25s Remotion-rendered README intro: speak on the phone, the text lands at the cursor on the computer.

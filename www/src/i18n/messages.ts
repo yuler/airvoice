@@ -17,6 +17,7 @@ export function heroMessages(t: Translator) {
     subtitle: t('hero.subtitle'),
     cta: t('hero.cta'),
     docs: t('hero.docs'),
+    watch: t('hero.watch'),
     tabCli: t('hero.tab.cli'),
     tabDesktop: t('hero.tab.desktop'),
     statusConnected: t('hero.status.connected'),
