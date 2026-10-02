@@ -4,7 +4,7 @@
 
 **Goal:** Ship a ~25s Remotion-rendered README intro: speak on the phone, the text lands at the cursor on the computer.
 
-**Architecture:** A standalone Remotion project in `intro-video/`. Five scenes in a `Series`; scenes 3–5 of the storyboard are one persistent `Devices` scene (rebuilt macOS window + rebuilt phone). Music and SFX are synthesized by a Python script; one spoken line is cloned locally with OmniVoice and committed. `mise intro:*` tasks drive it; the MP4 is a GitHub Release asset.
+**Architecture:** A standalone Remotion project in `intro-video/`. Five scenes in a `Series`; scenes 3–5 of the storyboard are one persistent `Devices` scene (rebuilt macOS window + rebuilt phone). Music and SFX are synthesized by a Python script; one spoken line is cloned locally with OmniVoice and committed. `mise intro:*` tasks drive it; the MP4 is uploaded as a GitHub attachment.
 
 **Tech Stack:** Remotion 4.0.532, React 19, TypeScript, npm, `uv` + numpy/scipy, OmniVoice (`~/Explore/explore-tts`), ffmpeg.
 
@@ -17,7 +17,7 @@
 - No screen capture, no third-party keyboard branding
 - Text lands as a paste (with highlight), not per-character typing
 - MP4 and synthesized audio are gitignored; `intro-video/public/voice.wav` and `materials/intro-poster.jpg` are committed
-- Release `intro-video` is created with `--latest=false` (README/www rely on `releases/latest`)
+- No GitHub Release for the video; the user uploads the MP4 via the GitHub web UI
 - Plans live only under `docs/plans/`
 
 ## File Structure
@@ -104,6 +104,6 @@ Scene timings: Hook 3s, Install 3.5s (types `brew tap yuler/airvoice https://git
 - [ ] **Step 1:** `mise.toml` — `intro:voice`, `intro:studio` (install, audio, studio), `intro:render` (install, audio, render, poster), `dir = "./intro-video"`.
 - [ ] **Step 2:** `.gitignore` — `intro-video/out/`, `intro-video/public/audio/`.
 - [ ] **Step 3:** `mise run intro:render`; `ffprobe` → duration 25.0s, 1920×1080, 60fps, size < 6MB. Spot-check the poster.
-- [ ] **Step 4:** README — under the tagline, a centered poster image linking to `https://github.com/yuler/airvoice/releases/download/intro-video/intro.mp4`.
-- [ ] **Step 5:** Skill `.agents/skills/intro/SKILL.md` — commands, layout, publish (`gh release create intro-video intro-video/out/intro.mp4 --title "Intro video" --notes "README intro video asset." --latest=false` the first time, `gh release upload intro-video intro-video/out/intro.mp4 --clobber` after), fragile facts.
-- [ ] **Step 6:** Publishing the release and committing (git-commit skill) need the user's go-ahead.
+- [ ] **Step 4:** README — under the tagline, a centered poster image; after the user uploads the MP4, swap in a `<video>` tag with the `user-attachments` URL.
+- [ ] **Step 5:** Skill `.agents/skills/intro/SKILL.md` — commands, layout, publish via GitHub web UI upload, fragile facts.
+- [ ] **Step 6:** Committing (git-commit skill) needs the user's go-ahead.

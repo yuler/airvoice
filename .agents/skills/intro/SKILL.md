@@ -24,7 +24,7 @@ mise run intro:studio   # preview in Remotion Studio
 mise run intro:render   # audio + intro-video/out/intro.mp4 + materials/intro-poster.jpg
 ```
 
-Publish: `gh release upload intro-video intro-video/out/intro.mp4 --clobber`. The first time, create the release with `gh release create intro-video intro-video/out/intro.mp4 --title "Intro video" --notes "README intro video asset." --latest=false`. `README.md` links the poster to `releases/download/intro-video/intro.mp4`, so the URL never changes. The MP4 is not committed.
+Publish: upload `intro-video/out/intro.mp4` through the GitHub web UI (drag into an issue or PR comment), then put the `user-attachments` URL in the README `<video>` tag, with `materials/intro-poster.jpg` as the poster. Do not create a GitHub Release for it. The MP4 is not committed.
 
 ## Layout
 
@@ -44,6 +44,5 @@ Publish: `gh release upload intro-video intro-video/out/intro.mp4 --clobber`. Th
 | ------------------------------ | --------------------------------------------------------------------------------- |
 | Changed the spoken line        | `mise run intro:voice`, then set `VOICE_SECONDS` to the printed duration (≤ 5.5s) |
 | Poster frame                   | `--frame 950` in `package.json` must land after the paste highlight fades         |
-| Release marked latest          | Always `--latest=false`; README and www rely on `releases/latest` for `v*` builds |
 | `voice.sh` finds no line       | `spoken:` must stay a single-quoted one-liner in `strings.ts`                     |
 | Tuning a frame                 | `./node_modules/.bin/remotion still src/index.ts Intro /tmp/f.jpg --frame N` in `intro-video/` |

@@ -2,7 +2,7 @@
 
 ## Description
 
-A short launch-style intro video for the README: speak on the phone, the text lands at the cursor on the computer. It follows the Rails Studio intro strategy (Remotion, code-rendered, synthesized music + SFX, `mise intro:*` tasks, MP4 published as a GitHub Release asset) with one difference: Airvoice spans a native phone app and a desktop, which headless capture cannot record. Every device UI is rebuilt in React instead.
+A short launch-style intro video for the README: speak on the phone, the text lands at the cursor on the computer. It follows the Rails Studio intro strategy (Remotion, code-rendered, synthesized music + SFX, `mise intro:*` tasks, MP4 uploaded as a GitHub attachment) with one difference: Airvoice spans a native phone app and a desktop, which headless capture cannot record. Every device UI is rebuilt in React instead.
 
 ---
 
@@ -21,10 +21,8 @@ A short launch-style intro video for the README: speak on the phone, the text la
 | Delivery    | Text appears at the caret as a **paste** (that is what Airvoice does), with a short highlight     |
 | Audio       | Synthesized music + click/whoosh/pop/typing SFX, plus one cloned-voice line (local OmniVoice)     |
 | Location    | `intro-video/` (Remotion, npm); `mise run intro:voice`, `intro:studio`, `intro:render`            |
-| Publishing  | MP4 gitignored; `intro-video` GitHub Release asset (`--latest=false`); README poster links to it  |
+| Publishing  | MP4 gitignored; uploaded via GitHub web UI (`user-attachments`), URL in README; no Release        |
 | Poster      | `materials/intro-poster.jpg`, frame from the hero shot with text on both devices                  |
-
-`--latest=false` matters: README and www link to `releases/latest`, which must keep pointing at the `v*` product release. The `intro-video` tag does not match any `v*` workflow trigger.
 
 ## Storyboard
 
