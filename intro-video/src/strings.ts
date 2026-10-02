@@ -1,0 +1,22 @@
+export const copy = {
+  hook: ['Typing is slow.', "Talking isn't."],
+  install: 'Install. Run.',
+  pair: 'Scan. Paired.',
+  dictate: 'Speak on your phone. It types on your PC.',
+  local: 'Local network. No cloud. No account.',
+  platforms: 'Works everywhere.',
+  name: 'Airvoice',
+  tagline: 'Talk to your devices. Simply.',
+  url: 'airvoice.yuler.cc',
+  repo: 'github.com/yuler/airvoice',
+  spoken: 'Hey team, the release build is ready for review.',
+  host: 'MacBook-Pro',
+  connecting: 'Connecting…',
+  placeholder: 'Type here, or use the keyboard mic…',
+  send: 'Send to Desktop',
+  listening: 'Listening…',
+  lan: 'LAN only',
+  editorTitle: 'Release notes',
+  editorDate: 'October 3, 2026',
+  editorLine: 'Build 0.4.0 passed every check on CI.'
+};

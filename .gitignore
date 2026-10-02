@@ -51,3 +51,7 @@ desktop/frontend/package.json.md5
 # WWW
 www/.astro
 www/dist
+
+# Intro video
+intro-video/out/
+intro-video/public/audio/

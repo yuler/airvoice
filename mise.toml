@@ -61,6 +61,32 @@ description = "Clean www build output"
 run = "rm -rf .astro dist"
 dir = "./www"
 
+# -- Intro video (Remotion) --
+
+[tasks."intro:voice"]
+description = "Clone the spoken line into intro-video/public/voice.wav (needs ~/Explore/explore-tts)"
+run = "npm run voice"
+dir = "./intro-video"
+
+[tasks."intro:studio"]
+description = "Preview the intro in Remotion Studio"
+run = """
+npm install
+npm run audio
+npm run studio
+"""
+dir = "./intro-video"
+
+[tasks."intro:render"]
+description = "Synthesize music + SFX, render intro-video/out/intro.mp4 and materials/intro-poster.jpg"
+run = """
+npm install
+npm run audio
+npm run render
+npm run poster
+"""
+dir = "./intro-video"
+
 # -- iOS --
 
 [tasks."ios:dev"]
