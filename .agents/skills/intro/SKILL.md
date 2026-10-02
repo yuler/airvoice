@@ -1,6 +1,6 @@
 ---
 name: intro
-description: Render and publish the Airvoice README intro video (Remotion, rebuilt device UIs, synthesized audio, cloned voice line). Use when the user asks to update the intro video, README hero video, launch video, materials/intro-poster.jpg, or mise intro:voice / intro:studio / intro:render.
+description: Render and publish the Airvoice intro video (Remotion, rebuilt device UIs, synthesized audio, cloned voice line) used by the README and the www hero. Use when the user asks to update the intro video, launch video, www/public/intro.mp4 or intro-poster.jpg, or mise intro:voice / intro:studio / intro:render.
 ---
 
 # Intro
@@ -21,10 +21,10 @@ From the repo root:
 ```bash
 mise run intro:voice    # re-clone the spoken line → intro-video/public/voice.wav (committed)
 mise run intro:studio   # preview in Remotion Studio
-mise run intro:render   # audio + intro-video/out/intro.mp4 + materials/intro-poster.jpg
+mise run intro:render   # audio + www/public/intro.mp4 + www/public/intro-poster.jpg
 ```
 
-Publish: `gh release upload intro-video intro-video/out/intro.mp4 --clobber`. The first time, create the release with `gh release create intro-video intro-video/out/intro.mp4 --title "Intro video" --notes "README intro video asset." --latest=false`. `README.md` links the poster to `releases/download/intro-video/intro.mp4`, so the URL never changes. The MP4 is not committed.
+Publish by committing both files. They are the single copy: `README.md` links the poster to `www/public/intro.mp4`, and the www hero "Watch intro" button (`www/src/components/react/IntroVideo.tsx`) plays `/intro.mp4`. Pushing to `main` redeploys www because the files live under `www/`. Do not create a GitHub Release or a `user-attachments` upload for it.
 
 ## Layout
 
@@ -44,6 +44,5 @@ Publish: `gh release upload intro-video intro-video/out/intro.mp4 --clobber`. Th
 | ------------------------------ | --------------------------------------------------------------------------------- |
 | Changed the spoken line        | `mise run intro:voice`, then set `VOICE_SECONDS` to the printed duration (≤ 5.5s) |
 | Poster frame                   | `--frame 950` in `package.json` must land after the paste highlight fades         |
-| Release marked latest          | Always `--latest=false`; README and www rely on `releases/latest` for `v*` builds |
 | `voice.sh` finds no line       | `spoken:` must stay a single-quoted one-liner in `strings.ts`                     |
 | Tuning a frame                 | `./node_modules/.bin/remotion still src/index.ts Intro /tmp/f.jpg --frame N` in `intro-video/` |

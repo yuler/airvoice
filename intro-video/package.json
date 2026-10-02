@@ -7,8 +7,8 @@
     "voice": "bash audio/voice.sh",
     "typecheck": "tsc",
     "studio": "remotion studio src/index.ts",
-    "render": "remotion render src/index.ts Intro out/intro.mp4 --codec h264 --crf 23 --audio-bitrate 128k",
-    "poster": "remotion still src/index.ts Intro ../materials/intro-poster.jpg --frame 950 --jpeg-quality 90"
+    "render": "remotion render src/index.ts Intro ../www/public/intro.mp4 --codec h264 --crf 23 --audio-bitrate 128k",
+    "poster": "remotion still src/index.ts Intro ../www/public/intro-poster.jpg --frame 950 --jpeg-quality 90"
   },
   "dependencies": {
     "@remotion/cli": "4.0.532",

@@ -78,7 +78,7 @@ npm run studio
 dir = "./intro-video"
 
 [tasks."intro:render"]
-description = "Synthesize music + SFX, render intro-video/out/intro.mp4 and materials/intro-poster.jpg"
+description = "Synthesize music + SFX, render www/public/intro.mp4 and www/public/intro-poster.jpg"
 run = """
 npm install
 npm run audio
