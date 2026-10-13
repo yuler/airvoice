@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
 )
 
@@ -23,6 +24,8 @@ func detectHyprland() bool {
 }
 
 // terminalClasses is a set of window class names that are terminals.
+// NOTE: foot --app-id=herdr (Omarchy scratchpad) reports class "herdr",
+// so herdr must stay here or paste in Herdr sends CTRL+V instead of CTRL+SHIFT+V.
 var terminalClasses = map[string]bool{
 	"Alacritty":         true,
 	"kitty":             true,
@@ -34,7 +37,16 @@ var terminalClasses = map[string]bool{
 	"tilix":             true,
 	"terminator":        true,
 	"Terminal":          true,
+	"herdr":             true,
+	"ghostty":           true,
 	"io.github.cellbots.Terminal": true,
+}
+
+// terminalSubstrings matches lowercase class names containing a known terminal token.
+// Catches "Herdr", "FOOTCLIENT", "org.wezfurlong.wezterm", etc.
+var terminalSubstrings = []string{
+	"alacritty", "kitty", "foot", "wezterm", "konsole",
+	"tilix", "terminator", "terminal", "ghostty", "herdr",
 }
 
 // isTerminalWindow reports whether the given window class looks like a terminal.
@@ -42,8 +54,14 @@ func isTerminalWindow(class string) bool {
 	if terminalClasses[class] {
 		return true
 	}
+	lower := strings.ToLower(class)
 	for c := range terminalClasses {
 		if len(class) > len(c) && class[:len(c)+1] == c+"." {
+			return true
+		}
+	}
+	for _, sub := range terminalSubstrings {
+		if strings.Contains(lower, sub) {
 			return true
 		}
 	}
