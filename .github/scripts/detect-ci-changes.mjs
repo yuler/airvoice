@@ -30,6 +30,14 @@ export function matchScope(file) {
       file === ".github/workflows/ci.yml" ||
       file === ".github/scripts/detect-ci-changes.mjs" ||
       file === ".github/scripts/resolve-release.mjs",
+    ios:
+      file.startsWith("ios/") ||
+      file === "scripts/ios-xcodegen.sh" ||
+      file === "scripts/resolve-version.sh" ||
+      file === "scripts/lib.sh" ||
+      file === ".github/workflows/ci.yml" ||
+      file === ".github/scripts/detect-ci-changes.mjs" ||
+      file === ".github/scripts/resolve-release.mjs",
     www:
       file.startsWith("www/") ||
       file === "scripts/resolve-version.sh" ||
@@ -58,6 +66,7 @@ export function detectCiChanges({
       cli: true,
       desktop: true,
       android: true,
+      ios: true,
       www: true,
       reason: "manual workflow_dispatch runs all checks",
     };
@@ -82,7 +91,7 @@ export function detectCiChanges({
     reason = `unreleased diff since ${baseTag || "root"} (${files.length} files)`;
   }
 
-  const scopes = { cli: false, desktop: false, android: false, www: false };
+  const scopes = { cli: false, desktop: false, android: false, ios: false, www: false };
   for (const file of files) {
     const matched = matchScope(file);
     for (const key of Object.keys(scopes)) {
@@ -99,6 +108,7 @@ function writeGitHubOutput(scopes) {
     `cli=${scopes.cli}`,
     `desktop=${scopes.desktop}`,
     `android=${scopes.android}`,
+    `ios=${scopes.ios}`,
     `www=${scopes.www}`,
   ];
   appendFileSync(process.env.GITHUB_OUTPUT, `${lines.join("\n")}\n`);
@@ -107,7 +117,7 @@ function writeGitHubOutput(scopes) {
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   const scopes = detectCiChanges();
   console.log(
-    `Detected CI scopes (${scopes.reason}): cli=${scopes.cli} desktop=${scopes.desktop} android=${scopes.android} www=${scopes.www}`
+    `Detected CI scopes (${scopes.reason}): cli=${scopes.cli} desktop=${scopes.desktop} android=${scopes.android} ios=${scopes.ios} www=${scopes.www}`
   );
   writeGitHubOutput(scopes);
 }

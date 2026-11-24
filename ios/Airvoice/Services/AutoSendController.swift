@@ -8,6 +8,9 @@ enum SendTrigger {
 @MainActor final class AutoSendController: ObservableObject {
     /// Return `true` when a send actually started (connection ready, etc.).
     var onSend: ((String, SendTrigger) -> Bool)?
+    /// Returns the latest editor text when the debounce timer fires so stale
+    /// closure snapshots are never sent.
+    var currentText: (() -> String)?
     /// Auto-send fires only after this many seconds of no new input. Streamed
     /// voice-input characters keep resetting this window (and the countdown
     /// animation) so we only send once dictation goes quiet.
@@ -24,7 +27,12 @@ enum SendTrigger {
         debounceTask?.cancel()
 
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty, !inFlight else {
+        if trimmed.isEmpty {
+            resetLastAcked()
+            stopCountdown()
+            return
+        }
+        guard !inFlight else {
             stopCountdown()
             return
         }
@@ -36,7 +44,8 @@ enum SendTrigger {
                 try await Task.sleep(nanoseconds: UInt64(self.autoSendDelay * 1_000_000_000))
                 guard !Task.isCancelled else { return }
                 self.countdownActive = false
-                _ = self.attemptSend(text)
+                let latest = self.currentText?() ?? text
+                _ = self.attemptSend(latest)
             } catch {
                 // Task cancelled
             }
@@ -55,6 +64,10 @@ enum SendTrigger {
     func markAcked(_ content: String) {
         lastAcked = content
         inFlight = false
+    }
+
+    func resetLastAcked() {
+        lastAcked = nil
     }
 
     func clearInFlight() {

@@ -48,6 +48,7 @@ struct HomeView: View {
         }
         .onAppear {
             viewModel.wire(connection: connection, autoSend: autoSend)
+            connection.connectSavedIfAvailable()
             focusEditorForKeyboard()
         }
         .onChange(of: showScanner) { _, isShowing in
@@ -64,16 +65,16 @@ struct HomeView: View {
             }
         }
         .onChange(of: scenePhase) { _, newPhase in
-            if newPhase == .active {
+            switch newPhase {
+            case .active:
                 if !showScanner {
                     focusEditorForKeyboard()
                 }
-                // Auto-reconnect when returning to foreground
-                if connection.state != .connected,
-                   connection.state != .connecting,
-                   connection.canReconnect {
-                    connection.reconnect()
-                }
+                connection.resumeReconnect()
+            case .background:
+                connection.pauseReconnect()
+            default:
+                break
             }
         }
     }
@@ -140,15 +141,17 @@ struct HomeView: View {
             }
     }
 
-    /// Gray when offline, green blink when connected, yellow for errors and other warnings.
+    /// Gray when offline, green blink when connected, yellow when connecting or timed out, red on error.
     private var statusDotColor: Color {
         switch connection.state {
         case .disconnected:
             return theme.statusBarDisconnected
         case .connected where !viewModel.sendTimedOut:
             return theme.statusBarConnected
-        case .connecting, .connected, .error:
+        case .connecting, .connected:
             return theme.statusBarConnecting
+        case .error:
+            return theme.statusBarError
         }
     }
 
@@ -178,7 +181,7 @@ struct HomeView: View {
         case .disconnected: return "未连接"
         case .connecting: return "连接中..."
         case .connected: return "已连接: \(connection.hostName ?? "电脑")"
-        case .error(let msg): return msg
+        case .error: return "连接失败，正在重试"
         }
     }
 
@@ -295,6 +298,7 @@ struct HomeView: View {
                 onScan: { rawPayload in
                     do {
                         let payload = try PairingPayload.decode(from: rawPayload)
+                        autoSend.resetLastAcked()
                         connection.connect(payload: payload)
                         showScanner = false
                     } catch {

@@ -40,6 +40,12 @@ class ConnectionManager(private val client: OkHttpClient) {
     )
     val incomingMessages: SharedFlow<ProtocolMessage> = _incomingMessages
 
+    private val _authExpiredEvents = MutableSharedFlow<Unit>(
+        extraBufferCapacity = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+    val authExpiredEvents: SharedFlow<Unit> = _authExpiredEvents
+
     @Volatile private var webSocket: WebSocket? = null
     @Volatile private var currentUrl: String? = null
     @Volatile private var currentToken: String? = null
@@ -103,10 +109,24 @@ class ConnectionManager(private val client: OkHttpClient) {
             }
 
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+                var authExpired = false
                 synchronized(this@ConnectionManager) {
                     if (webSocket !== this@ConnectionManager.webSocket) return
-                    _status.value = ConnectionStatus.Error(t.message ?: "Connection Failure")
-                    triggerReconnect()
+                    if (response?.code == 401) {
+                        reconnectJob?.cancel()
+                        currentUrl = null
+                        currentToken = null
+                        this@ConnectionManager.webSocket = null
+                        backoffMs = 2000L
+                        _status.value = ConnectionStatus.Disconnected
+                        authExpired = true
+                    } else {
+                        _status.value = ConnectionStatus.Error(t.message ?: "Connection Failure")
+                        triggerReconnect()
+                    }
+                }
+                if (authExpired) {
+                    _authExpiredEvents.tryEmit(Unit)
                 }
             }
 
