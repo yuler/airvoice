@@ -121,7 +121,7 @@ Then on the same Wi‑Fi:
 | `mise run test` | `go test ./cli/...` |
 | `mise run serve` | Alias for `dev` |
 | `mise run ios:device` | Build & install on physical iOS device (macOS) |
-| `mise bump` | Bump the repo-root `VERSION` file (optionally commit + tag) |
+| `mise bump` | Manually create and push a release Git tag (`vX.Y.Z`) |
 
 Scripts live in `scripts/` (gum UI); `mise.toml` wires them as tasks.
 

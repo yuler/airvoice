@@ -27,7 +27,6 @@
 airvoice/
 ├── README.md
 ├── AGENTS.md
-├── VERSION                     # Canonical product version
 ├── go.mod
 ├── go.sum
 ├── cli/

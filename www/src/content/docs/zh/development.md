@@ -24,8 +24,8 @@ mise install
 
 ```
 airvoice/
-├── VERSION       # 产品版本唯一来源（semver）
 ├── cli/          # Go CLI — WebSocket 服务器 + 按键注入
+├── desktop/      # 桌面应用（Wails）
 ├── android/      # Android Kotlin/Compose 应用
 ├── ios/          # iOS SwiftUI 应用
 ├── www/          # 文档站点（Astro）
@@ -67,7 +67,7 @@ APK 输出路径：`android/app/build/outputs/apk/debug/app-debug.apk`。正式�
 open ios/Airvoice.xcodeproj
 ```
 
-项目使用 [XcodeGen](https://github.com/yonaskolb/XcodeGen) 生成 `project.yml`。修改项目设置后，编辑 `ios/project.yml`，用 `./scripts/ios-xcodegen.sh` 重新生成（会从 `VERSION` 导出 `APP_VERSION` / `APP_BUILD`）。不要单独跑 `xcodegen`。
+项目使用 [XcodeGen](https://github.com/yonaskolb/XcodeGen) 生成 `project.yml`。修改项目设置后，编辑 `ios/project.yml`，用 `./scripts/ios-xcodegen.sh` 重新生成（会从 `AIRVOICE_VERSION` 或最新 `v*` Git Tag 导出 `APP_VERSION` / `APP_BUILD`）。不要单独跑 `xcodegen`。
 
 ```bash
 ./scripts/ios-xcodegen.sh
@@ -83,8 +83,10 @@ cp ios/Signing.xcconfig.example ios/Signing.xcconfig
 
 编辑 `ios/Signing.xcconfig`，将 `DEVELOPMENT_TEAM` 设置为你的 Apple Team ID（在 Xcode → 设置 → 账户中查看）。
 
-## 版本
+## 版本与发布
 
-产品版本只写在仓库根目录的 `VERSION` 文件里。各端和 CI 在构建时读取，不要再抄到 `package.json` 或其他源码里。发版用 `mise bump`。
+产品版本以 **Git Tag（`vX.Y.Z`）** 为唯一来源，各端在构建时通过 `AIRVOICE_VERSION` 环境变量或最新 `v*` Tag 自动解析，不要在 `package.json` 或源码里硬编码版本号。
 
-iOS `CFBundleVersion` 和 Android `versionCode` 由 `major * 10000 + minor * 100 + patch` 算出。同一营销版本再打一包商店包需要先改 `VERSION`。
+代码推送或 PR 合并到 `main` 且 CI 通过后，GitHub Actions 会自动打新 Tag 并发布：默认升级 `patch`；提交信息或 PR 标题包含 `[minor]` / `[major]` 时对应升级；`HEAD` 提交包含 `[skip release]` 时跳过发版。也可以通过 GitHub Actions 的 `Release` 工作流手动触发，或本地运行 `mise bump` 手动打 Tag。
+
+iOS `CFBundleVersion` 和 Android `versionCode` 由 `major * 1000000 + minor * 1000 + patch` 算出。

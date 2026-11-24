@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run a Wails command with productVersion taken from the repo-root VERSION file.
+# Run a Wails command with productVersion resolved from AIRVOICE_VERSION or the latest v* Git tag.
 # Restores desktop/wails.json afterwards so the placeholder is not committed.
 
 set -euo pipefail

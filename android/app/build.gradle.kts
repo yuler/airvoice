@@ -4,13 +4,28 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization")
 }
 
-val rootVersion = providers.fileContents(layout.projectDirectory.file("../../VERSION")).asText.get().trim()
+val envVersion = providers.environmentVariable("AIRVOICE_VERSION").orNull
+    ?.trim()
+    ?.removePrefix("v")
+    ?.takeIf { it.isNotEmpty() }
+
+val gitTagVersion = providers.exec {
+    workingDir = rootProject.projectDir.parentFile
+    commandLine("git", "tag", "--list", "v*", "--sort=-v:refname")
+    isIgnoreExitValue = true
+}.standardOutput.asText.get()
+    .lineSequence()
+    .map { it.trim() }
+    .firstOrNull { Regex("^v\\d+\\.\\d+\\.\\d+$").matches(it) }
+    ?.removePrefix("v")
+
+val rootVersion = envVersion ?: gitTagVersion ?: "0.0.0"
 
 fun versionCodeFrom(semver: String): Int {
     val core = semver.substringBefore("-")
     val parts = core.split(".")
-    require(parts.size >= 3) { "VERSION must be X.Y.Z, got: $semver" }
-    val code = parts[0].toInt() * 10000 + parts[1].toInt() * 100 + parts[2].toInt()
+    require(parts.size >= 3) { "Version must be X.Y.Z, got: $semver" }
+    val code = parts[0].toInt() * 1_000_000 + parts[1].toInt() * 1_000 + parts[2].toInt()
     return maxOf(code, 1)
 }
 

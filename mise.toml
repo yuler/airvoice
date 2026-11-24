@@ -17,7 +17,7 @@ description = "Install mise tools and platform dependencies"
 run = "./scripts/setup.sh"
 
 [tasks.bump]
-description = "Bump VERSION (patch | minor | major | X.Y.Z)"
+description = "Create and push a release git tag (patch | minor | major | X.Y.Z)"
 run = "bash scripts/bump.sh"
 
 # -- CLI (Go) --
@@ -29,7 +29,7 @@ run = "./bin/airvoice"
 
 [tasks."cli:build"]
 description = "Build Go CLI to bin/airvoice"
-run = 'go build -ldflags="-s -w -X main.version=$(tr -d "[:space:]" < VERSION)" -o bin/airvoice ./cli'
+run = 'go build -ldflags="-s -w -X main.version=$(./scripts/resolve-version.sh)" -o bin/airvoice ./cli'
 
 [tasks."cli:clean"]
 description = "Remove built CLI binary"

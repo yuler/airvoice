@@ -1,49 +1,58 @@
 name: CLI Release
 
 on:
-  push:
-    tags:
-      - 'v*'
+  workflow_call:
+    inputs:
+      version:
+        description: 'Release version without leading v (e.g. 0.4.6)'
+        required: true
+        type: string
+      ref:
+        description: 'Git commit SHA or ref to build'
+        required: true
+        type: string
   workflow_dispatch:
     inputs:
-      tag:
-        description: 'Release tag (e.g. v0.2.0)'
-        required: true
+      version:
+        description: 'Optional version override (e.g. 0.4.6)'
+        required: false
+        type: string
+        default: ''
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  release:
-    name: Build and Release
+  build:
+    name: Build CLI Binaries
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          fetch-tags: true
 
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
           go-version-file: 'go.mod'
 
-      - name: Determine tag
-        id: tag
+      - name: Determine version
+        id: version
+        env:
+          INPUT_VERSION: ${{ inputs.version || '' }}
         run: |
-          APP_VERSION=$(tr -d '[:space:]' < VERSION)
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            TAG="${{ github.event.inputs.tag }}"
+          if [ -n "$INPUT_VERSION" ]; then
+            APP_VERSION="${INPUT_VERSION#v}"
           else
-            TAG="${GITHUB_REF#refs/tags/}"
+            APP_VERSION="$(./scripts/resolve-version.sh)"
           fi
-          if [ "$TAG" != "v${APP_VERSION}" ]; then
-            echo "Release tag $TAG does not match VERSION file (v${APP_VERSION})" >&2
-            exit 1
-          fi
-          echo "version=$TAG" >> $GITHUB_OUTPUT
-          echo "app_version=$APP_VERSION" >> $GITHUB_OUTPUT
+          echo "app_version=$APP_VERSION" >> "$GITHUB_OUTPUT"
+          echo "Building CLI version: $APP_VERSION"
 
       - name: Build binaries
         run: |
-          APP_VERSION="${{ steps.tag.outputs.app_version }}"
+          APP_VERSION="${{ steps.version.outputs.app_version }}"
           mkdir -p dist
 
           # macOS ARM64 (Apple Silicon)
@@ -66,85 +75,9 @@ jobs:
           cd dist
           sha256sum airvoice-cli-* > checksums-cli.txt
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v3
+      - name: Upload CLI artifacts
+        uses: actions/upload-artifact@v5
         with:
-          tag_name: ${{ steps.tag.outputs.version }}
-          name: ${{ steps.tag.outputs.version }}
-          generate_release_notes: true
-          files: |
-            dist/airvoice-cli-darwin-arm64
-            dist/airvoice-cli-darwin-amd64
-            dist/airvoice-cli-linux-arm64
-            dist/airvoice-cli-linux-amd64
-            dist/airvoice-cli-windows-amd64.exe
-            dist/checksums-cli.txt
-
-      - name: Update Homebrew formula
-        run: |
-          VERSION="${{ steps.tag.outputs.version }}"
-          VERSION_NUM="${{ steps.tag.outputs.app_version }}"
-
-          SHA256_ARM64=$(sha256sum dist/airvoice-cli-darwin-arm64 | cut -d' ' -f1)
-          SHA256_AMD64=$(sha256sum dist/airvoice-cli-darwin-amd64 | cut -d' ' -f1)
-          SHA256_LINUX_ARM64=$(sha256sum dist/airvoice-cli-linux-arm64 | cut -d' ' -f1)
-          SHA256_LINUX_AMD64=$(sha256sum dist/airvoice-cli-linux-amd64 | cut -d' ' -f1)
-
-          git fetch origin main
-          git checkout main
-          git pull --ff-only origin main
-
-          mkdir -p Formula
-          cat > Formula/airvoice.rb << 'FORMULA_EOF'
-          class Airvoice < Formula
-            desc "Voice-to-text CLI for Airvoice"
-            homepage "https://github.com/yuler/airvoice"
-            version "__VERSION__"
-            license "MIT"
-
-            on_macos do
-              if Hardware::CPU.arm?
-                url "https://github.com/yuler/airvoice/releases/download/v__VERSION__/airvoice-cli-darwin-arm64"
-                sha256 "__SHA256_ARM64__"
-              else
-                url "https://github.com/yuler/airvoice/releases/download/v__VERSION__/airvoice-cli-darwin-amd64"
-                sha256 "__SHA256_AMD64__"
-              end
-            end
-
-            on_linux do
-              if Hardware::CPU.arm?
-                url "https://github.com/yuler/airvoice/releases/download/v__VERSION__/airvoice-cli-linux-arm64"
-                sha256 "__SHA256_LINUX_ARM64__"
-              else
-                url "https://github.com/yuler/airvoice/releases/download/v__VERSION__/airvoice-cli-linux-amd64"
-                sha256 "__SHA256_LINUX_AMD64__"
-              end
-            end
-
-            def install
-              if OS.mac?
-                binary = Hardware::CPU.arm? ? "airvoice-cli-darwin-arm64" : "airvoice-cli-darwin-amd64"
-              else
-                binary = Hardware::CPU.arm? ? "airvoice-cli-linux-arm64" : "airvoice-cli-linux-amd64"
-              end
-              bin.install binary => "airvoice"
-            end
-
-            test do
-              assert_match "airvoice", shell_output("#{bin}/airvoice version")
-            end
-          end
-          FORMULA_EOF
-
-          sed -i "s/__VERSION__/${VERSION_NUM}/g" Formula/airvoice.rb
-          sed -i "s/__SHA256_ARM64__/${SHA256_ARM64}/g" Formula/airvoice.rb
-          sed -i "s/__SHA256_AMD64__/${SHA256_AMD64}/g" Formula/airvoice.rb
-          sed -i "s/__SHA256_LINUX_ARM64__/${SHA256_LINUX_ARM64}/g" Formula/airvoice.rb
-          sed -i "s/__SHA256_LINUX_AMD64__/${SHA256_LINUX_AMD64}/g" Formula/airvoice.rb
-
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add Formula/airvoice.rb
-          git commit -m "🔖 [homebrew]: Update formula to ${VERSION_NUM}" || echo "No changes to formula"
-          git push origin main
+          name: cli-binaries
+          path: dist/*
+          if-no-files-found: error

@@ -1,16 +1,35 @@
 name: iOS TestFlight
 
 on:
-  push:
-    tags:
-      - 'v*'
+  workflow_call:
+    inputs:
+      version:
+        description: 'Release version without leading v (e.g. 0.4.6)'
+        required: true
+        type: string
+      ref:
+        description: 'Git commit SHA or ref to build'
+        required: true
+        type: string
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Optional version override (e.g. 0.4.6)'
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: read
 
 jobs:
   testflight:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          fetch-tags: true
 
       - name: Install XcodeGen
         run: brew install xcodegen
@@ -38,19 +57,19 @@ jobs:
             fi
           done
 
-      - name: Version
+      - name: Determine version
         id: version
         shell: bash
+        env:
+          INPUT_VERSION: ${{ inputs.version || '' }}
         run: |
-          APP_VERSION=$(tr -d '[:space:]' < VERSION)
-          if [[ "${{ github.ref_type }}" == "tag" ]]; then
-            TAG="${GITHUB_REF_NAME#v}"
-            if [[ "$TAG" != "$APP_VERSION" ]]; then
-              echo "Tag v$TAG does not match VERSION file ($APP_VERSION)" >&2
-              exit 1
-            fi
+          if [ -n "$INPUT_VERSION" ]; then
+            APP_VERSION="${INPUT_VERSION#v}"
+          else
+            APP_VERSION="$(./scripts/resolve-version.sh)"
           fi
           echo "version=$APP_VERSION" >> "$GITHUB_OUTPUT"
+          echo "Building iOS version: $APP_VERSION"
 
       - name: Import signing certificate
         env:
@@ -101,6 +120,8 @@ jobs:
           EOF
 
       - name: Generate Xcode project
+        env:
+          AIRVOICE_VERSION: ${{ steps.version.outputs.version }}
         run: ./scripts/ios-xcodegen.sh
 
       - name: Archive and upload to TestFlight
@@ -132,58 +153,3 @@ jobs:
             -authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8" \
             -authenticationKeyID "$APP_STORE_CONNECT_KEY_ID" \
             -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID"
-
-      - name: Submit build for external TestFlight review
-        env:
-          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
-          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
-        run: |
-          set -euo pipefail
-          INSTALL_DIR="$HOME/.local/bin" curl -fsSL https://asccli.sh/install | bash
-          export PATH="$HOME/.local/bin:$PATH"
-          chmod 600 "$RUNNER_TEMP/AuthKey.p8"
-          asc auth login --bypass-keychain --name "Airvoice CI" \
-            --key-id "$APP_STORE_CONNECT_KEY_ID" \
-            --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
-            --private-key "$RUNNER_TEMP/AuthKey.p8"
-
-          APP_VERSION=$(tr -d '[:space:]' < VERSION)
-          IFS=. read -r major minor patch <<<"${APP_VERSION%%-*}"
-          APP_BUILD=$(( major * 10000 + minor * 100 + patch ))
-          echo "Waiting for $APP_VERSION ($APP_BUILD) to finish processing"
-
-          asc builds wait \
-            --app cc.yuler.airvoice \
-            --build-number "$APP_BUILD" \
-            --platform IOS \
-            --version "$APP_VERSION" \
-            --timeout 45m \
-            --poll-interval 30s
-
-          BUILD_ID=$(asc builds info \
-            --app cc.yuler.airvoice \
-            --build-number "$APP_BUILD" \
-            --platform IOS \
-            --version "$APP_VERSION" \
-            --output json | python3 -c 'import json,sys; print(json.load(sys.stdin)["data"]["id"])')
-          STATE=$(asc testflight distribution view --build-id "$BUILD_ID" --output json | python3 -c 'import json,sys; print(json.load(sys.stdin)["data"][0]["attributes"]["externalBuildState"])')
-          echo "Build $BUILD_ID external state: $STATE"
-
-          case "$STATE" in
-            READY_FOR_BETA_SUBMISSION)
-              asc builds add-groups \
-                --build-id "$BUILD_ID" \
-                --group External \
-                --submit \
-                --confirm
-              ;;
-            WAITING_FOR_BETA_REVIEW|IN_BETA_REVIEW|IN_BETA_TESTING|BETA_APPROVED)
-              asc builds add-groups \
-                --build-id "$BUILD_ID" \
-                --group External
-              ;;
-            *)
-              echo "Build is not ready for external testing: $STATE" >&2
-              exit 1
-              ;;
-          esac
