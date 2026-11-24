@@ -52,6 +52,7 @@ func TestRunHelpListsCommands(t *testing.T) {
 		})
 		for _, want := range []string{
 			"airvoice [--port 7654]",
+			"airvoice upgrade [--check] [--version X.Y.Z]",
 			"airvoice settings",
 			"airvoice token refresh",
 			"airvoice doctor",
@@ -134,6 +135,42 @@ func TestRunTokenRefreshRotates(t *testing.T) {
 	}
 	if disk.Token != newTok {
 		t.Fatalf("disk %q printed %q", disk.Token, newTok)
+	}
+}
+
+func TestRunDispatchesUpgrade(t *testing.T) {
+	orig := upgradeFn
+	var gotArgs []string
+	called := false
+	upgradeFn = func(args []string) int {
+		called = true
+		gotArgs = append([]string(nil), args...)
+		return 0
+	}
+	defer func() { upgradeFn = orig }()
+
+	if code := run([]string{"upgrade", "--check", "--version", "0.4.8"}); code != 0 || !called {
+		t.Fatalf("run(upgrade) code=%d called=%v", code, called)
+	}
+	want := []string{"--check", "--version", "0.4.8"}
+	if len(gotArgs) != len(want) {
+		t.Fatalf("upgrade args = %v, want %v", gotArgs, want)
+	}
+	for i := range want {
+		if gotArgs[i] != want[i] {
+			t.Fatalf("upgrade args[%d] = %q, want %q", i, gotArgs[i], want[i])
+		}
+	}
+}
+
+func TestRunUpgradeRejectsPositionalArgs(t *testing.T) {
+	stderr := captureStderr(t, func() {
+		if code := runUpgrade([]string{"unexpected"}); code != 1 {
+			t.Fatalf("code = %d, want 1", code)
+		}
+	})
+	if !strings.Contains(stderr, "airvoice upgrade [--check] [--version X.Y.Z]") {
+		t.Fatalf("stderr missing upgrade usage:\n%s", stderr)
 	}
 }
 
