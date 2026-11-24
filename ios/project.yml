@@ -19,6 +19,7 @@ targets:
       - path: Airvoice
     settings:
       PRODUCT_BUNDLE_IDENTIFIER: cc.yuler.airvoice
+      ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
       INFOPLIST_FILE: Airvoice/Info.plist
       GENERATE_INFOPLIST_FILE: NO
       MARKETING_VERSION: "${APP_VERSION}"
