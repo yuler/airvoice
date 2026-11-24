@@ -199,6 +199,25 @@ test("detectCiChanges checks all unreleased commits since latest tag on push to 
     assert.equal(scopes.cli, true);
     assert.equal(scopes.desktop, true);
     assert.equal(scopes.android, false);
+    assert.equal(scopes.ios, false);
+    assert.equal(scopes.www, false);
+  } finally {
+    repo.cleanup();
+  }
+});
+
+test("detectCiChanges enables ios scope when ios/ files change", () => {
+  const repo = createRepo();
+  try {
+    repo.commitFile("ios/Airvoice/Services/ConnectionManager.swift", "// v1\n", "init");
+    repo.run("tag", "v0.4.5");
+    repo.commitFile("ios/Airvoice/Services/ConnectionManager.swift", "// v2\n", "update ios");
+
+    const scopes = detectCiChanges({ cwd: repo.dir, eventName: "push" });
+    assert.equal(scopes.cli, false);
+    assert.equal(scopes.desktop, false);
+    assert.equal(scopes.android, false);
+    assert.equal(scopes.ios, true);
     assert.equal(scopes.www, false);
   } finally {
     repo.cleanup();

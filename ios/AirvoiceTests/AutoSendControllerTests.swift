@@ -70,6 +70,42 @@ final class AutoSendControllerTests: XCTestCase {
         XCTAssertEqual(sentTexts.last?.0, "different test")
     }
 
+    func testClearingTextResetsLastAcked() {
+        controller.attemptSend("好的")
+        controller.markAcked("好的")
+        XCTAssertFalse(controller.attemptSend("好的"))
+
+        controller.textDidChange("")
+
+        XCTAssertTrue(controller.attemptSend("好的"))
+        XCTAssertEqual(sentTexts.count, 2)
+    }
+
+    func testCountdownStopsWhileInFlight() {
+        controller.textDidChange("hello")
+        XCTAssertTrue(controller.countdownActive)
+        let token = controller.countdownToken
+
+        controller.beginSend()
+        controller.textDidChange("hello world")
+
+        XCTAssertFalse(controller.countdownActive)
+        XCTAssertEqual(controller.countdownToken, token)
+    }
+
+    func testDebounceUsesLatestTextFromCurrentTextClosure() async {
+        var latest = "first"
+        controller.currentText = { latest }
+
+        controller.textDidChange("first")
+        latest = "first updated"
+
+        await sleep(1.3)
+
+        XCTAssertEqual(sentTexts.count, 1)
+        XCTAssertEqual(sentTexts.first?.0, "first updated")
+    }
+
     func testInFlightLock() async {
         controller.attemptSend("first")
         XCTAssertTrue(controller.inFlight)

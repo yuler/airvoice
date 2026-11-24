@@ -61,6 +61,13 @@ class AirvoiceViewModel(application: Application) : AndroidViewModel(application
             }
         }
 
+        viewModelScope.launch {
+            connectionManager.authExpiredEvents.collect {
+                storage.clearConnection()
+                showToast("配对已失效，请重新扫码", isError = true)
+            }
+        }
+
         autoSendController = AutoSendController(
             textFlow = _inputText,
             connectionManager = connectionManager,

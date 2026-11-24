@@ -21,6 +21,10 @@ final class HomeViewModel: ObservableObject {
     private var inFlightIsRetry = false
 
     func wire(connection: ConnectionManager, autoSend: AutoSendController) {
+        autoSend.currentText = { [weak self] in
+            self?.text ?? ""
+        }
+
         autoSend.onSend = { [weak self, weak connection, weak autoSend] content, trigger in
             guard let self, let connection, let autoSend else { return false }
             return self.handleSend(
@@ -42,6 +46,13 @@ final class HomeViewModel: ObservableObject {
             Task { @MainActor in
                 guard let self, let autoSend else { return }
                 self.handleTransportError(message, autoSend: autoSend)
+            }
+        }
+
+        connection.onAuthExpired = { [weak self, weak autoSend] in
+            Task { @MainActor in
+                guard let self, let autoSend else { return }
+                self.handleAuthExpired(autoSend: autoSend)
             }
         }
     }
@@ -159,6 +170,7 @@ final class HomeViewModel: ObservableObject {
     }
 
     private func handleTransportError(_ message: String, autoSend: AutoSendController) {
+        let wasInFlight = autoSend.inFlight
         sendTimeoutTask?.cancel()
         sendTimeoutTask = nil
         if let msgId = pendingSendMsgId {
@@ -166,7 +178,25 @@ final class HomeViewModel: ObservableObject {
         }
         autoSend.clearInFlight()
         inFlightContent = nil
-        showToast(message, isError: true)
+        // Keep background reconnect failures silent in the status bar; only alert
+        // when an active send was interrupted.
+        if wasInFlight {
+            sendTimedOut = true
+            showToast("发送失败，请检查连接", isError: true)
+        }
+    }
+
+    private func handleAuthExpired(autoSend: AutoSendController) {
+        sendTimeoutTask?.cancel()
+        sendTimeoutTask = nil
+        if let msgId = pendingSendMsgId {
+            clearPendingSend(msgId: msgId)
+        }
+        pendingAutoSendText = nil
+        autoSend.clearInFlight()
+        inFlightContent = nil
+        sendTimedOut = false
+        showToast("配对已失效，请重新扫码", isError: true)
     }
 
     private func clearPendingSend(msgId: String) {
@@ -196,12 +226,20 @@ final class HomeViewModel: ObservableObject {
             showToast("已发送到电脑", isError: false)
             // Always release the in-flight lock on success, even if the acked id
             // didn't match a tracked message (otherwise "发送中" sticks forever).
+            let remaining: String
             if let sentContent {
                 autoSend.markAcked(sentContent)
+                if text.hasPrefix(sentContent) {
+                    remaining = String(text.dropFirst(sentContent.count))
+                } else {
+                    remaining = text
+                }
             } else {
                 autoSend.clearInFlight()
+                remaining = ""
             }
-            text = ""
+            text = remaining
+            autoSend.textDidChange(remaining)
             inFlightContent = nil
         } else {
             autoSend.clearInFlight()

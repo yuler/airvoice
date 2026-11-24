@@ -22,6 +22,7 @@ jobs:
       cli: ${{ steps.scope.outputs.cli }}
       desktop: ${{ steps.scope.outputs.desktop }}
       android: ${{ steps.scope.outputs.android }}
+      ios: ${{ steps.scope.outputs.ios }}
       www: ${{ steps.scope.outputs.www }}
     steps:
       - uses: actions/checkout@v5
@@ -170,6 +171,51 @@ jobs:
       - name: Build debug APK
         working-directory: android
         run: ./gradlew assembleDebug
+
+  ios-test:
+    name: iOS Test & Build
+    needs: changes
+    if: needs.changes.outputs.ios == 'true'
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-tags: true
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Prepare unsigned signing config
+        run: cp ios/Signing.xcconfig.example ios/Signing.xcconfig
+
+      - name: Generate Xcode project
+        run: ./scripts/ios-xcodegen.sh
+
+      - name: Run unit tests on iOS Simulator
+        run: |
+          SIM_ID=$(xcrun simctl list devices available iPhone -j | python3 -c '
+          import json, sys
+          data = json.load(sys.stdin)
+          runtimes = sorted(
+              (k for k in data.get("devices", {}) if "SimRuntime.iOS" in k),
+              reverse=True,
+          )
+          for rt in runtimes:
+              for dev in data["devices"][rt]:
+                  if dev.get("isAvailable") and "iPhone" in dev.get("name", ""):
+                      print(dev["udid"])
+                      sys.exit(0)
+          sys.exit(1)
+          ')
+          echo "Using iOS Simulator UDID: $SIM_ID"
+          xcodebuild test \
+            -project ios/Airvoice.xcodeproj \
+            -scheme Airvoice \
+            -configuration Debug \
+            -destination "platform=iOS Simulator,id=$SIM_ID" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO
 
   www-build:
     name: WWW Build

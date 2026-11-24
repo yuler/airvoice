@@ -1,6 +1,6 @@
 import Foundation
 
-struct PairingPayload: Codable {
+struct PairingPayload: Codable, Equatable {
     let v: Int
     let ws: String
     let token: String
