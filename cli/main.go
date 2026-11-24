@@ -16,7 +16,8 @@ import (
 	"github.com/yuler/airvoice/cli/server"
 )
 
-// version is injected at build time from AIRVOICE_VERSION or the latest v* Git tag via -ldflags.
+// version is injected by release builds via -ldflags. go install leaves it as "dev"
+// and productVersion falls back to the module version embedded in the binary.
 var version = "dev"
 
 var serveFn = runServer
@@ -37,7 +38,7 @@ func run(args []string) int {
 
 	switch args[0] {
 	case "version":
-		fmt.Println("airvoice " + version)
+		fmt.Println("airvoice " + productVersion())
 		return 0
 	case "doctor":
 		return paste.PrintDoctor(os.Stdout)
@@ -121,12 +122,12 @@ func runServer(args []string) int {
 		Addr:     addr,
 		Port:     port,
 		Hostname: hostname,
-		Version:  version,
+		Version:  productVersion(),
 		Paster:   paster,
 	})
 	srv.SetToken(token)
 
-	if _, err := pairing.PrintPairingWithToken(port, token, ""); err != nil {
+	if _, err := pairing.PrintPairingWithToken(port, token, "", productVersion()); err != nil {
 		fmt.Fprintf(os.Stderr, "Error creating pairing session: %v\n", err)
 		return 1
 	}
@@ -140,7 +141,7 @@ func runServer(args []string) int {
 		srv.SetToken(newToken)
 		srv.DisconnectClients()
 		fmt.Fprintf(os.Stderr, "  [airvoice] pairing token refreshed\n")
-		if _, err := pairing.PrintPairingWithToken(port, newToken, ""); err != nil {
+		if _, err := pairing.PrintPairingWithToken(port, newToken, "", productVersion()); err != nil {
 			fmt.Fprintf(os.Stderr, "Error reprinting pairing: %v\n", err)
 		}
 	})

@@ -8,26 +8,22 @@ Airvoice 由两部分组成：**桌面端服务器**（CLI）和 **手机客户�
 
 ## 1. 安装 CLI
 
-如果还没有安装 `mise`：
+macOS 和 Linux：
 
 ```bash
-curl https://mise.run | sh
+curl -fsSL https://airvoice.yuler.cc/install.sh | sh
 ```
 
-然后安装 Airvoice：
+脚本会下载最新的发布版，装到 `~/.local/bin`（root 则是 `/usr/local/bin`），并打印版本号。如果这个目录不在 `PATH` 里，按脚本提示加进去。
+
+Windows 从 [GitHub Releases](https://github.com/yuler/airvoice/releases/latest) 下载 `airvoice-cli-windows-amd64.exe`，重命名为 `airvoice.exe` 后加入 `PATH`。
+
+已经在用 Homebrew 的话也可以：
 
 ```bash
-mise trust
-mise install
+brew tap yuler/airvoice https://github.com/yuler/airvoice
+brew install airvoice
 ```
-
-或者直接用 Go 安装：
-
-```bash
-go install github.com/yuler/airvoice/cli@latest
-```
-
-也可以从 [GitHub Releases](https://github.com/yuler/airvoice/releases/latest) 下载对应平台的二进制文件。
 
 ## 2. 启动服务器
 

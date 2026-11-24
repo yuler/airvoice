@@ -20,8 +20,7 @@ interface GetStartedProps {
 
 export default function GetStarted({ m, iosDocsUrl }: GetStartedProps) {
   const cliCommands = [
-    'brew tap yuler/airvoice https://github.com/yuler/airvoice && brew install airvoice',
-    'go install github.com/yuler/airvoice/cli@latest',
+    'curl -fsSL https://airvoice.yuler.cc/install.sh | sh',
   ];
   const [urls, setUrls] = useState<DownloadUrls>({
     cli: 'https://github.com/yuler/airvoice/releases/latest',

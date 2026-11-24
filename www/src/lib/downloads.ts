@@ -1,4 +1,5 @@
-const VERSION = __APP_VERSION__.trim();
+export const APP_VERSION = __APP_VERSION__.trim();
+const VERSION = APP_VERSION;
 const HAS_RELEASE = VERSION.length > 0 && VERSION !== '0.0.0';
 const TAG = `v${VERSION}`;
 const BASE = `https://github.com/yuler/airvoice/releases/download/${TAG}`;
