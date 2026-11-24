@@ -40,6 +40,10 @@ android/app/release/
 *.p12
 airvoice-release-secrets.env
 
+# Local secrets (App Store Connect key, iOS signing). Upload with: gh secret set -f .env
+.env
+*.p8
+
 # Desktop frontend
 desktop/airvoice
 desktop/desktop

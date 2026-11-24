@@ -1,6 +1,6 @@
 name: Airvoice
 options:
-  bundleIdPrefix: com.airvoice
+  bundleIdPrefix: cc.yuler
   deploymentTarget:
     iOS: "17.0"
   createIntermediateGroups: true
@@ -18,7 +18,7 @@ targets:
     sources:
       - path: Airvoice
     settings:
-      PRODUCT_BUNDLE_IDENTIFIER: com.airvoice.app
+      PRODUCT_BUNDLE_IDENTIFIER: cc.yuler.airvoice
       INFOPLIST_FILE: Airvoice/Info.plist
       GENERATE_INFOPLIST_FILE: NO
       MARKETING_VERSION: "${APP_VERSION}"
@@ -33,7 +33,7 @@ targets:
     dependencies:
       - target: Airvoice
     settings:
-      PRODUCT_BUNDLE_IDENTIFIER: com.airvoice.app.tests
+      PRODUCT_BUNDLE_IDENTIFIER: cc.yuler.airvoice.tests
       GENERATE_INFOPLIST_FILE: YES
       IPHONEOS_DEPLOYMENT_TARGET: "17.0"
 schemes:
