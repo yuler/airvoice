@@ -1,0 +1,275 @@
+name: Release
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types:
+      - completed
+    branches:
+      - main
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Semver bump type (ignored if explicit version is set)'
+        type: choice
+        default: patch
+        options:
+          - patch
+          - minor
+          - major
+      version:
+        description: 'Explicit version without leading v (e.g. 0.5.0, optional)'
+        type: string
+        required: false
+        default: ''
+      ios:
+        description: 'iOS TestFlight upload mode'
+        type: choice
+        default: always
+        options:
+          - always
+          - auto
+          - skip
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: release-main
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    name: Plan Release
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.event == 'push'
+      )
+    runs-on: ubuntu-latest
+    outputs:
+      skip: ${{ steps.resolve.outputs.skip }}
+      version: ${{ steps.resolve.outputs.version }}
+      tag: ${{ steps.resolve.outputs.tag }}
+      create_tag: ${{ steps.resolve.outputs.create_tag }}
+      ios_changed: ${{ steps.resolve.outputs.ios_changed }}
+      sha: ${{ steps.resolve.outputs.sha }}
+      bump: ${{ steps.resolve.outputs.bump }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+
+      - name: Resolve release plan
+        id: resolve
+        env:
+          INPUT_BUMP: ${{ inputs.bump || 'patch' }}
+          INPUT_VERSION: ${{ inputs.version || '' }}
+          INPUT_IOS: ${{ inputs.ios || 'always' }}
+        run: node .github/scripts/resolve-release.mjs
+
+  cli:
+    name: Build CLI
+    needs: plan
+    if: needs.plan.outputs.skip != 'true'
+    uses: ./.github/workflows/cli-release.yml
+    with:
+      version: ${{ needs.plan.outputs.version }}
+      ref: ${{ needs.plan.outputs.sha }}
+
+  desktop:
+    name: Build Desktop
+    needs: plan
+    if: needs.plan.outputs.skip != 'true'
+    uses: ./.github/workflows/desktop-release.yml
+    with:
+      version: ${{ needs.plan.outputs.version }}
+      ref: ${{ needs.plan.outputs.sha }}
+
+  android:
+    name: Build Android
+    needs: plan
+    if: needs.plan.outputs.skip != 'true'
+    uses: ./.github/workflows/android-release.yml
+    with:
+      version: ${{ needs.plan.outputs.version }}
+      ref: ${{ needs.plan.outputs.sha }}
+    secrets: inherit
+
+  publish:
+    name: Tag, Release & Homebrew
+    needs: [plan, cli, desktop, android]
+    if: needs.plan.outputs.skip != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout target commit
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          ref: ${{ needs.plan.outputs.sha }}
+
+      - name: Download all release artifacts
+        uses: actions/download-artifact@v5
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Verify required release assets
+        env:
+          VERSION: ${{ needs.plan.outputs.version }}
+        run: |
+          echo "=== Collected release artifacts ==="
+          find artifacts -maxdepth 2 -type f -exec ls -lh {} \;
+
+          REQUIRED=(
+            "airvoice-cli-darwin-arm64"
+            "airvoice-cli-darwin-amd64"
+            "airvoice-cli-linux-arm64"
+            "airvoice-cli-linux-amd64"
+            "airvoice-cli-windows-amd64.exe"
+            "checksums-cli.txt"
+            "Airvoice-Desktop-${VERSION}-macOS.zip"
+            "Airvoice-Desktop-${VERSION}-Linux-x86_64.AppImage"
+            "Airvoice-Desktop-${VERSION}-Windows.zip"
+            "airvoice-android-${VERSION}.apk"
+          )
+
+          MISSING=0
+          for asset in "${REQUIRED[@]}"; do
+            if [ ! -f "artifacts/${asset}" ]; then
+              echo "::error::Missing required release asset: ${asset}"
+              MISSING=$((MISSING + 1))
+            fi
+          done
+          [ "$MISSING" -eq 0 ] || exit 1
+
+      - name: Create Git Tag and GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.plan.outputs.tag }}
+          TARGET_SHA: ${{ needs.plan.outputs.sha }}
+          CREATE_TAG: ${{ needs.plan.outputs.create_tag }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "GitHub Release $TAG already exists; uploading assets with --clobber."
+            gh release upload "$TAG" artifacts/* --clobber
+          elif [ "$CREATE_TAG" = "true" ]; then
+            gh release create "$TAG" \
+              --target "$TARGET_SHA" \
+              --title "$TAG" \
+              --generate-notes \
+              artifacts/*
+          else
+            gh release create "$TAG" \
+              --title "$TAG" \
+              --generate-notes \
+              artifacts/*
+          fi
+
+      - name: Update Homebrew formula
+        env:
+          VERSION_NUM: ${{ needs.plan.outputs.version }}
+        run: |
+          SHA256_ARM64=$(sha256sum artifacts/airvoice-cli-darwin-arm64 | cut -d' ' -f1)
+          SHA256_AMD64=$(sha256sum artifacts/airvoice-cli-darwin-amd64 | cut -d' ' -f1)
+          SHA256_LINUX_ARM64=$(sha256sum artifacts/airvoice-cli-linux-arm64 | cut -d' ' -f1)
+          SHA256_LINUX_AMD64=$(sha256sum artifacts/airvoice-cli-linux-amd64 | cut -d' ' -f1)
+
+          git fetch origin main
+          git checkout -B main origin/main
+
+          mkdir -p Formula
+          cat > Formula/airvoice.rb << 'FORMULA_EOF'
+          class Airvoice < Formula
+            desc "Voice-to-text CLI for Airvoice"
+            homepage "https://github.com/yuler/airvoice"
+            version "__VERSION__"
+            license "MIT"
+
+            on_macos do
+              if Hardware::CPU.arm?
+                url "https://github.com/yuler/airvoice/releases/download/v__VERSION__/airvoice-cli-darwin-arm64"
+                sha256 "__SHA256_ARM64__"
+              else
+                url "https://github.com/yuler/airvoice/releases/download/v__VERSION__/airvoice-cli-darwin-amd64"
+                sha256 "__SHA256_AMD64__"
+              end
+            end
+
+            on_linux do
+              if Hardware::CPU.arm?
+                url "https://github.com/yuler/airvoice/releases/download/v__VERSION__/airvoice-cli-linux-arm64"
+                sha256 "__SHA256_LINUX_ARM64__"
+              else
+                url "https://github.com/yuler/airvoice/releases/download/v__VERSION__/airvoice-cli-linux-amd64"
+                sha256 "__SHA256_LINUX_AMD64__"
+              end
+            end
+
+            def install
+              if OS.mac?
+                binary = Hardware::CPU.arm? ? "airvoice-cli-darwin-arm64" : "airvoice-cli-darwin-amd64"
+              else
+                binary = Hardware::CPU.arm? ? "airvoice-cli-linux-arm64" : "airvoice-cli-linux-amd64"
+              end
+              bin.install binary => "airvoice"
+            end
+
+            test do
+              assert_match "airvoice", shell_output("#{bin}/airvoice version")
+            end
+          end
+          FORMULA_EOF
+
+          sed -i "s/__VERSION__/${VERSION_NUM}/g" Formula/airvoice.rb
+          sed -i "s/__SHA256_ARM64__/${SHA256_ARM64}/g" Formula/airvoice.rb
+          sed -i "s/__SHA256_AMD64__/${SHA256_AMD64}/g" Formula/airvoice.rb
+          sed -i "s/__SHA256_LINUX_ARM64__/${SHA256_LINUX_ARM64}/g" Formula/airvoice.rb
+          sed -i "s/__SHA256_LINUX_AMD64__/${SHA256_LINUX_AMD64}/g" Formula/airvoice.rb
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/airvoice.rb
+          if git diff --cached --quiet; then
+            echo "No changes to Formula/airvoice.rb"
+            exit 0
+          fi
+          git commit -m "🔖 [homebrew]: Update formula to ${VERSION_NUM} [skip release]"
+
+          for attempt in 1 2 3; do
+            if git push origin main; then
+              exit 0
+            fi
+            echo "Push failed (attempt ${attempt}); rebasing onto origin/main..."
+            git pull --rebase origin main
+          done
+          echo "::error::Failed to push Formula/airvoice.rb after 3 attempts"
+          exit 1
+
+      - name: Trigger WWW Deploy
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run www-deploy.yml --ref main
+
+  ios:
+    name: Upload iOS TestFlight
+    needs: [plan, publish]
+    if: needs.plan.outputs.skip != 'true' && needs.plan.outputs.ios_changed == 'true'
+    uses: ./.github/workflows/ios-release.yml
+    with:
+      version: ${{ needs.plan.outputs.version }}
+      ref: ${{ needs.plan.outputs.sha }}
+    secrets: inherit

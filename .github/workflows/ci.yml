@@ -1,27 +1,70 @@
-name: Desktop CI
+name: CI
 
 on:
   push:
     branches: [main]
-    paths:
-      - 'desktop/**'
-      - 'go.mod'
-      - 'go.sum'
-      - 'VERSION'
-      - '.github/workflows/desktop-ci.yml'
   pull_request:
     branches: [main]
-    paths:
-      - 'desktop/**'
-      - 'go.mod'
-      - 'go.sum'
-      - 'VERSION'
-      - '.github/workflows/desktop-ci.yml'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
 jobs:
-  test:
-    name: Go tests
+  changes:
+    name: Detect Changes & Script Tests
+    runs-on: ubuntu-latest
+    outputs:
+      cli: ${{ steps.scope.outputs.cli }}
+      desktop: ${{ steps.scope.outputs.desktop }}
+      android: ${{ steps.scope.outputs.android }}
+      www: ${{ steps.scope.outputs.www }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+
+      - name: Test release scripts
+        run: node --test .github/scripts/resolve-release.test.mjs
+
+      - name: Detect affected targets
+        id: scope
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: node .github/scripts/detect-ci-changes.mjs
+
+  cli-test:
+    name: CLI Tests (${{ matrix.os }})
+    needs: changes
+    if: needs.changes.outputs.cli == 'true'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: 'go.mod'
+
+      - name: Run CLI Tests
+        run: go test -v ./cli/...
+
+  desktop-test:
+    name: Desktop Go Tests
+    needs: changes
+    if: needs.changes.outputs.desktop == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -57,12 +100,16 @@ jobs:
       - name: Run desktop tests
         run: go test -v ./desktop/...
 
-  build:
-    name: Linux build
+  desktop-build:
+    name: Desktop Linux Build
+    needs: changes
+    if: needs.changes.outputs.desktop == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-tags: true
 
       - name: Set up Go
         uses: actions/setup-go@v6
@@ -98,3 +145,53 @@ jobs:
 
       - name: Build
         run: ./scripts/with-wails-version.sh wails build --platform linux/amd64 -tags webkit2_41
+
+  android-test:
+    name: Android Test & Build
+    needs: changes
+    if: needs.changes.outputs.android == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-tags: true
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Run unit tests
+        working-directory: android
+        run: ./gradlew testDebugUnitTest
+
+      - name: Build debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug
+
+  www-build:
+    name: WWW Build
+    needs: changes
+    if: needs.changes.outputs.www == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-tags: true
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: 'npm'
+          cache-dependency-path: www/package-lock.json
+
+      - name: Install dependencies
+        working-directory: www
+        run: npm ci
+
+      - name: Build
+        working-directory: www
+        run: npm run build

@@ -14,7 +14,7 @@ gum spin --spinner dot --title "Installing mise tools (go, node, gum, swift)…"
 # ── CLI (Go) ──
 mkdir -p bin
 gum spin --spinner dot --title "Building CLI…" -- \
-  go build -ldflags="-s -w -X main.version=$(tr -d '[:space:]' < VERSION)" -o bin/airvoice ./cli
+  go build -ldflags="-s -w -X main.version=$(./scripts/resolve-version.sh)" -o bin/airvoice ./cli
 
 # ── WWW (Astro) ──
 if [[ -d "$ROOT/www" ]]; then

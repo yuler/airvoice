@@ -24,8 +24,8 @@ mise install
 
 ```
 airvoice/
-├── VERSION       # Canonical product version (semver)
 ├── cli/          # Go CLI — WebSocket server + keystroke injection
+├── desktop/      # Desktop app (Wails)
 ├── android/      # Android Kotlin/Compose app
 ├── ios/          # iOS SwiftUI app
 ├── www/          # Documentation site (Astro)
@@ -67,7 +67,7 @@ Open the project in Xcode:
 open ios/Airvoice.xcodeproj
 ```
 
-The project uses [XcodeGen](https://github.com/yonaskolb/XcodeGen) to generate `project.yml`. If you modify project settings, edit `ios/project.yml` and regenerate with `./scripts/ios-xcodegen.sh` (exports `APP_VERSION` / `APP_BUILD` from `VERSION`). Do not run `xcodegen` alone.
+The project uses [XcodeGen](https://github.com/yonaskolb/XcodeGen) to generate `project.yml`. If you modify project settings, edit `ios/project.yml` and regenerate with `./scripts/ios-xcodegen.sh` (exports `APP_VERSION` / `APP_BUILD` from `AIRVOICE_VERSION` or the latest `v*` Git tag). Do not run `xcodegen` alone.
 
 ```bash
 ./scripts/ios-xcodegen.sh
@@ -83,8 +83,10 @@ cp ios/Signing.xcconfig.example ios/Signing.xcconfig
 
 Edit `ios/Signing.xcconfig` and set `DEVELOPMENT_TEAM` to your Apple Team ID (find it in Xcode → Settings → Accounts).
 
-## Version
+## Version & Releases
 
-The product version lives only in the repo-root `VERSION` file. Apps and CI read it at build time — do not copy it into `package.json` or other source files. Release with `mise bump`.
+Git tags (`vX.Y.Z`) are the canonical source of truth for product versions. Apps and CI resolve the version at build time via `AIRVOICE_VERSION` or the latest `v*` tag — do not copy it into `package.json` or source files.
 
-iOS `CFBundleVersion` and Android `versionCode` are derived as `major * 10000 + minor * 100 + patch`. Releasing another binary with the same marketing version requires bumping `VERSION`.
+Merges/pushes to `main` automatically cut a new release tag after CI passes: `patch` by default, `[minor]` or `[major]` in a commit message / PR title to bump higher, or `[skip release]` in the `HEAD` commit subject to skip. You can also dispatch the `Release` workflow manually or run `mise bump` locally to create and push a tag.
+
+iOS `CFBundleVersion` and Android `versionCode` are derived as `major * 1000000 + minor * 1000 + patch`.

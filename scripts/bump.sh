@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-# Bump Airvoice version. The repo-root VERSION file is the only source of truth.
+# Manually create and push a release Git tag (vX.Y.Z).
+# Normal releases are tagged automatically by GitHub Actions on push/merge to main;
+# this script serves as a local fallback for manual tag-based releases.
 #
 # Usage:
 #   ./scripts/bump.sh              # interactive (gum choose)
@@ -13,13 +15,7 @@ set -euo pipefail
 source "$(dirname "$0")/lib.sh"
 cd "$ROOT"
 
-VERSION_FILE="$ROOT/VERSION"
-if [[ ! -f "$VERSION_FILE" ]]; then
-  gum_err "VERSION file not found. Create it with: echo 0.1.0 > VERSION"
-  exit 1
-fi
-
-current=$(tr -d '[:space:]' < "$VERSION_FILE")
+current=$(AIRVOICE_VERSION="" "$ROOT/scripts/resolve-version.sh")
 
 # ── SemVer Helpers ──
 
@@ -40,16 +36,16 @@ bump_semver() {
   local type="$1"
   parse_semver "$current"
   case "$type" in
-    major) echo "$(( SEMVER_MAJOR + 1 )).0.0" ;;
-    minor) echo "${SEMVER_MAJOR}.$(( SEMVER_MINOR + 1 )).0" ;;
-    patch) echo "${SEMVER_MAJOR}.${SEMVER_MINOR}.$(( SEMVER_PATCH + 1 ))" ;;
+    major) echo "$(( 10#$SEMVER_MAJOR + 1 )).0.0" ;;
+    minor) echo "${SEMVER_MAJOR}.$(( 10#$SEMVER_MINOR + 1 )).0" ;;
+    patch) echo "${SEMVER_MAJOR}.${SEMVER_MINOR}.$(( 10#$SEMVER_PATCH + 1 ))" ;;
   esac
 }
 
 # ── Choose version ──
 
 if [[ $# -ge 1 ]]; then
-  input="$1"
+  input="${1#v}"
   case "$input" in
     major|minor|patch)
       new_version=$(bump_semver "$input")
@@ -59,8 +55,8 @@ if [[ $# -ge 1 ]]; then
       ;;
   esac
 else
-  gum_header "Bump Version"
-  gum style --foreground 212 "Current: $current"
+  gum_header "Tag Release"
+  gum style --foreground 212 "Current latest tag: v$current"
   choice=$(gum choose --header "Bump type" "patch" "minor" "major")
   new_version=$(bump_semver "$choice")
 fi
@@ -68,41 +64,31 @@ fi
 # ── Validate ──
 
 parse_semver "$new_version"
+new_tag="v$new_version"
 
-if [[ "$new_version" == "$current" ]]; then
-  gum_warn "Version unchanged ($current). Nothing to do."
-  exit 0
+if git rev-parse --verify "refs/tags/$new_tag" >/dev/null 2>&1; then
+  gum_err "Tag $new_tag already exists."
+  exit 1
 fi
 
-gum style --margin "1 0" --foreground 212 --bold "Bumping $current → $new_version"
+gum style --margin "1 0" --foreground 212 --bold "Tagging HEAD: v$current → $new_tag"
 
-# ── Confirm ──
+# ── Confirm & Tag ──
 
-if ! gum confirm "Apply version $new_version?"; then
+if ! gum confirm "Create git tag $new_tag at HEAD?"; then
   gum_info "Aborted."
   exit 0
 fi
 
-# ── Update VERSION file ──
+git tag "$new_tag"
+gum_info "Created tag $new_tag"
 
-echo "$new_version" > "$VERSION_FILE"
-gum_info "Updated VERSION ($new_version)"
-
-# ── Git tag ──
-
-echo ""
-if gum confirm "Create git commit and tag v$new_version?"; then
-  # Commit only VERSION — leave any unrelated staged changes staged.
-  git commit -m "🚀 [release] Bump version to $new_version" -- VERSION
-  git tag "v$new_version"
-  gum_info "Created commit & tag v$new_version"
-  if gum confirm "Push commit and tag to origin?"; then
-    git push && git push origin "v$new_version"
-    gum_info "Pushed to origin."
-  fi
+if gum confirm "Push tag $new_tag to origin (triggers Release workflow)?"; then
+  git push origin "$new_tag"
+  gum_info "Pushed $new_tag to origin."
 else
-  gum_warn "Skipped git tag. Changes are unstaged — review with: git diff"
+  gum_warn "Skipped push. Push later with: git push origin $new_tag"
 fi
 
 echo ""
-gum style --foreground 10 --bold "Version bumped successfully: $current → $new_version"
+gum style --foreground 10 --bold "Release tag created: $new_tag"

@@ -1,10 +1,11 @@
-import versionRaw from '../../../VERSION?raw';
-
-const VERSION = versionRaw.trim();
+const VERSION = __APP_VERSION__.trim();
+const HAS_RELEASE = VERSION.length > 0 && VERSION !== '0.0.0';
 const TAG = `v${VERSION}`;
 const BASE = `https://github.com/yuler/airvoice/releases/download/${TAG}`;
 export const RELEASES = 'https://github.com/yuler/airvoice/releases/latest';
-export const ANDROID_APK_URL = `${BASE}/airvoice-android-${VERSION}.apk`;
+export const ANDROID_APK_URL = HAS_RELEASE
+  ? `${BASE}/airvoice-android-${VERSION}.apk`
+  : RELEASES;
 export const REPO_URL = 'https://github.com/yuler/airvoice';
 
 export interface DownloadUrls {
@@ -79,6 +80,7 @@ export function getDesktopOS(): DesktopOS {
 }
 
 export function getDesktopDownloadUrl(os: DesktopOS): string {
+  if (!HAS_RELEASE) return RELEASES;
   switch (os) {
     case 'macos':
       return `${BASE}/Airvoice-Desktop-${VERSION}-macOS.zip`;
@@ -93,20 +95,24 @@ export function getDownloadUrls(iosDocsUrl = 'docs/quick-start/#ios'): DownloadU
   const { isWindows, isMac, isLinux, isAndroid, isIOS, isARM } = detectPlatform();
 
   let cli = RELEASES;
-  let desktop = `${BASE}/Airvoice-Desktop-${VERSION}-Windows.zip`; // Default to Windows ZIP
+  let desktop = HAS_RELEASE
+    ? `${BASE}/Airvoice-Desktop-${VERSION}-Windows.zip`
+    : RELEASES; // Default to Windows ZIP
   let mobile = RELEASES;
 
-  if (isWindows) {
-    cli = `${BASE}/airvoice-cli-windows-amd64.exe`;
-    desktop = `${BASE}/Airvoice-Desktop-${VERSION}-Windows.zip`;
-  } else if (isMac) {
-    cli = isARM
-      ? `${BASE}/airvoice-cli-darwin-arm64`
-      : `${BASE}/airvoice-cli-darwin-amd64`;
-    desktop = `${BASE}/Airvoice-Desktop-${VERSION}-macOS.zip`;
-  } else if (isLinux) {
-    cli = `${BASE}/airvoice-cli-linux-amd64`;
-    desktop = `${BASE}/Airvoice-Desktop-${VERSION}-Linux-x86_64.AppImage`;
+  if (HAS_RELEASE) {
+    if (isWindows) {
+      cli = `${BASE}/airvoice-cli-windows-amd64.exe`;
+      desktop = `${BASE}/Airvoice-Desktop-${VERSION}-Windows.zip`;
+    } else if (isMac) {
+      cli = isARM
+        ? `${BASE}/airvoice-cli-darwin-arm64`
+        : `${BASE}/airvoice-cli-darwin-amd64`;
+      desktop = `${BASE}/Airvoice-Desktop-${VERSION}-macOS.zip`;
+    } else if (isLinux) {
+      cli = `${BASE}/airvoice-cli-linux-amd64`;
+      desktop = `${BASE}/Airvoice-Desktop-${VERSION}-Linux-x86_64.AppImage`;
+    }
   }
 
   if (isAndroid) {

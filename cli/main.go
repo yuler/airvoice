@@ -16,7 +16,7 @@ import (
 	"github.com/yuler/airvoice/cli/server"
 )
 
-// version is injected at build time from the repo-root VERSION file via -ldflags.
+// version is injected at build time from AIRVOICE_VERSION or the latest v* Git tag via -ldflags.
 var version = "dev"
 
 var serveFn = runServer
