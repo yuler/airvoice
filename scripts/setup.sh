@@ -24,7 +24,8 @@ fi
 # ── Desktop (Wails) ──
 if [[ -d "$ROOT/desktop" ]]; then
   if ! command -v wails >/dev/null 2>&1; then
-    gum spin --spinner dot --title "Installing Wails CLI…" -- go install github.com/wailsapp/wails/v2/cmd/wails@latest
+    _wails_version="$(go list -m -f '{{.Version}}' github.com/wailsapp/wails/v2)"
+    gum spin --spinner dot --title "Installing Wails CLI (${_wails_version})…" -- go install "github.com/wailsapp/wails/v2/cmd/wails@${_wails_version}"
   else
     gum_info "Wails CLI already installed: $(wails version 2>/dev/null || echo 'unknown')"
   fi

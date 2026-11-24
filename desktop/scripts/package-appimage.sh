@@ -164,7 +164,8 @@ download_verify \
   "linuxdeploy-plugin-gtk"
 chmod +x "$TOOLS/linuxdeploy-plugin-gtk.sh"
 
-export DEPLOY_GTK_VERSION=4
+# Wails v2 + webkit2gtk-4.1 links against GTK 3 (libsoup 3), not GTK 4.
+export DEPLOY_GTK_VERSION=3
 export NO_STRIP=1
 export PATH="$TOOLS:$PATH"
 export APPIMAGE_EXTRACT_AND_RUN=1
