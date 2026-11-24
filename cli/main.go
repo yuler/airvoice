@@ -14,13 +14,17 @@ import (
 	"github.com/yuler/airvoice/cli/pairing"
 	"github.com/yuler/airvoice/cli/paste"
 	"github.com/yuler/airvoice/cli/server"
+	"github.com/yuler/airvoice/cli/upgrade"
 )
 
 // version is injected by release builds via -ldflags. go install leaves it as "dev"
 // and productVersion falls back to the module version embedded in the binary.
 var version = "dev"
 
-var serveFn = runServer
+var (
+	serveFn   = runServer
+	upgradeFn = runUpgrade
+)
 
 func main() {
 	os.Exit(run(os.Args[1:]))
@@ -37,6 +41,8 @@ func run(args []string) int {
 	}
 
 	switch args[0] {
+	case "upgrade":
+		return upgradeFn(args[1:])
 	case "version":
 		fmt.Println("airvoice " + productVersion())
 		return 0
@@ -54,6 +60,40 @@ func run(args []string) int {
 		printUsage()
 		return 1
 	}
+}
+
+func runUpgrade(args []string) int {
+	var checkOnly bool
+	var targetVersion string
+
+	fs := flag.NewFlagSet("airvoice upgrade", flag.ContinueOnError)
+	fs.SetOutput(os.Stderr)
+	fs.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage:\n  airvoice upgrade [--check] [--version X.Y.Z]\n")
+	}
+	fs.BoolVar(&checkOnly, "check", false, "check for updates without installing")
+	fs.StringVar(&targetVersion, "version", "", "install a specific version (e.g. 0.4.8)")
+	if err := fs.Parse(args); err != nil {
+		return 1
+	}
+	if fs.NArg() > 0 {
+		fs.Usage()
+		return 1
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+
+	if err := upgrade.Run(ctx, upgrade.Options{
+		CurrentVersion: productVersion(),
+		TargetVersion:  targetVersion,
+		CheckOnly:      checkOnly,
+		Out:            os.Stdout,
+	}); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		return 1
+	}
+	return 0
 }
 
 func runSettings() int {
@@ -137,6 +177,16 @@ func runServer(args []string) int {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
+	execPath, _ := os.Executable()
+	upgrade.StartBackgroundCheck(ctx, upgrade.BackgroundOptions{
+		CurrentVersion: productVersion(),
+		ExecPath:       execPath,
+		Notify: func(current, latest, hint string) {
+			fmt.Fprintf(os.Stderr, "  [airvoice] update available: v%s -> v%s (run `%s`)\n", current, latest, hint)
+		},
+	})
+
 	go config.WatchToken(ctx, config.Path(), time.Second, token, func(newToken string) {
 		srv.SetToken(newToken)
 		srv.DisconnectClients()
@@ -164,6 +214,7 @@ func printUsage() {
 func writeUsage(w io.Writer) {
 	fmt.Fprintf(w, "Usage:\n")
 	fmt.Fprintf(w, "  airvoice [--port 7654]\n")
+	fmt.Fprintf(w, "  airvoice upgrade [--check] [--version X.Y.Z]\n")
 	fmt.Fprintf(w, "  airvoice settings\n")
 	fmt.Fprintf(w, "  airvoice token refresh\n")
 	fmt.Fprintf(w, "  airvoice doctor\n")

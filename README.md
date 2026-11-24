@@ -28,7 +28,7 @@ Explore the detailed documentation to understand the project better:
 curl -fsSL https://airvoice.yuler.cc/install.sh | sh
 ```
 
-This installs the latest release binary to `~/.local/bin` and prints its version.
+This installs the latest release binary to `~/.local/bin` and prints its version. To update later, run `airvoice upgrade` (or `airvoice upgrade --check` to check without installing).
 
 Homebrew:
 
@@ -36,6 +36,8 @@ Homebrew:
 brew tap yuler/airvoice https://github.com/yuler/airvoice
 brew install airvoice
 ```
+
+To update a Homebrew install, run `brew upgrade airvoice`. Set `AIRVOICE_NO_UPDATE_CHECK=1` to disable the daily background update check when running `airvoice`.
 
 ### Windows
 
