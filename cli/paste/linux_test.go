@@ -262,3 +262,22 @@ func TestLinuxPasters(t *testing.T) {
 		}
 	})
 }
+
+func TestIsTerminalWindow(t *testing.T) {
+	terminals := []string{
+		"Alacritty", "kitty", "foot", "wezterm", "konsole",
+		"herdr", "Herdr", "HERDR", "ghostty", "Ghostty",
+		"org.wezfurlong.wezterm", "footclient",
+	}
+	for _, class := range terminals {
+		if !isTerminalWindow(class) {
+			t.Errorf("expected %q to be detected as terminal", class)
+		}
+	}
+	nonTerminals := []string{"firefox", "Code", "chromium", "", "nautilus"}
+	for _, class := range nonTerminals {
+		if isTerminalWindow(class) {
+			t.Errorf("expected %q NOT to be detected as terminal", class)
+		}
+	}
+}
