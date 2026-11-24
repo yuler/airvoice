@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Lightbox from './Lightbox';
+import { APP_VERSION } from '../../lib/downloads';
 import type { HeroMessages } from '../../i18n/messages';
 
 interface HeroProps {
@@ -33,6 +34,10 @@ function TerminalWindow() {
           />
         </div>
         <div className="w-full font-mono text-[7px] sm:text-[9px] leading-relaxed space-y-0.5 sm:space-y-1 text-left truncate-children">
+          <div className="truncate">
+            <span style={{ color: labelColor }}>Airvoice</span>{' '}
+            <span style={{ color: fg }}>{APP_VERSION === '0.0.0' ? 'dev' : APP_VERSION}</span>
+          </div>
           <div className="truncate">
             <span style={{ color: labelColor }}>Token:</span>{' '}
             <span style={{ color: fg }}>277129e4-35ea-40af-a122-13a5839e5e1f</span>

@@ -8,26 +8,22 @@ Airvoice has two parts: a **desktop server** (CLI) and a **mobile client** (Andr
 
 ## 1. Install the CLI
 
-Install `mise` if you haven't:
+On macOS and Linux:
 
 ```bash
-curl https://mise.run | sh
+curl -fsSL https://airvoice.yuler.cc/install.sh | sh
 ```
 
-Then install Airvoice:
+The script downloads the latest release into `~/.local/bin` (`/usr/local/bin` when run as root) and prints the version. If that directory is not on `PATH`, follow the hint it prints.
+
+On Windows, download `airvoice-cli-windows-amd64.exe` from [GitHub Releases](https://github.com/yuler/airvoice/releases/latest), rename it to `airvoice.exe`, and add it to `PATH`.
+
+Homebrew also works:
 
 ```bash
-mise trust
-mise install
+brew tap yuler/airvoice https://github.com/yuler/airvoice
+brew install airvoice
 ```
-
-Or with Go directly:
-
-```bash
-go install github.com/yuler/airvoice/cli@latest
-```
-
-Or download a binary from [GitHub Releases](https://github.com/yuler/airvoice/releases/latest).
 
 ## 2. Start the Server
 

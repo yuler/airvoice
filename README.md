@@ -22,7 +22,15 @@ Explore the detailed documentation to understand the project better:
 
 ## Installation
 
-### macOS / Linux (Homebrew)
+### macOS / Linux
+
+```bash
+curl -fsSL https://airvoice.yuler.cc/install.sh | sh
+```
+
+This installs the latest release binary to `~/.local/bin` and prints its version.
+
+Homebrew:
 
 ```bash
 brew tap yuler/airvoice https://github.com/yuler/airvoice
@@ -32,12 +40,6 @@ brew install airvoice
 ### Windows
 
 Download `airvoice-cli-windows-amd64.exe` from [GitHub Releases](https://github.com/yuler/airvoice/releases), rename to `airvoice.exe`, and add to your PATH.
-
-### Go (all platforms)
-
-```bash
-go install github.com/yuler/airvoice/cli@latest
-```
 
 ### Manual Download
 
@@ -54,6 +56,14 @@ Download the binary for your platform from [GitHub Releases](https://github.com/
 ---
 
 ## Quick Start
+
+```bash
+airvoice
+```
+
+The terminal prints the version, a QR code, and the WebSocket URL. Keep it running, install the phone app, and scan the code on the same Wi-Fi. See the [quick start](https://airvoice.yuler.cc/docs/quick-start/) for Android and iOS.
+
+## Development
 
 This project uses [mise](https://mise.jdx.dev/) to pin **Go**, **Swift**, and **gum**, and to run common dev tasks.
 
