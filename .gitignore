@@ -59,3 +59,6 @@ www/dist
 
 # Intro video
 intro-video/public/audio/
+
+# Worktree
+.worktree
