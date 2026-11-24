@@ -22,6 +22,10 @@ done
 
 [[ -n "$BINARY" && -n "$VERSION" && -n "$OUTPUT_DIR" ]] || usage
 [[ -f "$BINARY" ]] || { echo "binary not found: $BINARY" >&2; exit 1; }
+command -v desktop-file-validate >/dev/null 2>&1 || {
+  echo "desktop-file-validate not found; install desktop-file-utils" >&2
+  exit 1
+}
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DESKTOP_DIR="$(cd "$SCRIPT_DIR/../packaging/linux" && pwd)"
@@ -189,7 +193,7 @@ export APPIMAGE_EXTRACT_AND_RUN=1
 write_apprun
 
 FINAL="$OUTPUT_DIR/Airvoice-Desktop-${VERSION}-Linux-${ARCH}.AppImage"
-APPIMAGE_EXTRACT_AND_RUN=1 "$APPIMAGETOOL" "$APPDIR" "$FINAL"
+ARCH="$ARCH" APPIMAGE_EXTRACT_AND_RUN=1 "$APPIMAGETOOL" "$APPDIR" "$FINAL"
 chmod +x "$FINAL"
 echo "Wrote $FINAL"
 ls -lh "$FINAL"
