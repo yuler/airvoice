@@ -79,27 +79,37 @@ func NewApp() (*App, error) {
 	return app, nil
 }
 
+func (a *App) getContext() context.Context {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+	return a.ctx
+}
+
 func (a *App) startup(ctx context.Context) {
+	a.mu.Lock()
 	a.ctx = ctx
+	port := a.port
+	token := a.token
+	path := a.settingsPath
+	a.mu.Unlock()
+
 	if a.tray != nil {
 		a.tray.Start()
 	}
-	server.LogHook = func(msg string) {
-		runtime.EventsEmit(a.ctx, "log_added", msg)
-	}
-	if err := a.StartServer(a.port); err != nil {
+	server.SetLogHook(func(msg string) {
+		if c := a.getContext(); c != nil {
+			runtime.EventsEmit(c, "log_added", msg)
+		}
+	})
+	if err := a.StartServer(port); err != nil {
 		log.Printf("Failed to start server: %v", err)
-		runtime.MessageDialog(a.ctx, runtime.MessageDialogOptions{
+		runtime.MessageDialog(ctx, runtime.MessageDialogOptions{
 			Type:    runtime.ErrorDialog,
 			Title:   "Server Error",
 			Message: fmt.Sprintf("Failed to start server: %v\n\nPlease check your settings and port occupancy.", err),
 		})
 	}
 
-	a.mu.RLock()
-	token := a.token
-	path := a.settingsPath
-	a.mu.RUnlock()
 	go config.WatchToken(ctx, path, time.Second, token, func(newToken string) {
 		a.applyToken(newToken, true)
 	})
@@ -148,6 +158,7 @@ func (a *App) applyToken(newToken string, disconnect bool) {
 	}
 	a.token = newToken
 	srv := a.server
+	ctx := a.ctx
 	a.mu.Unlock()
 
 	if srv != nil {
@@ -157,9 +168,9 @@ func (a *App) applyToken(newToken string, disconnect bool) {
 		}
 	}
 
-	if a.ctx != nil {
-		runtime.EventsEmit(a.ctx, "log_added", " [airvoice] pairing token refreshed")
-		runtime.EventsEmit(a.ctx, "pairing_changed")
+	if ctx != nil {
+		runtime.EventsEmit(ctx, "log_added", " [airvoice] pairing token refreshed")
+		runtime.EventsEmit(ctx, "pairing_changed")
 	}
 }
 
@@ -214,39 +225,59 @@ func (a *App) StartServer(port int) error {
 		State: "waiting",
 		Port:  port,
 	}
+	paster := a.paster
+	ctx := a.ctx
 	a.mu.Unlock()
 	if a.tray != nil {
 		a.tray.UpdateStatus()
 	}
 
-	if a.ctx != nil {
-		runtime.EventsEmit(a.ctx, "log_added", fmt.Sprintf(" [airvoice] listening on :%d (health: /health, ws: /ws)", port))
-	}
-
-	if a.paster == nil {
-		paster, err := paste.New()
+	if paster == nil {
+		var err error
+		paster, err = paste.New()
 		if err != nil {
+			a.mu.Lock()
+			a.status = ConnectionStatus{State: "disconnected"}
+			status := a.status
+			ctx = a.ctx
+			a.mu.Unlock()
+			if a.tray != nil {
+				a.tray.UpdateStatus()
+			}
+			if ctx != nil {
+				runtime.EventsEmit(ctx, "status_changed", status)
+			}
 			return fmt.Errorf("failed to initialize paster: %w", err)
 		}
-		a.paster = paster
+		a.mu.Lock()
+		if a.paster == nil {
+			a.paster = paster
+		} else {
+			paster = a.paster
+		}
+		a.mu.Unlock()
+	}
+
+	if ctx != nil {
+		runtime.EventsEmit(ctx, "log_added", fmt.Sprintf(" [airvoice] listening on :%d (health: /health, ws: /ws)", port))
 	}
 
 	srv := server.New(server.Config{
 		Addr:     fmt.Sprintf(":%d", port),
 		Port:     port,
 		Hostname: getLocalHostname(),
-		Paster:   a.paster,
+		Paster:   paster,
 		OnTextReceived: func(content, device string) {
 			if a.history != nil {
 				a.history.Add(content, device)
 			}
 		},
 		OnConnect: func(device string) {
-			a.mu.Lock()
 			host := ""
 			if ip, err := pairing.LocalIPv4(); err == nil {
 				host = ip
 			}
+			a.mu.Lock()
 			a.status = ConnectionStatus{
 				State:      "connected",
 				DeviceName: device,
@@ -254,12 +285,13 @@ func (a *App) StartServer(port int) error {
 				Port:       a.port,
 			}
 			status := a.status
+			ctx := a.ctx
 			a.mu.Unlock()
 			if a.tray != nil {
 				a.tray.UpdateStatus()
 			}
-			if a.ctx != nil {
-				runtime.EventsEmit(a.ctx, "status_changed", status)
+			if ctx != nil {
+				runtime.EventsEmit(ctx, "status_changed", status)
 			}
 		},
 		OnDisconnect: func() {
@@ -269,24 +301,26 @@ func (a *App) StartServer(port int) error {
 				Port:  a.port,
 			}
 			status := a.status
+			ctx := a.ctx
 			a.mu.Unlock()
 			if a.tray != nil {
 				a.tray.UpdateStatus()
 			}
-			if a.ctx != nil {
-				runtime.EventsEmit(a.ctx, "status_changed", status)
+			if ctx != nil {
+				runtime.EventsEmit(ctx, "status_changed", status)
 			}
 		},
 	})
 
-	a.mu.RLock()
-	token := a.token
-	a.mu.RUnlock()
-	srv.SetToken(token)
-
 	a.mu.Lock()
+	if a.server != nil {
+		a.mu.Unlock()
+		return fmt.Errorf("server already running")
+	}
+	token := a.token
 	a.server = srv
 	a.mu.Unlock()
+	srv.SetToken(token)
 
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -299,14 +333,49 @@ func (a *App) StartServer(port int) error {
 				Port:  a.port,
 			}
 			status := a.status
+			ctx := a.ctx
 			a.mu.Unlock()
-			if a.ctx != nil {
-				runtime.EventsEmit(a.ctx, "status_changed", status)
+			if a.tray != nil {
+				a.tray.UpdateStatus()
+			}
+			if ctx != nil {
+				runtime.EventsEmit(ctx, "status_changed", status)
 			}
 		}
 	}()
 
 	return nil
+}
+
+// DisconnectClients disconnects all active WebSocket clients while keeping the server running.
+func (a *App) DisconnectClients() {
+	a.mu.RLock()
+	srv := a.server
+	a.mu.RUnlock()
+	if srv == nil {
+		return
+	}
+	srv.DisconnectClients()
+
+	a.mu.Lock()
+	changed := a.status.State != "waiting"
+	if changed {
+		a.status = ConnectionStatus{
+			State: "waiting",
+			Port:  a.port,
+		}
+	}
+	status := a.status
+	ctx := a.ctx
+	a.mu.Unlock()
+	if changed {
+		if a.tray != nil {
+			a.tray.UpdateStatus()
+		}
+		if ctx != nil {
+			runtime.EventsEmit(ctx, "status_changed", status)
+		}
+	}
 }
 
 func (a *App) StopServer() error {
@@ -315,13 +384,14 @@ func (a *App) StopServer() error {
 	a.server = nil
 	a.status = ConnectionStatus{State: "disconnected"}
 	status := a.status
+	ctx := a.ctx
 	a.mu.Unlock()
 	if a.tray != nil {
 		a.tray.UpdateStatus()
 	}
 
-	if a.ctx != nil {
-		runtime.EventsEmit(a.ctx, "status_changed", status)
+	if ctx != nil {
+		runtime.EventsEmit(ctx, "status_changed", status)
 	}
 
 	if srv != nil {
@@ -367,7 +437,6 @@ func (a *App) SaveSettings(s Settings) error {
 
 	a.mu.RLock()
 	portChanged := a.port != s.Port
-	token := a.token
 	a.mu.RUnlock()
 
 	if portChanged {
@@ -377,7 +446,7 @@ func (a *App) SaveSettings(s Settings) error {
 	}
 
 	if err := config.Save(a.settingsPath, config.Settings{
-		Token:     token,
+		Token:     "",
 		Port:      s.Port,
 		AutoStart: s.AutoStart,
 		Language:  s.Language,
@@ -391,6 +460,7 @@ func (a *App) SaveSettings(s Settings) error {
 	}
 
 	a.mu.Lock()
+	oldToken := a.token
 	a.settings = Settings{
 		Token:     disk.Token,
 		Port:      s.Port,
@@ -399,12 +469,20 @@ func (a *App) SaveSettings(s Settings) error {
 	}
 	a.port = s.Port
 	a.token = disk.Token
+	srv := a.server
+	ctx := a.ctx
 	a.mu.Unlock()
 
-	if portChanged && a.ctx != nil {
+	if srv != nil && disk.Token != "" && disk.Token != oldToken {
+		srv.SetToken(disk.Token)
+	}
+
+	if portChanged && ctx != nil {
 		_ = a.StopServer()
-		_ = a.StartServer(s.Port)
-		runtime.EventsEmit(a.ctx, "server_restarted")
+		if err := a.StartServer(s.Port); err != nil {
+			return err
+		}
+		runtime.EventsEmit(ctx, "server_restarted")
 	}
 
 	return nil

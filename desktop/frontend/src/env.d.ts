@@ -30,6 +30,7 @@ interface WailsApp {
   GetQRCode(): Promise<string>
   GetPairingLink(): Promise<string>
   GetConnectionStatus(): Promise<ConnectionStatus>
+  DisconnectClients(): Promise<void>
   GetHistory(limit: number): Promise<HistoryEntry[]>
   SearchHistory(query: string, limit: number): Promise<HistoryEntry[]>
   ClearHistory(): Promise<void>

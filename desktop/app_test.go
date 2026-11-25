@@ -3,9 +3,16 @@ package main
 import (
 	"bytes"
 	"encoding/base64"
+	"fmt"
 	"image/png"
+	"net"
 	"os"
+	"runtime"
 	"testing"
+	"time"
+
+	"github.com/gorilla/websocket"
+	"github.com/yuler/airvoice/cli/config"
 )
 
 func TestNewApp(t *testing.T) {
@@ -217,6 +224,127 @@ func TestSaveSettingsPreservesToken(t *testing.T) {
 	}
 	if app.token != token {
 		t.Fatalf("token changed on SaveSettings: %q vs %q", app.token, token)
+	}
+}
+
+func TestSaveSettingsPreservesExternallyRotatedToken(t *testing.T) {
+	app := newTestApp(t)
+	oldToken := app.token
+
+	rotated, err := config.RotateToken(app.settingsPath)
+	if err != nil {
+		t.Fatalf("RotateToken: %v", err)
+	}
+	if rotated.Token == oldToken {
+		t.Fatal("expected rotated token to differ from initial token")
+	}
+
+	if err := app.SaveSettings(Settings{Port: app.port, Language: "en-US", AutoStart: true}); err != nil {
+		t.Fatalf("SaveSettings: %v", err)
+	}
+
+	if app.token != rotated.Token {
+		t.Fatalf("app.token = %q, want externally rotated token %q", app.token, rotated.Token)
+	}
+	disk, err := config.Load(app.settingsPath)
+	if err != nil {
+		t.Fatalf("config.Load: %v", err)
+	}
+	if disk.Token != rotated.Token {
+		t.Fatalf("disk token = %q, want externally rotated token %q", disk.Token, rotated.Token)
+	}
+}
+
+type stubPaster struct{}
+
+func (stubPaster) Paste(string) error { return nil }
+func (stubPaster) Name() string       { return "stub" }
+
+func freePort(t *testing.T) int {
+	t.Helper()
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	port := ln.Addr().(*net.TCPAddr).Port
+	ln.Close()
+	return port
+}
+
+func TestDisconnectClientsKeepsServerRunning(t *testing.T) {
+	app := newTestApp(t)
+	app.paster = stubPaster{}
+
+	port := freePort(t)
+	if err := app.StartServer(port); err != nil {
+		t.Fatalf("StartServer: %v", err)
+	}
+	defer func() { _ = app.StopServer() }()
+
+	wsURL := fmt.Sprintf("ws://127.0.0.1:%d/ws?token=%s", port, app.token)
+
+	// Wait briefly for ListenAndServe goroutine to bind.
+	var conn *websocket.Conn
+	var err error
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		conn, _, err = websocket.DefaultDialer.Dial(wsURL, nil)
+		if err == nil {
+			break
+		}
+		time.Sleep(15 * time.Millisecond)
+	}
+	if err != nil {
+		t.Fatalf("failed to connect websocket client: %v", err)
+	}
+	defer conn.Close()
+
+	// Wait for OnConnect to update status to connected.
+	deadline = time.Now().Add(time.Second)
+	for app.GetConnectionStatus().State != "connected" && time.Now().Before(deadline) {
+		time.Sleep(10 * time.Millisecond)
+	}
+	if got := app.GetConnectionStatus().State; got != "connected" {
+		t.Fatalf("status = %q, want connected", got)
+	}
+
+	// DisconnectClients should drop client, move state to waiting, and keep server running.
+	app.DisconnectClients()
+
+	if got := app.GetConnectionStatus().State; got != "waiting" {
+		t.Fatalf("status after DisconnectClients = %q, want waiting", got)
+	}
+
+	_ = conn.SetReadDeadline(time.Now().Add(time.Second))
+	if _, _, err := conn.ReadMessage(); err == nil {
+		t.Fatal("expected disconnected client read to fail")
+	}
+
+	// Server must still be running and accept a new connection.
+	conn2, _, err := websocket.DefaultDialer.Dial(wsURL, nil)
+	if err != nil {
+		t.Fatalf("expected server to remain listening after DisconnectClients, got err=%v", err)
+	}
+	conn2.Close()
+}
+
+func TestStartServerPasterFailureRollsBackStatus(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("Linux session-detection failure test")
+	}
+	app := newTestApp(t)
+	t.Setenv("XDG_SESSION_TYPE", "unknown")
+	t.Setenv("WAYLAND_DISPLAY", "")
+	t.Setenv("DISPLAY", "")
+	t.Setenv("PATH", "")
+
+	port := freePort(t)
+	if err := app.StartServer(port); err == nil {
+		_ = app.StopServer()
+		t.Fatal("expected StartServer to fail when paster initialization fails")
+	}
+	if got := app.GetConnectionStatus().State; got != "disconnected" {
+		t.Fatalf("status after paster failure = %q, want disconnected", got)
 	}
 }
 

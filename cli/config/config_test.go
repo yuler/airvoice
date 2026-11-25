@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"runtime"
+	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -160,4 +163,112 @@ func writeSettings(path string, s Settings) error {
 		return err
 	}
 	return os.WriteFile(path, data, 0o600)
+}
+
+func TestEnsureTokenPropagatesErrorWithoutOverwritingCorruptFile(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "settings.json")
+	corrupt := []byte("{not valid json")
+	if err := os.WriteFile(path, corrupt, 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := EnsureToken(path); err == nil {
+		t.Fatal("expected EnsureToken to return error on corrupt JSON")
+	}
+
+	after, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(after) != string(corrupt) {
+		t.Fatalf("corrupt file was overwritten: got %q, want %q", after, corrupt)
+	}
+}
+
+func TestSavePropagatesErrorWithoutOverwritingCorruptFile(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "settings.json")
+	corrupt := []byte("{not valid json")
+	if err := os.WriteFile(path, corrupt, 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := Save(path, Settings{Port: 7655, Language: "en-US"}); err == nil {
+		t.Fatal("expected Save to return error on corrupt JSON")
+	}
+
+	after, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(after) != string(corrupt) {
+		t.Fatalf("corrupt file was overwritten: got %q, want %q", after, corrupt)
+	}
+}
+
+func TestWriteFileAtomicPermissionsAndConcurrentSaves(t *testing.T) {
+	baseDir := t.TempDir()
+	settingsDir := filepath.Join(baseDir, "nested-airvoice")
+	path := filepath.Join(settingsDir, "settings.json")
+
+	if _, err := EnsureToken(path); err != nil {
+		t.Fatal(err)
+	}
+
+	if runtime.GOOS != "windows" {
+		dirInfo, err := os.Stat(settingsDir)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if perm := dirInfo.Mode().Perm(); perm != 0o700 {
+			t.Errorf("dir perm = %o, want 0700", perm)
+		}
+		fileInfo, err := os.Stat(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if perm := fileInfo.Mode().Perm(); perm != 0o600 {
+			t.Errorf("file perm = %o, want 0600", perm)
+		}
+	}
+
+	// Concurrent atomic saves should not race on a fixed .tmp filename or leave temp files behind.
+	// Skip parallel rename stress on Windows where renaming over a concurrently read file can fail with sharing violation.
+	if runtime.GOOS != "windows" {
+		var wg sync.WaitGroup
+		errCh := make(chan error, 10)
+		for i := 0; i < 10; i++ {
+			wg.Add(1)
+			go func(port int) {
+				defer wg.Done()
+				if err := Save(path, Settings{Port: port, Language: "en-US"}); err != nil {
+					errCh <- err
+				}
+			}(7655 + i)
+		}
+		wg.Wait()
+		close(errCh)
+		for err := range errCh {
+			t.Fatalf("concurrent Save failed: %v", err)
+		}
+	} else {
+		if err := Save(path, Settings{Port: 7656, Language: "en-US"}); err != nil {
+			t.Fatalf("Save failed: %v", err)
+		}
+	}
+
+	// Resulting file must still be valid JSON and no temp files left behind.
+	if _, err := Load(path); err != nil {
+		t.Fatalf("Load after concurrent saves failed: %v", err)
+	}
+	entries, err := os.ReadDir(settingsDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, e := range entries {
+		if strings.HasPrefix(e.Name(), ".settings-") {
+			t.Fatalf("leftover temp file found: %s", e.Name())
+		}
+	}
 }

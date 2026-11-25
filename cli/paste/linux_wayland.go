@@ -3,11 +3,14 @@
 package paste
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -78,7 +81,9 @@ type hyprctlWindow struct {
 var activeWindowClass = detectActiveWindowClass
 
 func detectActiveWindowClass() string {
-	out, err := exec.Command("hyprctl", "activewindow", "-j").Output()
+	ctx, cancel := context.WithTimeout(context.Background(), pasteCommandTimeout)
+	defer cancel()
+	out, err := exec.CommandContext(ctx, "hyprctl", "activewindow", "-j").Output()
 	if err != nil {
 		return ""
 	}
@@ -104,28 +109,49 @@ func (w *waylandPaster) Paste(text string) error {
 		return runCommand("hyprctl", "", "dispatch", luaExpr)
 	}
 
-	ensureYdotoolSocket()
-	return runCommand("ydotool", "", "key", "CTRL+v")
+	var extraEnv []string
+	if sock := resolveYdotoolSocket(); sock != "" {
+		extraEnv = []string{"YDOTOOL_SOCKET=" + sock}
+	}
+	return runCommandWithEnv(extraEnv, "ydotool", "", "key", "CTRL+v")
 }
 
-func ensureYdotoolSocket() {
+// resolveYdotoolSocket returns a fallback YDOTOOL_SOCKET path to pass to ydotool,
+// or empty string when YDOTOOL_SOCKET is already set or no fallback socket exists.
+var resolveYdotoolSocket = detectYdotoolSocket
+
+var tmpYdotoolSocketPath = "/tmp/.ydotool_socket"
+
+func detectYdotoolSocket() string {
 	if os.Getenv("YDOTOOL_SOCKET") != "" {
-		return
+		return ""
 	}
 	if runtimeDir := os.Getenv("XDG_RUNTIME_DIR"); runtimeDir != "" {
-		if _, err := os.Stat(runtimeDir + "/.ydotool_socket"); err == nil {
-			os.Setenv("YDOTOOL_SOCKET", runtimeDir+"/.ydotool_socket")
-			return
+		candidate := filepath.Join(runtimeDir, ".ydotool_socket")
+		if _, err := os.Stat(candidate); err == nil {
+			return candidate
 		}
 	}
-	if _, err := os.Stat("/tmp/.ydotool_socket"); err == nil {
-		os.Setenv("YDOTOOL_SOCKET", "/tmp/.ydotool_socket")
-		return
+	if isOwnedByCurrentUser(tmpYdotoolSocketPath) {
+		return tmpYdotoolSocketPath
 	}
 	uidSocket := fmt.Sprintf("/run/user/%d/ydotool/socket", os.Getuid())
 	if _, err := os.Stat(uidSocket); err == nil {
-		os.Setenv("YDOTOOL_SOCKET", uidSocket)
+		return uidSocket
 	}
+	return ""
+}
+
+func isOwnedByCurrentUser(path string) bool {
+	info, err := os.Lstat(path)
+	if err != nil || info.Mode()&os.ModeSymlink != 0 {
+		return false
+	}
+	st, ok := info.Sys().(*syscall.Stat_t)
+	if !ok {
+		return false
+	}
+	return int(st.Uid) == os.Getuid()
 }
 
 func (w *waylandPaster) Name() string {
