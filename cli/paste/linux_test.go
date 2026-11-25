@@ -5,6 +5,7 @@ package paste
 import (
 	"errors"
 	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 )
@@ -63,6 +64,10 @@ func TestLinuxPasters(t *testing.T) {
 		isHyprland = func() bool { return false }
 		defer func() { isHyprland = origIsHyprland }()
 
+		origResolve := resolveYdotoolSocket
+		resolveYdotoolSocket = func() string { return "" }
+		defer func() { resolveYdotoolSocket = origResolve }()
+
 		runCommand = func(name string, stdin string, args ...string) error {
 			calls = append(calls, commandCall{name: name, stdin: stdin, args: args})
 			return nil
@@ -82,6 +87,52 @@ func TestLinuxPasters(t *testing.T) {
 		}
 		if !reflect.DeepEqual(calls, expected) {
 			t.Errorf("got calls %+v, expected %+v", calls, expected)
+		}
+	})
+
+	t.Run("waylandPaster passes YDOTOOL_SOCKET via child env without mutating process env", func(t *testing.T) {
+		t.Setenv("YDOTOOL_SOCKET", "")
+
+		origIsHyprland := isHyprland
+		isHyprland = func() bool { return false }
+		defer func() { isHyprland = origIsHyprland }()
+
+		origResolve := resolveYdotoolSocket
+		resolveYdotoolSocket = func() string { return "/run/user/1000/.ydotool_socket" }
+		defer func() { resolveYdotoolSocket = origResolve }()
+
+		origRunWithEnv := runCommandWithEnv
+		defer func() { runCommandWithEnv = origRunWithEnv }()
+
+		var gotEnv []string
+		var envCalls []commandCall
+		runCommand = func(name string, stdin string, args ...string) error {
+			calls = append(calls, commandCall{name: name, stdin: stdin, args: args})
+			return nil
+		}
+		runCommandWithEnv = func(extraEnv []string, name string, stdin string, args ...string) error {
+			gotEnv = append([]string(nil), extraEnv...)
+			envCalls = append(envCalls, commandCall{name: name, stdin: stdin, args: args})
+			return nil
+		}
+		calls = nil
+
+		p := &waylandPaster{}
+		if err := p.Paste("hello env"); err != nil {
+			t.Fatalf("Paste failed: %v", err)
+		}
+		if os.Getenv("YDOTOOL_SOCKET") != "" {
+			t.Fatalf("process YDOTOOL_SOCKET was mutated to %q", os.Getenv("YDOTOOL_SOCKET"))
+		}
+		wantEnv := []string{"YDOTOOL_SOCKET=/run/user/1000/.ydotool_socket"}
+		if !reflect.DeepEqual(gotEnv, wantEnv) {
+			t.Errorf("extraEnv = %v, want %v", gotEnv, wantEnv)
+		}
+		wantEnvCalls := []commandCall{
+			{name: "ydotool", stdin: "", args: []string{"key", "CTRL+v"}},
+		}
+		if !reflect.DeepEqual(envCalls, wantEnvCalls) {
+			t.Errorf("envCalls = %+v, want %+v", envCalls, wantEnvCalls)
 		}
 	})
 
@@ -279,5 +330,80 @@ func TestIsTerminalWindow(t *testing.T) {
 		if isTerminalWindow(class) {
 			t.Errorf("expected %q NOT to be detected as terminal", class)
 		}
+	}
+}
+
+func TestDetectYdotoolSocketAndOwnership(t *testing.T) {
+	origTmpPath := tmpYdotoolSocketPath
+	defer func() { tmpYdotoolSocketPath = origTmpPath }()
+
+	t.Run("respects existing YDOTOOL_SOCKET", func(t *testing.T) {
+		t.Setenv("YDOTOOL_SOCKET", "/custom/socket")
+		if got := detectYdotoolSocket(); got != "" {
+			t.Fatalf("expected empty fallback when YDOTOOL_SOCKET is set, got %q", got)
+		}
+	})
+
+	t.Run("prefers XDG_RUNTIME_DIR socket without mutating env", func(t *testing.T) {
+		runtimeDir := t.TempDir()
+		sock := filepath.Join(runtimeDir, ".ydotool_socket")
+		if err := os.WriteFile(sock, nil, 0o600); err != nil {
+			t.Fatal(err)
+		}
+		t.Setenv("YDOTOOL_SOCKET", "")
+		t.Setenv("XDG_RUNTIME_DIR", runtimeDir)
+		tmpYdotoolSocketPath = filepath.Join(t.TempDir(), "missing")
+
+		if got := detectYdotoolSocket(); got != sock {
+			t.Fatalf("got %q, want %q", got, sock)
+		}
+		if os.Getenv("YDOTOOL_SOCKET") != "" {
+			t.Fatalf("expected YDOTOOL_SOCKET env to remain unset, got %q", os.Getenv("YDOTOOL_SOCKET"))
+		}
+	})
+
+	t.Run("uses tmp fallback only when owned by current user and not a symlink", func(t *testing.T) {
+		dir := t.TempDir()
+		owned := filepath.Join(dir, ".ydotool_socket")
+		if err := os.WriteFile(owned, nil, 0o600); err != nil {
+			t.Fatal(err)
+		}
+		t.Setenv("YDOTOOL_SOCKET", "")
+		t.Setenv("XDG_RUNTIME_DIR", filepath.Join(dir, "empty-runtime"))
+		tmpYdotoolSocketPath = owned
+
+		if got := detectYdotoolSocket(); got != owned {
+			t.Fatalf("expected owned tmp fallback %q, got %q", owned, got)
+		}
+
+		// Symlink must be rejected.
+		link := filepath.Join(dir, "symlink_socket")
+		if err := os.Symlink(owned, link); err != nil {
+			t.Fatal(err)
+		}
+		if isOwnedByCurrentUser(link) {
+			t.Fatal("expected symlink to be rejected by isOwnedByCurrentUser")
+		}
+
+		// File owned by another user (root) must be rejected when running as non-root.
+		if os.Getuid() != 0 {
+			if isOwnedByCurrentUser("/etc/passwd") {
+				t.Fatal("expected root-owned file to be rejected by isOwnedByCurrentUser")
+			}
+		}
+	})
+}
+
+func TestRunCommandCaptureEnvDoesNotMutateProcessEnv(t *testing.T) {
+	t.Setenv("AIRVOICE_CHILD_ONLY", "")
+	_, err := runCommandCaptureEnv(
+		[]string{"AIRVOICE_CHILD_ONLY=expected-val"},
+		"sh", "", "-c", `test "$AIRVOICE_CHILD_ONLY" = "expected-val"`,
+	)
+	if err != nil {
+		t.Fatalf("expected child process to observe extraEnv, got err=%v", err)
+	}
+	if got := os.Getenv("AIRVOICE_CHILD_ONLY"); got != "" {
+		t.Fatalf("expected parent env to remain empty, got %q", got)
 	}
 }

@@ -49,7 +49,7 @@ func Load(path string) (Settings, error) {
 func EnsureToken(path string) (Settings, error) {
 	s, err := Load(path)
 	if err != nil {
-		s = Settings{}
+		return Settings{}, err
 	}
 	if strings.TrimSpace(s.Token) != "" {
 		s.Token = strings.TrimSpace(s.Token)
@@ -79,7 +79,7 @@ func RotateToken(path string) (Settings, error) {
 func Save(path string, incoming Settings) error {
 	existing, err := Load(path)
 	if err != nil {
-		existing = Settings{}
+		return err
 	}
 	if strings.TrimSpace(incoming.Token) == "" {
 		incoming.Token = existing.Token
@@ -117,7 +117,8 @@ func WatchToken(ctx context.Context, path string, interval time.Duration, curren
 }
 
 func writeFile(path string, s Settings) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return err
 	}
 	data, err := json.MarshalIndent(s, "", "  ")
@@ -125,9 +126,32 @@ func writeFile(path string, s Settings) error {
 		return err
 	}
 	data = append(data, '\n')
-	tmp := path + ".tmp"
-	if err := os.WriteFile(tmp, data, 0o600); err != nil {
+
+	tmpFile, err := os.CreateTemp(dir, ".settings-*.tmp")
+	if err != nil {
 		return err
 	}
-	return os.Rename(tmp, path)
+	tmpPath := tmpFile.Name()
+	cleanup := true
+	defer func() {
+		if cleanup {
+			_ = os.Remove(tmpPath)
+		}
+	}()
+
+	if _, err := tmpFile.Write(data); err != nil {
+		_ = tmpFile.Close()
+		return err
+	}
+	if err := tmpFile.Close(); err != nil {
+		return err
+	}
+	if err := os.Chmod(tmpPath, 0o600); err != nil {
+		return err
+	}
+	if err := os.Rename(tmpPath, path); err != nil {
+		return err
+	}
+	cleanup = false
+	return nil
 }

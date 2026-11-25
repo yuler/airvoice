@@ -3,6 +3,7 @@ package paste
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 	"time"
@@ -21,12 +22,29 @@ var runCommand = func(name string, stdin string, args ...string) error {
 	return err
 }
 
+// runCommandWithEnv runs a command with optional additional KEY=VALUE environment entries
+// without mutating the current process environment.
+var runCommandWithEnv = func(extraEnv []string, name string, stdin string, args ...string) error {
+	if len(extraEnv) == 0 {
+		return runCommand(name, stdin, args...)
+	}
+	_, err := runCommandCaptureEnv(extraEnv, name, stdin, args...)
+	return err
+}
+
 func runCommandCapture(name string, stdin string, args ...string) (string, error) {
+	return runCommandCaptureEnv(nil, name, stdin, args...)
+}
+
+func runCommandCaptureEnv(extraEnv []string, name string, stdin string, args ...string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), pasteCommandTimeout)
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, name, args...)
 	configureCmd(cmd)
+	if len(extraEnv) > 0 {
+		cmd.Env = append(os.Environ(), extraEnv...)
+	}
 	if stdin != "" {
 		cmd.Stdin = strings.NewReader(stdin)
 	}

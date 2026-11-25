@@ -17,6 +17,7 @@ var trayIcon []byte
 
 type platformTray struct {
 	once       sync.Once
+	mu         sync.Mutex
 	statusItem *systray.MenuItem
 	showItem   *systray.MenuItem
 	hideItem   *systray.MenuItem
@@ -38,38 +39,45 @@ func (t *TrayManager) onReady() {
 	}
 	systray.SetTooltip("Airvoice")
 
-	t.showItem = systray.AddMenuItem("Show Window", "Show Airvoice Window")
-	t.hideItem = systray.AddMenuItem("Hide Window", "Hide Airvoice Window")
+	showItem := systray.AddMenuItem("Show Window", "Show Airvoice Window")
+	hideItem := systray.AddMenuItem("Hide Window", "Hide Airvoice Window")
 	systray.AddSeparator()
-	t.statusItem = systray.AddMenuItem(t.statusLabel(), "")
-	t.statusItem.Disable()
+	statusItem := systray.AddMenuItem(t.statusLabel(), "")
+	statusItem.Disable()
 	systray.AddSeparator()
-	t.quitItem = systray.AddMenuItem("Quit", "Quit Airvoice")
+	quitItem := systray.AddMenuItem("Quit", "Quit Airvoice")
+
+	t.mu.Lock()
+	t.showItem = showItem
+	t.hideItem = hideItem
+	t.statusItem = statusItem
+	t.quitItem = quitItem
+	t.mu.Unlock()
 
 	// Handle clicks in a background loop
 	go func() {
 		for {
 			select {
-			case _, ok := <-t.showItem.ClickedCh:
+			case _, ok := <-showItem.ClickedCh:
 				if !ok {
 					return
 				}
-				if t.app.ctx != nil {
-					wailsruntime.WindowShow(t.app.ctx)
+				if ctx := t.app.getContext(); ctx != nil {
+					wailsruntime.WindowShow(ctx)
 				}
-			case _, ok := <-t.hideItem.ClickedCh:
+			case _, ok := <-hideItem.ClickedCh:
 				if !ok {
 					return
 				}
-				if t.app.ctx != nil {
-					wailsruntime.WindowHide(t.app.ctx)
+				if ctx := t.app.getContext(); ctx != nil {
+					wailsruntime.WindowHide(ctx)
 				}
-			case _, ok := <-t.quitItem.ClickedCh:
+			case _, ok := <-quitItem.ClickedCh:
 				if !ok {
 					return
 				}
-				if t.app.ctx != nil {
-					wailsruntime.Quit(t.app.ctx)
+				if ctx := t.app.getContext(); ctx != nil {
+					wailsruntime.Quit(ctx)
 				}
 				systray.Quit()
 			}
@@ -81,8 +89,11 @@ func (t *TrayManager) onExit() {
 }
 
 func (t *TrayManager) UpdateStatus() {
-	if t.statusItem != nil {
-		t.statusItem.SetTitle(t.statusLabel())
+	t.mu.Lock()
+	item := t.statusItem
+	t.mu.Unlock()
+	if item != nil {
+		item.SetTitle(t.statusLabel())
 	}
 }
 
