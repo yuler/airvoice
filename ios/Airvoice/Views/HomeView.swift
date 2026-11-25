@@ -2,7 +2,8 @@ import SwiftUI
 import Combine
 
 struct HomeView: View {
-    @AppStorage("appTheme") private var appThemeRaw = AppTheme.light.rawValue
+    @ObservedObject private var settings = AppSettings.shared
+    @Environment(\.colorScheme) private var systemColorScheme
     @Environment(\.scenePhase) private var scenePhase
 
     @StateObject private var connection = ConnectionManager()
@@ -12,11 +13,16 @@ struct HomeView: View {
     @FocusState private var isEditorFocused: Bool
 
     @State private var showScanner = false
+    @State private var showSettings = false
     @State private var pendingRemotePairing: ValidatedPairing?
     @State private var isBreathing = false
 
     private var theme: AppTheme {
-        AppTheme(rawValue: appThemeRaw) ?? .light
+        AppTheme.resolved(mode: settings.themeMode, colorScheme: systemColorScheme)
+    }
+
+    private var strings: AppStrings {
+        settings.strings
     }
 
     var body: some View {
@@ -29,9 +35,9 @@ struct HomeView: View {
 
                 // — Countdown bar (full width, no spacing, directly below status bar)
                 AutoSendCountdownBar(
-                    active: autoSend.countdownActive,
+                    active: settings.autoSendEnabled && autoSend.countdownActive,
                     token: autoSend.countdownToken,
-                    duration: autoSend.autoSendDelay,
+                    duration: settings.autoSendDelaySeconds,
                     theme: theme
                 )
 
@@ -43,43 +49,74 @@ struct HomeView: View {
                 .padding(.top, 12)
             }
         }
+        .preferredColorScheme(settings.themeMode.preferredColorScheme)
         .toast(message: $viewModel.toastMessage, isError: $viewModel.isToastError, theme: theme)
         .sheet(isPresented: $showScanner) {
             scannerSheetView
         }
+        .sheet(isPresented: $showSettings) {
+            SettingsSheetView(
+                settings: settings,
+                connection: connection,
+                theme: theme,
+                onDisconnectAndClear: {
+                    viewModel.disconnectAndClear(connection: connection, autoSend: autoSend)
+                },
+                onSettingsReset: {
+                    syncSettingsToControllers()
+                }
+            )
+        }
         .alert(
-            "确认连接外部服务器",
+            strings.remoteAlertTitle,
             isPresented: Binding(
                 get: { pendingRemotePairing != nil },
                 set: { if !$0 { pendingRemotePairing = nil } }
             ),
             presenting: pendingRemotePairing
         ) { pending in
-            Button("取消", role: .cancel) {
+            Button(strings.cancel, role: .cancel) {
                 pendingRemotePairing = nil
             }
-            Button("确认连接") {
+            Button(strings.remoteAlertConfirm) {
                 autoSend.resetLastAcked()
                 connection.connect(payload: pending.payload, allowRemote: true)
                 pendingRemotePairing = nil
             }
         } message: { pending in
-            Text("该二维码指向非局域网地址：\n\(pending.host)\n\n确认连接后，您的输入将自动发送到该服务器。请仅在信任该服务器时继续。")
+            Text(strings.remoteAlertBody(pending.host))
         }
         .onAppear {
             viewModel.wire(connection: connection, autoSend: autoSend)
+            syncSettingsToControllers()
             connection.connectSavedIfAvailable()
             focusEditorForKeyboard()
+        }
+        .onChange(of: settings.autoSendEnabled) { _, enabled in
+            autoSend.setAutoSendEnabled(enabled)
+        }
+        .onChange(of: settings.autoSendDelayMs) { _, _ in
+            autoSend.autoSendDelay = settings.autoSendDelaySeconds
+        }
+        .onChange(of: settings.keepScreenAwake) { _, _ in
+            syncIdleTimer()
         }
         .onChange(of: showScanner) { _, isShowing in
             if isShowing {
                 isEditorFocused = false
-            } else {
+            } else if !showSettings {
+                focusEditorForKeyboard()
+            }
+        }
+        .onChange(of: showSettings) { _, isShowing in
+            if isShowing {
+                isEditorFocused = false
+            } else if !showScanner {
                 focusEditorForKeyboard()
             }
         }
         .onChange(of: connection.state) { _, newValue in
-            UIApplication.shared.isIdleTimerDisabled = (newValue == .connected)
+            syncIdleTimer()
             if newValue == .connected {
                 viewModel.flushPendingAutoSend(connection: connection, autoSend: autoSend)
             }
@@ -87,7 +124,7 @@ struct HomeView: View {
         .onChange(of: scenePhase) { _, newPhase in
             switch newPhase {
             case .active:
-                if !showScanner {
+                if !showScanner && !showSettings {
                     focusEditorForKeyboard()
                 }
                 connection.resumeReconnect()
@@ -113,11 +150,9 @@ struct HomeView: View {
 
             HStack(spacing: 8) {
                 Button {
-                    var next = theme
-                    next.toggle()
-                    appThemeRaw = next.rawValue
+                    showScanner = true
                 } label: {
-                    Image(systemName: theme == .light ? "moon.fill" : "sun.max.fill")
+                    Image(systemName: "qrcode.viewfinder")
                         .font(.system(size: 13, weight: .bold))
                         .foregroundColor(theme.primaryText)
                         .frame(width: 28, height: 28)
@@ -126,9 +161,9 @@ struct HomeView: View {
                 }
 
                 Button {
-                    showScanner = true
+                    showSettings = true
                 } label: {
-                    Image(systemName: "qrcode.viewfinder")
+                    Image(systemName: "gearshape.fill")
                         .font(.system(size: 13, weight: .bold))
                         .foregroundColor(theme.primaryText)
                         .frame(width: 28, height: 28)
@@ -198,10 +233,10 @@ struct HomeView: View {
 
     private var statusText: String {
         switch connection.state {
-        case .disconnected: return "未连接"
-        case .connecting: return "连接中..."
-        case .connected: return "已连接: \(connection.hostName ?? "电脑")"
-        case .error: return "连接失败，正在重试"
+        case .disconnected: return strings.statusDisconnected
+        case .connecting: return strings.statusConnecting
+        case .connected: return strings.statusConnected(connection.hostName)
+        case .error: return strings.statusError
         }
     }
 
@@ -210,7 +245,7 @@ struct HomeView: View {
     private var editorSection: some View {
         ZStack(alignment: .topLeading) {
             if viewModel.text.isEmpty {
-                Text("在此输入，或使用键盘麦克风语音输入...")
+                Text(strings.editorPlaceholder)
                     .foregroundColor(theme.placeholderText)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
@@ -225,7 +260,7 @@ struct HomeView: View {
                 .padding(8)
                 .onChange(of: viewModel.text) { _, newValue in
                     autoSend.textDidChange(newValue)
-                    if newValue.isEmpty, !showScanner {
+                    if newValue.isEmpty, !showScanner, !showSettings {
                         isEditorFocused = true
                     }
                 }
@@ -249,13 +284,13 @@ struct HomeView: View {
                     ProgressView()
                         .controlSize(.small)
                         .tint(theme.secondaryText)
-                    Text("发送中")
+                    Text(strings.sending)
                         .font(.caption)
                         .foregroundColor(theme.secondaryText)
                     Button {
                         viewModel.cancelSend(autoSend: autoSend)
                     } label: {
-                        Text("取消")
+                        Text(strings.cancel)
                             .font(.caption.weight(.semibold))
                             .foregroundColor(theme.accent)
                     }
@@ -265,7 +300,7 @@ struct HomeView: View {
                 .background(theme.chipBackground)
                 .cornerRadius(14)
             } else if connection.state != .connected {
-                Text(connection.canReconnect ? "连接中断，正在重连..." : "请先扫码连接电脑")
+                Text(connection.canReconnect ? strings.promptReconnect : strings.promptScanQr)
                     .font(.caption)
                     .foregroundColor(theme.secondaryText)
             }
@@ -275,7 +310,7 @@ struct HomeView: View {
             }) {
                 HStack(spacing: 8) {
                     Image(systemName: "paperplane.fill")
-                    Text("发送到电脑")
+                    Text(strings.sendToPc)
                 }
                 .font(.subheadline.weight(.semibold))
                 .foregroundColor(theme.primaryText)
@@ -290,14 +325,8 @@ struct HomeView: View {
             }
             .disabled(connection.state != .connected || autoSend.inFlight)
 
-            InputMethodTipsView(theme: theme)
-
-            if let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String {
-                Text("v\(version)")
-                    .font(.system(size: 11, weight: .medium, design: .rounded))
-                    .foregroundColor(theme.secondaryText.opacity(0.6))
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.top, 4)
+            if settings.showInputTips {
+                InputMethodTipsView(theme: theme, strings: strings)
             }
         }
         .padding(.horizontal, 20)
@@ -306,9 +335,21 @@ struct HomeView: View {
 
     // MARK: - Helpers
 
+    private func syncSettingsToControllers() {
+        autoSend.setAutoSendEnabled(settings.autoSendEnabled)
+        autoSend.autoSendDelay = settings.autoSendDelaySeconds
+        syncIdleTimer()
+    }
+
+    private func syncIdleTimer() {
+        UIApplication.shared.isIdleTimerDisabled = (connection.state == .connected && settings.keepScreenAwake)
+    }
+
     private func focusEditorForKeyboard() {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-            isEditorFocused = true
+            if !showScanner && !showSettings {
+                isEditorFocused = true
+            }
         }
     }
 
@@ -328,20 +369,20 @@ struct HomeView: View {
                             showScanner = false
                         }
                     } catch let error as PairingValidationError {
-                        viewModel.showToast(error.errorDescription ?? "无效的二维码", isError: true)
+                        viewModel.showToast(error.localizedMessage(strings), isError: true)
                     } catch {
-                        viewModel.showToast("无效的二维码", isError: true)
+                        viewModel.showToast(strings.invalidQrCode, isError: true)
                     }
                 },
                 onError: { error in
-                    viewModel.showToast("相机错误: \(error.localizedDescription)", isError: true)
+                    viewModel.showToast(strings.cameraError(error.localizedDescription), isError: true)
                 }
             )
-            .navigationTitle("扫描电脑端二维码")
+            .navigationTitle(strings.scannerTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("取消") {
+                    Button(strings.cancel) {
                         showScanner = false
                     }
                 }

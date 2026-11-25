@@ -3,7 +3,10 @@ package cc.yuler.airvoice.ui.viewmodel
 import android.app.Application
 import androidx.datastore.preferences.core.edit
 import androidx.test.core.app.ApplicationProvider
+import cc.yuler.airvoice.models.AppLanguage
+import cc.yuler.airvoice.models.AppSettings
 import cc.yuler.airvoice.models.PairingPayload
+import cc.yuler.airvoice.models.ThemeMode
 import cc.yuler.airvoice.services.AesGcmTokenCipher
 import cc.yuler.airvoice.services.ConnectionManager
 import cc.yuler.airvoice.services.ConnectionStatus
@@ -101,14 +104,14 @@ class AirvoiceViewModelTest {
 
             viewModel.cancelSend()
             assertFalse(sendJob.await())
-            assertEquals("已取消发送", viewModel.toastMessage.value)
+            assertEquals(viewModel.currentStrings().toastSendCancelled, viewModel.toastMessage.value)
             assertFalse(viewModel.isToastError.value)
             assertFalse(viewModel.sendTimedOut.value)
 
             // Wait past the 400ms auto-retry window to confirm NO automatic resend occurs.
             delay(700L)
             assertEquals(1, textFrameCount.get())
-            assertEquals("已取消发送", viewModel.toastMessage.value)
+            assertEquals(viewModel.currentStrings().toastSendCancelled, viewModel.toastMessage.value)
             assertFalse(viewModel.isToastError.value)
             assertFalse(viewModel.sendTimedOut.value)
         } finally {
@@ -130,5 +133,34 @@ class AirvoiceViewModelTest {
         assertTrue(viewModel.isToastError.value)
         assertNull(storageManager.connectionInfoFlow.first().wsUrl)
         assertEquals(ConnectionStatus.Disconnected, connectionManager.status.value)
+    }
+
+    @Test
+    fun testSettingsMutationsAndLanguageSwitching() = runBlocking {
+        viewModel.setThemeMode(ThemeMode.DARK)
+        viewModel.setLanguage(AppLanguage.EN)
+        viewModel.setAutoSendEnabled(false)
+        viewModel.setAutoSendDelayMs(2500L)
+        viewModel.setHapticFeedbackEnabled(false)
+        viewModel.setKeepScreenAwake(false)
+        viewModel.setShowInputTips(false)
+        viewModel.setSendTimeoutMs(10000L)
+
+        val current = viewModel.settings.value
+        assertEquals(ThemeMode.DARK, current.themeMode)
+        assertEquals(AppLanguage.EN, current.language)
+        assertFalse(current.autoSendEnabled)
+        assertEquals(2500L, current.autoSendDelayMs)
+        assertFalse(current.hapticFeedbackEnabled)
+        assertFalse(current.keepScreenAwake)
+        assertFalse(current.showInputTips)
+        assertEquals(10000L, current.sendTimeoutMs)
+        assertEquals("Send cancelled", viewModel.currentStrings().toastSendCancelled)
+
+        viewModel.setLanguage(AppLanguage.ZH)
+        assertEquals("已取消发送", viewModel.currentStrings().toastSendCancelled)
+
+        viewModel.resetSettings()
+        assertEquals(AppSettings(), viewModel.settings.value)
     }
 }

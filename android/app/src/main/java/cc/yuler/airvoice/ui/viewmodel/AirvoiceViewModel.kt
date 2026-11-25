@@ -5,15 +5,20 @@ import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import cc.yuler.airvoice.AirvoiceApplication
+import cc.yuler.airvoice.models.AppLanguage
+import cc.yuler.airvoice.models.AppSettings
 import cc.yuler.airvoice.models.PairingPayload
 import cc.yuler.airvoice.models.PairingValidationResult
 import cc.yuler.airvoice.models.PairingValidator
+import cc.yuler.airvoice.models.ThemeMode
 import cc.yuler.airvoice.services.AutoSendController
 import cc.yuler.airvoice.services.ConnectionManager
 import cc.yuler.airvoice.services.ConnectionStatus
 import cc.yuler.airvoice.services.SendResult
 import cc.yuler.airvoice.services.SendTrigger
 import cc.yuler.airvoice.services.StorageManager
+import cc.yuler.airvoice.ui.i18n.AppStrings
+import cc.yuler.airvoice.ui.i18n.stringsFor
 import cc.yuler.airvoice.utils.VibratorHelper
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -41,8 +46,11 @@ class AirvoiceViewModel internal constructor(
 
     private val vibratorHelper = VibratorHelper(application)
 
-    private val _appTheme = MutableStateFlow("light")
-    val appTheme: StateFlow<String> = _appTheme.asStateFlow()
+    private val _settings = MutableStateFlow(AppSettings())
+    val settings: StateFlow<AppSettings> = _settings.asStateFlow()
+
+    private val _pairedWsUrl = MutableStateFlow<String?>(null)
+    val pairedWsUrl: StateFlow<String?> = _pairedWsUrl.asStateFlow()
 
     private val _inputText = MutableStateFlow("")
     val inputText: StateFlow<String> = _inputText.asStateFlow()
@@ -64,9 +72,10 @@ class AirvoiceViewModel internal constructor(
 
     init {
         viewModelScope.launch {
-            _appTheme.value = storage.themeFlow.first()
+            _settings.value = storage.settingsFlow.first()
 
             val conn = storage.readConnectionAndMigrateLegacy()
+            _pairedWsUrl.value = conn.wsUrl
             if (!conn.wsUrl.isNullOrEmpty() && !conn.token.isNullOrEmpty()) {
                 connectionManager.connect(conn.wsUrl, conn.token, allowRemote = conn.allowRemote)
             }
@@ -76,18 +85,24 @@ class AirvoiceViewModel internal constructor(
             connectionManager.authExpiredEvents.collect {
                 cancelPendingRetry()
                 storage.clearConnection()
-                showToast("配对已失效，请重新扫码", isError = true)
+                _pairedWsUrl.value = null
+                showToast(currentStrings().toastAuthExpired, isError = true)
             }
         }
 
         autoSendController = AutoSendController(
             textFlow = _inputText,
             connectionManager = connectionManager,
+            isAutoSendEnabled = { _settings.value.autoSendEnabled },
+            autoSendDelayMs = { _settings.value.autoSendDelayMs },
+            sendTimeoutMs = { _settings.value.sendTimeoutMs },
             onSentAck = { result, sentText, trigger ->
                 handleSentAck(result, sentText, trigger)
             }
         )
     }
+
+    fun currentStrings(): AppStrings = stringsFor(_settings.value.language)
 
     fun updateInputText(text: String) {
         _inputText.value = text
@@ -98,12 +113,57 @@ class AirvoiceViewModel internal constructor(
         autoSendController.triggerImmediateSend()
     }
 
-    fun toggleTheme() {
-        viewModelScope.launch {
-            val nextTheme = if (_appTheme.value == "light") "dark" else "light"
-            _appTheme.value = nextTheme
-            storage.saveTheme(nextTheme)
+    fun setThemeMode(mode: ThemeMode) {
+        _settings.value = _settings.value.copy(themeMode = mode)
+        viewModelScope.launch { storage.saveThemeMode(mode) }
+    }
+
+    fun setLanguage(language: AppLanguage) {
+        _settings.value = _settings.value.copy(language = language)
+        viewModelScope.launch { storage.saveLanguage(language) }
+    }
+
+    fun setAutoSendEnabled(enabled: Boolean) {
+        _settings.value = _settings.value.copy(autoSendEnabled = enabled)
+        if (!enabled) {
+            autoSendController.cancelCountdown()
         }
+        viewModelScope.launch { storage.saveAutoSendEnabled(enabled) }
+    }
+
+    fun setAutoSendDelayMs(delayMs: Long) {
+        val sanitized = AppSettings.sanitizeDelayMs(delayMs)
+        _settings.value = _settings.value.copy(autoSendDelayMs = sanitized)
+        viewModelScope.launch { storage.saveAutoSendDelayMs(sanitized) }
+    }
+
+    fun setHapticFeedbackEnabled(enabled: Boolean) {
+        _settings.value = _settings.value.copy(hapticFeedbackEnabled = enabled)
+        viewModelScope.launch { storage.saveHapticFeedbackEnabled(enabled) }
+    }
+
+    fun setKeepScreenAwake(enabled: Boolean) {
+        _settings.value = _settings.value.copy(keepScreenAwake = enabled)
+        viewModelScope.launch { storage.saveKeepScreenAwake(enabled) }
+    }
+
+    fun setShowInputTips(enabled: Boolean) {
+        _settings.value = _settings.value.copy(showInputTips = enabled)
+        viewModelScope.launch { storage.saveShowInputTips(enabled) }
+    }
+
+    fun setSendTimeoutMs(timeoutMs: Long) {
+        val sanitized = AppSettings.sanitizeTimeoutMs(timeoutMs)
+        _settings.value = _settings.value.copy(sendTimeoutMs = sanitized)
+        viewModelScope.launch { storage.saveSendTimeoutMs(sanitized) }
+    }
+
+    fun resetSettings() {
+        _settings.value = AppSettings()
+        viewModelScope.launch {
+            storage.resetSettings()
+        }
+        showToast(currentStrings().toastSettingsReset, isError = false)
     }
 
     fun showToast(message: String, isError: Boolean = false) {
@@ -117,17 +177,18 @@ class AirvoiceViewModel internal constructor(
     }
 
     fun manualSend() {
+        val strings = currentStrings()
         val currentText = _inputText.value
         if (currentText.trim().isEmpty()) {
-            showToast("请输入文字", isError = true)
+            showToast(strings.toastEnterText, isError = true)
             return
         }
         if (connectionManager.status.value !is ConnectionStatus.Connected) {
-            showToast("请先连接电脑", isError = true)
+            showToast(strings.toastConnectFirst, isError = true)
             return
         }
         if (autoSendController.inFlight.value) {
-            showToast("上一条仍在发送中", isError = true)
+            showToast(strings.toastSendInFlight, isError = true)
             return
         }
         cancelPendingRetry()
@@ -142,7 +203,7 @@ class AirvoiceViewModel internal constructor(
         cancelPendingRetry()
         if (autoSendController.inFlight.value || hadPendingRetry) {
             autoSendController.clearInFlight()
-            showToast("已取消发送", isError = false)
+            showToast(currentStrings().toastSendCancelled, isError = false)
         }
     }
 
@@ -157,6 +218,7 @@ class AirvoiceViewModel internal constructor(
             "AirvoiceViewModel",
             "handleSentAck: result=$result, sentLen=${sentText.length}, currentLen=${_inputText.value.length}, trigger=$trigger"
         )
+        val strings = currentStrings()
         when (result) {
             SendResult.SUCCESS -> {
                 val currentText = _inputText.value
@@ -169,8 +231,10 @@ class AirvoiceViewModel internal constructor(
                 autoSendController.textDidChange(remaining)
                 _sendTimedOut.value = false
                 cancelPendingRetry()
-                vibratorHelper.triggerHapticClick()
-                showToast("已发送到电脑", isError = false)
+                if (_settings.value.hapticFeedbackEnabled) {
+                    vibratorHelper.triggerHapticClick()
+                }
+                showToast(strings.toastSentToPc, isError = false)
             }
             SendResult.CANCELLED -> {
                 cancelPendingRetry()
@@ -193,24 +257,26 @@ class AirvoiceViewModel internal constructor(
                 } else {
                     _sendTimedOut.value = true
                     cancelPendingRetry()
-                    showToast("发送失败，请检查连接", isError = true)
+                    showToast(strings.toastSendFailed, isError = true)
                 }
             }
         }
     }
 
     fun pairAndConnect(payload: PairingPayload, allowRemote: Boolean = false) {
+        val strings = currentStrings()
         val validation = PairingValidator.validate(payload)
         if (validation is PairingValidationResult.Invalid) {
-            showToast(PairingValidator.errorMessage(validation.reason), isError = true)
+            showToast(PairingValidator.errorMessage(validation.reason, strings), isError = true)
             return
         }
         val valid = validation as PairingValidationResult.Valid
         if (!valid.isLocal && !allowRemote) {
-            showToast("非局域网地址未经确认", isError = true)
+            showToast(strings.errUnconfirmedRemote, isError = true)
             return
         }
 
+        _pairedWsUrl.value = valid.normalizedUrl
         viewModelScope.launch {
             cancelPendingRetry()
             storage.saveConnection(valid.normalizedUrl, payload.token.trim(), allowRemote = allowRemote)
@@ -220,12 +286,17 @@ class AirvoiceViewModel internal constructor(
     }
 
     fun disconnectAndClear() {
+        _pairedWsUrl.value = null
+        _inputText.value = ""
+        _sendTimedOut.value = false
         viewModelScope.launch {
             cancelPendingRetry()
+            autoSendController.cancelCountdown()
+            autoSendController.clearInFlight()
             connectionManager.disconnect()
             storage.clearConnection()
-            _inputText.value = ""
         }
+        showToast(currentStrings().toastPairingCleared, isError = false)
     }
 
     override fun onCleared() {

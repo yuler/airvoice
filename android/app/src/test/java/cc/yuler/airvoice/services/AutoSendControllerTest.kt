@@ -84,6 +84,33 @@ class AutoSendControllerTest {
     }
 
     @Test
+    fun testAutoSendDisabledSkipsCountdownAndImmediateSend() {
+        var enabled = false
+        val controller = AutoSendController(
+            textFlow = textFlow,
+            connectionManager = connectionManager,
+            isAutoSendEnabled = { enabled },
+            autoSendDelayMs = { 800L }
+        ) { _, _, _ -> }
+
+        textFlow.value = "hello"
+        controller.textDidChange("hello")
+        assertFalse(controller.countdownActive.value)
+        assertEquals(0, controller.countdownToken.value)
+
+        controller.triggerImmediateSend()
+        assertFalse(controller.inFlight.value)
+
+        enabled = true
+        controller.textDidChange("hello")
+        assertTrue(controller.countdownActive.value)
+        controller.cancelCountdown()
+        assertFalse(controller.countdownActive.value)
+
+        controller.cleanup()
+    }
+
+    @Test
     fun testClearInFlightCompletesWithCancelledInsteadOfFailed() = runBlocking {
         val server = MockWebServer()
         val opened = CompletableDeferred<Unit>()

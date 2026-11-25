@@ -2,25 +2,28 @@ import SwiftUI
 
 struct InputMethodTipsView: View {
     let theme: AppTheme
+    let strings: AppStrings
     @Environment(\.openURL) private var openURL
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Label("语音输入需要第三方输入法", systemImage: "keyboard")
+            Label(strings.tipsTitle, systemImage: "keyboard")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(theme.primaryText)
 
-            Text("优先使用豆包或微信输入法，在键盘中点击麦克风说话：")
+            Text(strings.tipsBody)
                 .font(.caption)
                 .foregroundStyle(theme.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)
 
-            HStack(spacing: 10) {
-                appStoreLink(title: "豆包输入法", appID: "6752316550")
-                appStoreLink(title: "微信输入法", appID: "1618175312")
+            if strings.isChinese {
+                HStack(spacing: 10) {
+                    appStoreLink(title: strings.doubaoIme, appID: "6752316550")
+                    appStoreLink(title: strings.wetypeIme, appID: "1618175312")
+                }
             }
 
-            Text("安装后前往 设置 → 通用 → 键盘 添加新键盘")
+            Text(strings.tipsInstallHint)
                 .font(.caption2)
                 .foregroundStyle(theme.secondaryText)
         }

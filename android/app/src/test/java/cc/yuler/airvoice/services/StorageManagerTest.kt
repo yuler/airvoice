@@ -3,6 +3,9 @@ package cc.yuler.airvoice.services
 import android.content.Context
 import androidx.datastore.preferences.core.edit
 import androidx.test.core.app.ApplicationProvider
+import cc.yuler.airvoice.models.AppLanguage
+import cc.yuler.airvoice.models.AppSettings
+import cc.yuler.airvoice.models.ThemeMode
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -103,8 +106,40 @@ class StorageManagerTest {
 
     @Test
     fun testSaveTheme() = runBlocking {
-        assertEquals("light", storageManager.themeFlow.first())
+        assertEquals("system", storageManager.themeFlow.first())
         storageManager.saveTheme("dark")
         assertEquals("dark", storageManager.themeFlow.first())
+    }
+
+    @Test
+    fun testSettingsPersistenceAndResetPreservesConnection() = runBlocking {
+        assertEquals(AppSettings(), storageManager.settingsFlow.first())
+
+        storageManager.saveConnection("ws://192.168.1.5:7655/ws", "keep-token", allowRemote = false)
+        storageManager.saveThemeMode(ThemeMode.DARK)
+        storageManager.saveLanguage(AppLanguage.EN)
+        storageManager.saveAutoSendEnabled(false)
+        storageManager.saveAutoSendDelayMs(2500L)
+        storageManager.saveHapticFeedbackEnabled(false)
+        storageManager.saveKeepScreenAwake(false)
+        storageManager.saveShowInputTips(false)
+        storageManager.saveSendTimeoutMs(10000L)
+
+        val saved = storageManager.settingsFlow.first()
+        assertEquals(ThemeMode.DARK, saved.themeMode)
+        assertEquals(AppLanguage.EN, saved.language)
+        assertFalse(saved.autoSendEnabled)
+        assertEquals(2500L, saved.autoSendDelayMs)
+        assertFalse(saved.hapticFeedbackEnabled)
+        assertFalse(saved.keepScreenAwake)
+        assertFalse(saved.showInputTips)
+        assertEquals(10000L, saved.sendTimeoutMs)
+
+        storageManager.resetSettings()
+        assertEquals(AppSettings(), storageManager.settingsFlow.first())
+
+        val conn = storageManager.connectionInfoFlow.first()
+        assertEquals("ws://192.168.1.5:7655/ws", conn.wsUrl)
+        assertEquals("keep-token", conn.token)
     }
 }

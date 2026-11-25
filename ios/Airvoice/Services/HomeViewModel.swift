@@ -8,6 +8,7 @@ final class HomeViewModel: ObservableObject {
     @Published var isToastError = false
     @Published var sendTimedOut = false
 
+    private let settings: AppSettings
     private var sendTimeoutTask: Task<Void, Never>?
     private var retryTask: Task<Void, Never>?
     /// Maps in-flight message IDs to the content actually sent (for dedup after ack).
@@ -20,6 +21,10 @@ final class HomeViewModel: ObservableObject {
     private var inFlightContent: String?
     private var inFlightTrigger: SendTrigger = .manual
     private var inFlightIsRetry = false
+
+    init(settings: AppSettings? = nil) {
+        self.settings = settings ?? AppSettings.shared
+    }
 
     func wire(connection: ConnectionManager, autoSend: AutoSendController) {
         autoSend.currentText = { [weak self] in
@@ -75,16 +80,17 @@ final class HomeViewModel: ObservableObject {
     }
 
     func manualSend(connection: ConnectionManager, autoSend: AutoSendController) {
+        let strings = settings.strings
         guard connection.state == .connected else {
-            showToast("请先连接电脑", isError: true)
+            showToast(strings.toastConnectFirst, isError: true)
             return
         }
         guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            showToast("请输入文字", isError: true)
+            showToast(strings.toastEnterText, isError: true)
             return
         }
         if autoSend.inFlight {
-            showToast("上一条仍在发送中", isError: true)
+            showToast(strings.toastSendInFlight, isError: true)
             return
         }
         autoSend.sendNow(text, force: true)
@@ -104,7 +110,27 @@ final class HomeViewModel: ObservableObject {
         inFlightContent = nil
         inFlightIsRetry = false
         autoSend.clearInFlight()
-        showToast("已取消发送", isError: false)
+        showToast(settings.strings.toastSendCancelled, isError: false)
+    }
+
+    func disconnectAndClear(connection: ConnectionManager, autoSend: AutoSendController) {
+        retryTask?.cancel()
+        retryTask = nil
+        sendTimeoutTask?.cancel()
+        sendTimeoutTask = nil
+        if let msgId = pendingSendMsgId {
+            clearPendingSend(msgId: msgId)
+        }
+        pendingAutoSendText = nil
+        inFlightContent = nil
+        inFlightIsRetry = false
+        sendTimedOut = false
+        autoSend.resetOnFocus()
+        autoSend.clearInFlight()
+        autoSend.resetLastAcked()
+        text = ""
+        connection.disconnectAndClear()
+        showToast(settings.strings.toastPairingCleared, isError: false)
     }
 
     @discardableResult
@@ -115,6 +141,7 @@ final class HomeViewModel: ObservableObject {
         autoSend: AutoSendController,
         isRetry: Bool = false
     ) -> Bool {
+        let strings = settings.strings
         let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return false }
 
@@ -123,13 +150,13 @@ final class HomeViewModel: ObservableObject {
                 pendingAutoSendText = content
                 return false
             }
-            showToast("请先连接电脑", isError: true)
+            showToast(strings.toastConnectFirst, isError: true)
             return false
         }
 
         if autoSend.inFlight {
             if trigger == .manual {
-                showToast("上一条仍在发送中", isError: true)
+                showToast(strings.toastSendInFlight, isError: true)
             }
             return false
         }
@@ -151,20 +178,21 @@ final class HomeViewModel: ObservableObject {
             inFlightContent = nil
             inFlightIsRetry = false
             autoSend.clearInFlight()
-            showToast("发送失败：未连接到电脑", isError: true)
+            showToast(strings.toastSendFailedNotConnected, isError: true)
             return false
         }
 
         sendTimeoutTask?.cancel()
         sendTimeoutTask = Task { [weak self, weak autoSend] in
-            let timeoutMs = AppSettings.shared.sendTimeoutMs
+            guard let self else { return }
+            let timeoutMs = self.settings.sendTimeoutMs
             let timeoutNs = UInt64(timeoutMs * 1_000_000)
             try? await Task.sleep(nanoseconds: timeoutNs)
             guard !Task.isCancelled else {
-                self?.sendTimeoutTask = nil
+                self.sendTimeoutTask = nil
                 return
             }
-            guard let self, let autoSend else { return }
+            guard let autoSend else { return }
             if autoSend.inFlight {
                 if let msgId = self.pendingSendMsgId {
                     self.clearPendingSend(msgId: msgId)
@@ -173,7 +201,7 @@ final class HomeViewModel: ObservableObject {
                 self.inFlightContent = nil
                 self.inFlightIsRetry = false
                 self.sendTimedOut = true
-                self.showToast("发送超时，请重试", isError: true)
+                self.showToast(self.settings.strings.toastSendTimeout, isError: true)
             }
             self.sendTimeoutTask = nil
         }
@@ -196,7 +224,7 @@ final class HomeViewModel: ObservableObject {
         // when an active send was interrupted.
         if wasInFlight {
             sendTimedOut = true
-            showToast("发送失败，请检查连接", isError: true)
+            showToast(settings.strings.toastSendFailedCheckConnection, isError: true)
         }
     }
 
@@ -213,7 +241,7 @@ final class HomeViewModel: ObservableObject {
         inFlightContent = nil
         inFlightIsRetry = false
         sendTimedOut = false
-        showToast("配对已失效，请重新扫码", isError: true)
+        showToast(settings.strings.toastAuthExpired, isError: true)
     }
 
     private func clearPendingSend(msgId: String) {
@@ -243,9 +271,11 @@ final class HomeViewModel: ObservableObject {
         sendTimeoutTask = nil
 
         if ok {
-            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            if settings.hapticFeedbackEnabled {
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            }
             sendTimedOut = false
-            showToast("已发送到电脑", isError: false)
+            showToast(settings.strings.toastSentToPc, isError: false)
             autoSend.markAcked(sentContent)
             let remaining: String
             if text.hasPrefix(sentContent) {
@@ -289,7 +319,7 @@ final class HomeViewModel: ObservableObject {
                 }
             } else {
                 inFlightIsRetry = false
-                showToast(errMsg ?? "发送失败", isError: true)
+                showToast(errMsg ?? settings.strings.toastSendFailedGeneric, isError: true)
             }
         }
     }

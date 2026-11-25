@@ -35,6 +35,9 @@ enum class SendResult {
 class AutoSendController(
     private val textFlow: StateFlow<String>,
     private val connectionManager: ConnectionManager,
+    private val isAutoSendEnabled: () -> Boolean = { true },
+    private val autoSendDelayMs: () -> Long = { 1500L },
+    private val sendTimeoutMs: () -> Long = { 5000L },
     private val onSentAck: (SendResult, String, SendTrigger) -> Unit
 ) {
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
@@ -94,15 +97,16 @@ class AutoSendController(
             stopCountdown()
             return
         }
-        if (_inFlight.value) {
+        if (!isAutoSendEnabled() || _inFlight.value) {
             stopCountdown()
             return
         }
 
+        val delayDuration = autoSendDelayMs()
         startCountdown()
         debounceJob = scope.launch {
-            delay(1500L)
-            if (!isActive) return@launch
+            delay(delayDuration)
+            if (!isActive || !isAutoSendEnabled()) return@launch
             _countdownActive.value = false
             scope.launch {
                 attemptSend(textFlow.value, SendTrigger.AUTO)
@@ -110,7 +114,12 @@ class AutoSendController(
         }
     }
 
+    fun cancelCountdown() {
+        stopCountdown()
+    }
+
     fun triggerImmediateSend() {
+        if (!isAutoSendEnabled()) return
         val text = textFlow.value
         if (text.isNotEmpty() && text != lastAckedText) {
             scope.launch {
@@ -172,7 +181,7 @@ class AutoSendController(
 
         val result = try {
             Log.d("AutoSendController", "Awaiting deferred for msgId=$msgId")
-            withTimeout(5000L) {
+            withTimeout(sendTimeoutMs()) {
                 deferred.await()
             }
         } catch (e: TimeoutCancellationException) {
