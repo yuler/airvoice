@@ -1,26 +1,26 @@
 class Airvoice < Formula
   desc "Voice-to-text CLI for Airvoice"
   homepage "https://github.com/yuler/airvoice"
-  version "0.4.9"
+  version "0.4.10"
   license "MIT"
 
   on_macos do
     if Hardware::CPU.arm?
-      url "https://github.com/yuler/airvoice/releases/download/v0.4.9/airvoice-cli-darwin-arm64"
-      sha256 "0f8a631b8580f4b721ebc1b88adc62dcf5510aef3a0dc13d46ac8561c694dc3c"
+      url "https://github.com/yuler/airvoice/releases/download/v0.4.10/airvoice-cli-darwin-arm64"
+      sha256 "7259e959059b7c60ba10bbd73d24afd603fe43be5a8cfb6226b2149dffad0b95"
     else
-      url "https://github.com/yuler/airvoice/releases/download/v0.4.9/airvoice-cli-darwin-amd64"
-      sha256 "9429938b188abfbce970a49813eec157521122e0d5e95bea23a7e0d125a3eddb"
+      url "https://github.com/yuler/airvoice/releases/download/v0.4.10/airvoice-cli-darwin-amd64"
+      sha256 "3ea3eb503ac799357349668b6f1fdb41c5166b79d58ba01ce7156f1190f1138f"
     end
   end
 
   on_linux do
     if Hardware::CPU.arm?
-      url "https://github.com/yuler/airvoice/releases/download/v0.4.9/airvoice-cli-linux-arm64"
-      sha256 "3b6b416d9027fa22b185226cf7e6c07674aede81a8d2de622e38ce76149de54f"
+      url "https://github.com/yuler/airvoice/releases/download/v0.4.10/airvoice-cli-linux-arm64"
+      sha256 "e2bfb910597a111bfcdab30679ddc0c3ba415048a006bc236f52e32e08e58bb6"
     else
-      url "https://github.com/yuler/airvoice/releases/download/v0.4.9/airvoice-cli-linux-amd64"
-      sha256 "48089bfb510bea45dd25ab7ab9d0afec3cf3c462f49a20f11e6c60505466b563"
+      url "https://github.com/yuler/airvoice/releases/download/v0.4.10/airvoice-cli-linux-amd64"
+      sha256 "bdfde2ec0daf42098ea24a5a1f0bf2157040caab2779ec3020dd8029548b443e"
     end
   end
 
