@@ -3,6 +3,9 @@ package cc.yuler.airvoice.services
 import android.content.Context
 import androidx.datastore.preferences.core.edit
 import androidx.test.core.app.ApplicationProvider
+import cc.yuler.airvoice.models.AppLanguage
+import cc.yuler.airvoice.models.AppSettings
+import cc.yuler.airvoice.models.ThemeMode
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -102,9 +105,37 @@ class StorageManagerTest {
     }
 
     @Test
-    fun testSaveTheme() = runBlocking {
-        assertEquals("light", storageManager.themeFlow.first())
-        storageManager.saveTheme("dark")
-        assertEquals("dark", storageManager.themeFlow.first())
+    fun testLegacyThemeKeyReadsCleanlyViaSettingsFlow() = runBlocking {
+        assertEquals(ThemeMode.SYSTEM, storageManager.settingsFlow.first().themeMode)
+        context.dataStore.edit { prefs -> prefs[StorageManager.KEY_THEME] = "dark" }
+        assertEquals(ThemeMode.DARK, storageManager.settingsFlow.first().themeMode)
+    }
+
+    @Test
+    fun testSettingsPersistenceAndResetPreservesConnection() = runBlocking {
+        assertEquals(AppSettings(), storageManager.settingsFlow.first())
+
+        storageManager.saveConnection("ws://192.168.1.5:7655/ws", "keep-token", allowRemote = false)
+        val updated = AppSettings(
+            themeMode = ThemeMode.DARK,
+            language = AppLanguage.EN,
+            autoSendEnabled = false,
+            autoSendDelayMs = 2500L,
+            hapticFeedbackEnabled = false,
+            keepScreenAwake = false,
+            showInputTips = false,
+            sendTimeoutMs = 10000L
+        )
+        storageManager.saveSettings(updated)
+
+        val saved = storageManager.settingsFlow.first()
+        assertEquals(updated, saved)
+
+        storageManager.resetSettings()
+        assertEquals(AppSettings(), storageManager.settingsFlow.first())
+
+        val conn = storageManager.connectionInfoFlow.first()
+        assertEquals("ws://192.168.1.5:7655/ws", conn.wsUrl)
+        assertEquals("keep-token", conn.token)
     }
 }

@@ -1,8 +1,37 @@
 import SwiftUI
 
+enum ThemeMode: String, CaseIterable {
+    case system
+    case light
+    case dark
+
+    var preferredColorScheme: ColorScheme? {
+        switch self {
+        case .system: nil
+        case .light: .light
+        case .dark: .dark
+        }
+    }
+
+    static func fromStorage(_ raw: String?) -> ThemeMode {
+        guard let raw, let mode = ThemeMode(rawValue: raw) else {
+            return .system
+        }
+        return mode
+    }
+}
+
 enum AppTheme: String, CaseIterable {
     case light
     case dark
+
+    static func resolved(mode: ThemeMode, colorScheme: ColorScheme) -> AppTheme {
+        switch mode {
+        case .light: .light
+        case .dark: .dark
+        case .system: colorScheme == .dark ? .dark : .light
+        }
+    }
 
     var background: Color {
         switch self {

@@ -28,7 +28,7 @@ class ConnectionManager: ObservableObject {
     var onAuthExpired: (() -> Void)?
 
     /// The most recent pairing payload (URL metadata in UserDefaults, token in Keychain).
-    private(set) var lastPayload: PairingPayload?
+    @Published private(set) var lastPayload: PairingPayload?
     private var lastAllowRemote = false
 
     private let userDefaults: UserDefaults
@@ -151,6 +151,16 @@ class ConnectionManager: ObservableObject {
         userDefaults.removeObject(forKey: Self.savedMetadataKey)
         userDefaults.removeObject(forKey: Self.savedPayloadKey)
         tokenStore.deleteToken()
+    }
+
+    func disconnectAndClear() {
+        disconnect()
+        clearStoredPayload()
+    }
+
+    /// Saved WebSocket URL for display in Settings.
+    var savedServerAddress: String? {
+        lastPayload?.ws
     }
 
     /// Whether we have credentials to attempt reconnection.
@@ -471,7 +481,8 @@ class ConnectionManager: ObservableObject {
             case "hello":
                 backoffNanoseconds = initialBackoffNanoseconds
                 state = .connected
-                hostName = msg.host ?? "Unknown Server"
+                let trimmedHost = msg.host?.trimmingCharacters(in: .whitespacesAndNewlines)
+                hostName = (trimmedHost?.isEmpty == false) ? trimmedHost : nil
             case "ack":
                 if let id = msg.id {
                     onAck?(id, msg.ok ?? false, msg.message)

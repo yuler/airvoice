@@ -9,17 +9,21 @@ enum PairingValidationError: LocalizedError, Equatable {
     case cleartextRemoteNotAllowed(host: String)
 
     var errorDescription: String? {
+        localizedMessage(.zh)
+    }
+
+    func localizedMessage(_ strings: AppStrings) -> String {
         switch self {
         case .unsupportedVersion:
-            return "不支持的二维码协议版本"
+            return strings.errUnsupportedVersion
         case .emptyToken:
-            return "二维码缺少认证令牌"
+            return strings.errEmptyToken
         case .invalidURL:
-            return "无效的服务器地址"
+            return strings.errInvalidUrl
         case .unsupportedScheme:
-            return "仅支持 ws:// 或 wss:// 协议"
+            return strings.errUnsupportedScheme
         case .cleartextRemoteNotAllowed:
-            return "拒绝连接：非局域网地址不支持明文 ws://"
+            return strings.errCleartextRemote
         }
     }
 }

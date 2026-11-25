@@ -1,5 +1,7 @@
 package cc.yuler.airvoice.models
 
+import cc.yuler.airvoice.ui.i18n.AppStrings
+import cc.yuler.airvoice.ui.i18n.ZhStrings
 import kotlinx.serialization.Serializable
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import java.net.Inet4Address
@@ -34,12 +36,12 @@ sealed class PairingValidationResult {
 }
 
 object PairingValidator {
-    fun errorMessage(error: PairingValidationError): String = when (error) {
-        PairingValidationError.UNSUPPORTED_VERSION -> "不支持的二维码协议版本"
-        PairingValidationError.EMPTY_TOKEN -> "二维码缺少认证令牌"
-        PairingValidationError.INVALID_URL -> "无效的服务器地址"
-        PairingValidationError.UNSUPPORTED_SCHEME -> "仅支持 ws:// 或 wss:// 协议"
-        PairingValidationError.CLEARTEXT_REMOTE_NOT_ALLOWED -> "拒绝连接：非局域网地址不支持明文 ws://"
+    fun errorMessage(error: PairingValidationError, strings: AppStrings = ZhStrings): String = when (error) {
+        PairingValidationError.UNSUPPORTED_VERSION -> strings.errUnsupportedVersion
+        PairingValidationError.EMPTY_TOKEN -> strings.errEmptyToken
+        PairingValidationError.INVALID_URL -> strings.errInvalidUrl
+        PairingValidationError.UNSUPPORTED_SCHEME -> strings.errUnsupportedScheme
+        PairingValidationError.CLEARTEXT_REMOTE_NOT_ALLOWED -> strings.errCleartextRemote
     }
 
     fun validate(payload: PairingPayload): PairingValidationResult {

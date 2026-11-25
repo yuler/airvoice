@@ -126,4 +126,20 @@ final class AutoSendControllerTests: XCTestCase {
         XCTAssertEqual(sentTexts.count, 1)
         XCTAssertEqual(sentTexts.first?.1, .manual)
     }
+
+    func testAutoSendDisabledSkipsCountdownAndDebounce() async {
+        controller.autoSendDelay = 0.2
+        controller.setAutoSendEnabled(false)
+
+        controller.textDidChange("manual only")
+        XCTAssertFalse(controller.countdownActive)
+        XCTAssertEqual(controller.countdownToken, 0)
+
+        await sleep(1.5)
+        XCTAssertTrue(sentTexts.isEmpty)
+
+        // Manual send still works when auto-send is disabled.
+        XCTAssertTrue(controller.sendNow("manual only", force: true))
+        XCTAssertEqual(sentTexts.count, 1)
+    }
 }

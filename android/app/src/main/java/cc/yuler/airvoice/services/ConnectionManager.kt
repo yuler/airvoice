@@ -25,7 +25,7 @@ import okhttp3.WebSocketListener
 sealed interface ConnectionStatus {
     object Disconnected : ConnectionStatus
     object Connecting : ConnectionStatus
-    data class Connected(val host: String) : ConnectionStatus
+    data class Connected(val host: String?) : ConnectionStatus
     data class Error(val message: String) : ConnectionStatus
 }
 
@@ -102,7 +102,7 @@ class ConnectionManager(private val client: OkHttpClient) {
                 try {
                     val msg = lenientJson.decodeFromString<ProtocolMessage>(text)
                     if (msg.type == "hello") {
-                        _status.value = ConnectionStatus.Connected(msg.host ?: "Computer")
+                        _status.value = ConnectionStatus.Connected(msg.host?.takeIf { it.isNotBlank() })
                     }
                     _incomingMessages.tryEmit(msg)
                 } catch (e: Exception) {

@@ -143,6 +143,20 @@ final class ConnectionManagerTests: XCTestCase {
         XCTAssertNil(ConnectionManager.loadSavedPayload(from: defaults, tokenStore: tokenStore))
     }
 
+    func testDisconnectAndClearResetsConnectionAndStoredAddress() {
+        let manager = ConnectionManager(userDefaults: defaults, tokenStore: tokenStore)
+        manager.connectHandlerForTesting = { _ in }
+        manager.connect(payload: makePayload(ws: "ws://192.168.1.9:7655/ws"))
+        XCTAssertEqual(manager.savedServerAddress, "ws://192.168.1.9:7655/ws")
+
+        manager.disconnectAndClear()
+
+        XCTAssertEqual(manager.state, .disconnected)
+        XCTAssertNil(manager.savedServerAddress)
+        XCTAssertNil(manager.lastPayload)
+        XCTAssertNil(tokenStore.storedToken)
+    }
+
     func testExponentialBackoffProgressionAndCap() {
         let manager = ConnectionManager(
             userDefaults: defaults,
@@ -230,10 +244,12 @@ final class ConnectionManagerTests: XCTestCase {
     }
 
     func testHomeViewModelSilentReconnectErrorAndAuthExpiredToast() async {
+        let settings = AppSettings(userDefaults: defaults)
+        settings.language = .zh
         let manager = ConnectionManager(userDefaults: defaults, tokenStore: tokenStore)
         manager.connectHandlerForTesting = { _ in }
         let autoSend = AutoSendController()
-        let viewModel = HomeViewModel()
+        let viewModel = HomeViewModel(settings: settings)
         viewModel.wire(connection: manager, autoSend: autoSend)
 
         manager.connect(payload: makePayload())
@@ -290,6 +306,8 @@ final class ConnectionManagerTests: XCTestCase {
     }
 
     func testHomeViewModelIgnoresLateAckAfterCancelWithoutClearingNewTextOrReleasingNewInFlight() async {
+        let settings = AppSettings(userDefaults: defaults)
+        settings.language = .zh
         let manager = ConnectionManager(userDefaults: defaults, tokenStore: tokenStore)
         var sentMessages: [(String, String)] = []
         manager.sendTextHandlerForTesting = { id, content in
@@ -299,7 +317,7 @@ final class ConnectionManagerTests: XCTestCase {
         manager.state = .connected
 
         let autoSend = AutoSendController()
-        let viewModel = HomeViewModel()
+        let viewModel = HomeViewModel(settings: settings)
         viewModel.wire(connection: manager, autoSend: autoSend)
 
         // Send first message, then cancel it.
@@ -351,5 +369,30 @@ final class ConnectionManagerTests: XCTestCase {
 
         XCTAssertEqual(viewModel.text, "unsent draft")
         XCTAssertFalse(autoSend.inFlight)
+    }
+
+    func testFlushPendingAutoSendSkipsWhenAutoSendDisabled() {
+        let settings = AppSettings(userDefaults: defaults)
+        let manager = ConnectionManager(userDefaults: defaults, tokenStore: tokenStore)
+        var sentMessages: [(String, String)] = []
+        manager.sendTextHandlerForTesting = { id, content in
+            sentMessages.append((id, content))
+            return true
+        }
+        manager.state = .disconnected
+
+        let autoSend = AutoSendController()
+        let viewModel = HomeViewModel(settings: settings)
+        viewModel.wire(connection: manager, autoSend: autoSend)
+
+        // Queue an auto-send while offline.
+        _ = autoSend.attemptSend("queued while offline")
+        XCTAssertTrue(sentMessages.isEmpty)
+
+        // User disables auto-send before reconnecting; flushing must drop queued text.
+        settings.autoSendEnabled = false
+        manager.state = .connected
+        viewModel.flushPendingAutoSend(connection: manager, autoSend: autoSend)
+        XCTAssertTrue(sentMessages.isEmpty)
     }
 }

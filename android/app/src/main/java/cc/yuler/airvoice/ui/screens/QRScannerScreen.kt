@@ -31,6 +31,7 @@ import com.google.mlkit.vision.common.InputImage
 import cc.yuler.airvoice.models.PairingPayload
 import cc.yuler.airvoice.models.PairingValidationResult
 import cc.yuler.airvoice.models.PairingValidator
+import cc.yuler.airvoice.ui.i18n.LocalAppStrings
 import cc.yuler.airvoice.ui.theme.AppColors
 import cc.yuler.airvoice.ui.theme.backgroundColor
 import cc.yuler.airvoice.ui.theme.primaryTextColor
@@ -50,6 +51,8 @@ fun QRScannerScreen(
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val strings = LocalAppStrings.current
+    val currentStrings by rememberUpdatedState(strings)
     val currentOnQrCodeScanned by rememberUpdatedState(onQrCodeScanned)
     val currentOnScanError by rememberUpdatedState(onScanError)
     val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
@@ -139,7 +142,7 @@ fun QRScannerScreen(
                                                         val now = System.currentTimeMillis()
                                                         val prev = lastErrorToastAt.get()
                                                         if (isActive.value && now - prev > 2000L && lastErrorToastAt.compareAndSet(prev, now)) {
-                                                            val msg = PairingValidator.errorMessage(validation.reason)
+                                                            val msg = PairingValidator.errorMessage(validation.reason, currentStrings)
                                                             previewView.post {
                                                                 currentOnScanError(msg)
                                                             }
@@ -184,7 +187,7 @@ fun QRScannerScreen(
                 verticalArrangement = Arrangement.Center
             ) {
                 Text(
-                    "需要相机权限来扫描二维码",
+                    strings.cameraPermissionNeeded,
                     color = textColor,
                     modifier = Modifier.padding(16.dp)
                 )
@@ -193,7 +196,7 @@ fun QRScannerScreen(
                     colors = ButtonDefaults.buttonColors(containerColor = AppColors.accent),
                     shape = RoundedCornerShape(28.dp)
                 ) {
-                    Text("授予权限", color = Color.White)
+                    Text(strings.grantPermission, color = Color.White)
                 }
             }
         }
@@ -206,7 +209,7 @@ fun QRScannerScreen(
             shape = RoundedCornerShape(28.dp),
             colors = ButtonDefaults.buttonColors(containerColor = AppColors.accent)
         ) {
-            Text("取消", color = Color.White)
+            Text(strings.cancel, color = Color.White)
         }
     }
 }

@@ -3,7 +3,10 @@ package cc.yuler.airvoice.ui.viewmodel
 import android.app.Application
 import androidx.datastore.preferences.core.edit
 import androidx.test.core.app.ApplicationProvider
+import cc.yuler.airvoice.models.AppLanguage
+import cc.yuler.airvoice.models.AppSettings
 import cc.yuler.airvoice.models.PairingPayload
+import cc.yuler.airvoice.models.ThemeMode
 import cc.yuler.airvoice.services.AesGcmTokenCipher
 import cc.yuler.airvoice.services.ConnectionManager
 import cc.yuler.airvoice.services.ConnectionStatus
@@ -32,6 +35,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicReference
 import javax.crypto.KeyGenerator
 
 @RunWith(RobolectricTestRunner::class)
@@ -68,10 +72,12 @@ class AirvoiceViewModelTest {
         val connected = CompletableDeferred<Unit>()
         val firstTextReceived = CompletableDeferred<Unit>()
         val textFrameCount = AtomicInteger(0)
+        val serverWebSocket = AtomicReference<WebSocket?>(null)
 
         server.enqueue(
             MockResponse().withWebSocketUpgrade(object : WebSocketListener() {
                 override fun onOpen(webSocket: WebSocket, response: Response) {
+                    serverWebSocket.set(webSocket)
                     webSocket.send("""{"type":"hello","host":"test-pc","version":"0.1.0"}""")
                     connected.complete(Unit)
                 }
@@ -81,6 +87,10 @@ class AirvoiceViewModelTest {
                         textFrameCount.incrementAndGet()
                         firstTextReceived.complete(Unit)
                     }
+                }
+
+                override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
+                    webSocket.close(1000, null)
                 }
             })
         )
@@ -101,17 +111,19 @@ class AirvoiceViewModelTest {
 
             viewModel.cancelSend()
             assertFalse(sendJob.await())
-            assertEquals("已取消发送", viewModel.toastMessage.value)
+            assertEquals(viewModel.currentStrings().toastSendCancelled, viewModel.toastMessage.value)
             assertFalse(viewModel.isToastError.value)
             assertFalse(viewModel.sendTimedOut.value)
 
             // Wait past the 400ms auto-retry window to confirm NO automatic resend occurs.
             delay(700L)
             assertEquals(1, textFrameCount.get())
-            assertEquals("已取消发送", viewModel.toastMessage.value)
+            assertEquals(viewModel.currentStrings().toastSendCancelled, viewModel.toastMessage.value)
             assertFalse(viewModel.isToastError.value)
             assertFalse(viewModel.sendTimedOut.value)
         } finally {
+            connectionManager.disconnect()
+            serverWebSocket.get()?.close(1000, null)
             server.shutdown()
         }
     }
@@ -130,5 +142,41 @@ class AirvoiceViewModelTest {
         assertTrue(viewModel.isToastError.value)
         assertNull(storageManager.connectionInfoFlow.first().wsUrl)
         assertEquals(ConnectionStatus.Disconnected, connectionManager.status.value)
+    }
+
+    @Test
+    fun testSettingsMutationsAndLanguageSwitching() = runBlocking {
+        viewModel.setThemeMode(ThemeMode.DARK)
+        viewModel.setLanguage(AppLanguage.EN)
+        viewModel.setAutoSendEnabled(false)
+        viewModel.setAutoSendDelayMs(2500L)
+        viewModel.setHapticFeedbackEnabled(false)
+        viewModel.setKeepScreenAwake(false)
+        viewModel.setShowInputTips(false)
+        viewModel.setSendTimeoutMs(10000L)
+
+        val current = viewModel.settings.value
+        assertEquals(ThemeMode.DARK, current.themeMode)
+        assertEquals(AppLanguage.EN, current.language)
+        assertFalse(current.autoSendEnabled)
+        assertEquals(2500L, current.autoSendDelayMs)
+        assertFalse(current.hapticFeedbackEnabled)
+        assertFalse(current.keepScreenAwake)
+        assertFalse(current.showInputTips)
+        assertEquals(10000L, current.sendTimeoutMs)
+        assertEquals("Send cancelled", viewModel.currentStrings().toastSendCancelled)
+
+        viewModel.setLanguage(AppLanguage.ZH)
+        assertEquals("已取消发送", viewModel.currentStrings().toastSendCancelled)
+        assertEquals("已连接: 电脑", viewModel.currentStrings().statusConnected(null))
+
+        viewModel.awaitPendingPersistence()
+        assertEquals(AppLanguage.ZH, storageManager.settingsFlow.first().language)
+        assertEquals(ThemeMode.DARK, storageManager.settingsFlow.first().themeMode)
+
+        viewModel.resetSettings()
+        viewModel.awaitPendingPersistence()
+        assertEquals(AppSettings(), viewModel.settings.value)
+        assertEquals(AppSettings(), storageManager.settingsFlow.first())
     }
 }

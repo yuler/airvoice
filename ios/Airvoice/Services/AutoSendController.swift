@@ -14,7 +14,8 @@ enum SendTrigger {
     /// Auto-send fires only after this many seconds of no new input. Streamed
     /// voice-input characters keep resetting this window (and the countdown
     /// animation) so we only send once dictation goes quiet.
-    let autoSendDelay: TimeInterval = 1.5
+    var autoSendDelay: TimeInterval = 1.5
+    var isAutoSendEnabled: Bool = true
     private var debounceTask: Task<Void, Never>?
     private var lastAcked: String?
     @Published private(set) var inFlight = false
@@ -22,6 +23,13 @@ enum SendTrigger {
     @Published private(set) var countdownActive = false
     /// Bumped every time the countdown (re)starts so the UI can restart its animation.
     @Published private(set) var countdownToken = 0
+
+    func setAutoSendEnabled(_ enabled: Bool) {
+        isAutoSendEnabled = enabled
+        if !enabled {
+            stopCountdown()
+        }
+    }
 
     func textDidChange(_ text: String) {
         debounceTask?.cancel()
@@ -32,17 +40,18 @@ enum SendTrigger {
             stopCountdown()
             return
         }
-        guard !inFlight else {
+        guard isAutoSendEnabled, !inFlight else {
             stopCountdown()
             return
         }
 
+        let delay = autoSendDelay
         startCountdown()
         debounceTask = Task { [weak self] in
             do {
                 guard let self else { return }
-                try await Task.sleep(nanoseconds: UInt64(self.autoSendDelay * 1_000_000_000))
-                guard !Task.isCancelled else { return }
+                try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+                guard !Task.isCancelled, self.isAutoSendEnabled else { return }
                 self.countdownActive = false
                 let latest = self.currentText?() ?? text
                 _ = self.attemptSend(latest)
