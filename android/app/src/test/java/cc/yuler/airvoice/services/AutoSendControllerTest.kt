@@ -3,9 +3,10 @@ package cc.yuler.airvoice.services
 import cc.yuler.airvoice.models.AppSettings
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import okhttp3.OkHttpClient
 import okhttp3.Response
 import okhttp3.WebSocket
@@ -22,6 +23,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.lang.reflect.Field
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.atomic.AtomicReference
 
 @RunWith(RobolectricTestRunner::class)
 class AutoSendControllerTest {
@@ -115,9 +117,11 @@ class AutoSendControllerTest {
         val server = MockWebServer()
         val opened = CompletableDeferred<Unit>()
         val receivedText = CompletableDeferred<String>()
+        val serverWebSocket = AtomicReference<WebSocket?>(null)
         server.enqueue(
             MockResponse().withWebSocketUpgrade(object : WebSocketListener() {
                 override fun onOpen(webSocket: WebSocket, response: Response) {
+                    serverWebSocket.set(webSocket)
                     webSocket.send("""{"type":"hello","host":"test-pc","version":"0.1.0"}""")
                     opened.complete(Unit)
                 }
@@ -127,29 +131,38 @@ class AutoSendControllerTest {
                         receivedText.complete(text)
                     }
                 }
+
+                override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
+                    webSocket.close(1000, null)
+                }
             })
         )
         server.start()
+        var controller: AutoSendController? = null
         try {
             val wsUrl = server.url("/ws").toString().replaceFirst("http://", "ws://")
             connectionManager.connect(wsUrl, "valid-token")
-            opened.await()
-
-            val results = CopyOnWriteArrayList<Triple<SendResult, String, SendTrigger>>()
-            val controller = AutoSendController(textFlow, connectionManager) { result, text, trigger ->
-                results.add(Triple(result, text, trigger))
+            withTimeout(3000L) {
+                opened.await()
+                connectionManager.status.first { it is ConnectionStatus.Connected }
             }
 
+            val results = CopyOnWriteArrayList<Triple<SendResult, String, SendTrigger>>()
+            val autoSend = AutoSendController(textFlow, connectionManager) { result, text, trigger ->
+                results.add(Triple(result, text, trigger))
+            }
+            controller = autoSend
+
             val sendDeferred = async {
-                controller.attemptSend("cancel me", SendTrigger.AUTO)
+                autoSend.attemptSend("cancel me", SendTrigger.AUTO)
             }
 
             // Wait until the frame is actually sent over the socket and in-flight.
-            receivedText.await()
-            assertTrue(controller.inFlight.value)
+            withTimeout(3000L) { receivedText.await() }
+            assertTrue(autoSend.inFlight.value)
 
-            controller.clearInFlight()
-            assertFalse(controller.inFlight.value)
+            autoSend.clearInFlight()
+            assertFalse(autoSend.inFlight.value)
 
             val succeeded = sendDeferred.await()
             assertFalse(succeeded)
@@ -157,10 +170,10 @@ class AutoSendControllerTest {
             assertEquals(SendResult.CANCELLED, results[0].first)
             assertEquals("cancel me", results[0].second)
             assertEquals(SendTrigger.AUTO, results[0].third)
-
-            controller.cleanup()
         } finally {
+            controller?.cleanup()
             connectionManager.disconnect()
+            serverWebSocket.get()?.close(1000, null)
             server.shutdown()
         }
     }

@@ -35,6 +35,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicReference
 import javax.crypto.KeyGenerator
 
 @RunWith(RobolectricTestRunner::class)
@@ -71,10 +72,12 @@ class AirvoiceViewModelTest {
         val connected = CompletableDeferred<Unit>()
         val firstTextReceived = CompletableDeferred<Unit>()
         val textFrameCount = AtomicInteger(0)
+        val serverWebSocket = AtomicReference<WebSocket?>(null)
 
         server.enqueue(
             MockResponse().withWebSocketUpgrade(object : WebSocketListener() {
                 override fun onOpen(webSocket: WebSocket, response: Response) {
+                    serverWebSocket.set(webSocket)
                     webSocket.send("""{"type":"hello","host":"test-pc","version":"0.1.0"}""")
                     connected.complete(Unit)
                 }
@@ -84,6 +87,10 @@ class AirvoiceViewModelTest {
                         textFrameCount.incrementAndGet()
                         firstTextReceived.complete(Unit)
                     }
+                }
+
+                override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
+                    webSocket.close(1000, null)
                 }
             })
         )
@@ -115,6 +122,8 @@ class AirvoiceViewModelTest {
             assertFalse(viewModel.isToastError.value)
             assertFalse(viewModel.sendTimedOut.value)
         } finally {
+            connectionManager.disconnect()
+            serverWebSocket.get()?.close(1000, null)
             server.shutdown()
         }
     }
