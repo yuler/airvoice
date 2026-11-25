@@ -29,24 +29,29 @@ import androidx.core.content.ContextCompat
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
 import cc.yuler.airvoice.models.PairingPayload
+import cc.yuler.airvoice.models.PairingValidationResult
+import cc.yuler.airvoice.models.PairingValidator
 import cc.yuler.airvoice.ui.theme.AppColors
 import cc.yuler.airvoice.ui.theme.backgroundColor
 import cc.yuler.airvoice.ui.theme.primaryTextColor
 import kotlinx.serialization.json.Json
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicLong
 
 private val lenientJson = Json { ignoreUnknownKeys = true }
 
 @OptIn(ExperimentalGetImage::class)
 @Composable
 fun QRScannerScreen(
-    onQrCodeScanned: (PairingPayload) -> Unit,
+    onQrCodeScanned: (PairingValidationResult.Valid) -> Unit,
+    onScanError: (String) -> Unit = {},
     onCancel: () -> Unit
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val currentOnQrCodeScanned by rememberUpdatedState(onQrCodeScanned)
+    val currentOnScanError by rememberUpdatedState(onScanError)
     val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
     val barcodeScanner = remember { BarcodeScanning.getClient() }
     var cameraProviderState by remember { mutableStateOf<ProcessCameraProvider?>(null) }
@@ -106,6 +111,7 @@ fun QRScannerScreen(
                             .build()
 
                         val isScanned = AtomicBoolean(false)
+                        val lastErrorToastAt = AtomicLong(0L)
 
                         imageAnalysis.setAnalyzer(cameraExecutor) { imageProxy ->
                             if (isScanned.get()) {
@@ -121,9 +127,23 @@ fun QRScannerScreen(
                                             val rawValue = barcode.rawValue ?: continue
                                             try {
                                                 val payload = lenientJson.decodeFromString<PairingPayload>(rawValue)
-                                                if (isActive.value && isScanned.compareAndSet(false, true)) {
-                                                    previewView.post {
-                                                        currentOnQrCodeScanned(payload)
+                                                when (val validation = PairingValidator.validate(payload)) {
+                                                    is PairingValidationResult.Valid -> {
+                                                        if (isActive.value && isScanned.compareAndSet(false, true)) {
+                                                            previewView.post {
+                                                                currentOnQrCodeScanned(validation)
+                                                            }
+                                                        }
+                                                    }
+                                                    is PairingValidationResult.Invalid -> {
+                                                        val now = System.currentTimeMillis()
+                                                        val prev = lastErrorToastAt.get()
+                                                        if (isActive.value && now - prev > 2000L && lastErrorToastAt.compareAndSet(prev, now)) {
+                                                            val msg = PairingValidator.errorMessage(validation.reason)
+                                                            previewView.post {
+                                                                currentOnScanError(msg)
+                                                            }
+                                                        }
                                                     }
                                                 }
                                                 break

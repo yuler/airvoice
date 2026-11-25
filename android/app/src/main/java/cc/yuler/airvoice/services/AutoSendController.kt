@@ -1,39 +1,47 @@
 package cc.yuler.airvoice.services
 
-import cc.yuler.airvoice.models.ProtocolMessage
-import java.util.UUID
 import android.util.Log
+import cc.yuler.airvoice.models.ProtocolMessage
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.withTimeout
-import kotlinx.coroutines.TimeoutCancellationException
+import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicReference
 
 enum class SendTrigger {
     AUTO,
     MANUAL
 }
 
+enum class SendResult {
+    SUCCESS,
+    FAILED,
+    CANCELLED
+}
+
 class AutoSendController(
     private val textFlow: StateFlow<String>,
     private val connectionManager: ConnectionManager,
-    private val onSentAck: (Boolean, String, SendTrigger) -> Unit
+    private val onSentAck: (SendResult, String, SendTrigger) -> Unit
 ) {
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var debounceJob: kotlinx.coroutines.Job? = null
     private var lastAckedText = ""
-    private val pendingAcks = ConcurrentHashMap<String, CompletableDeferred<Boolean>>()
+    private val pendingAcks = ConcurrentHashMap<String, CompletableDeferred<SendResult>>()
+    private val activeMsgId = AtomicReference<String?>(null)
 
     private val _inFlight = MutableStateFlow(false)
     val inFlight: StateFlow<Boolean> = _inFlight.asStateFlow()
@@ -52,24 +60,26 @@ class AutoSendController(
         // Listen to incoming acks
         scope.launch {
             connectionManager.incomingMessages.collect { msg ->
-                Log.d("AutoSendController", "Collector received msg: type=${msg.type}, id=${msg.id}, success=${msg.ok}")
+                Log.d("AutoSendController", "Collector received msg: type=${msg.type}, id=${msg.id}, ok=${msg.ok}")
                 if (msg.type == "ack") {
                     val msgId = msg.id ?: return@collect
-                    pendingAcks.remove(msgId)?.complete(msg.ok == true)
+                    val result = if (msg.ok == true) SendResult.SUCCESS else SendResult.FAILED
+                    pendingAcks.remove(msgId)?.complete(result)
                 }
             }
         }
 
-        // Reset isSending when connection drops
+        // Fail pending sends when connection drops
         connectionManager.status
             .onEach { status ->
                 if (status is ConnectionStatus.Disconnected || status is ConnectionStatus.Error) {
                     val acksToFail = pendingAcks.keys.toList()
                     if (acksToFail.isNotEmpty()) {
-                        for (msgId in acksToFail) {
-                            pendingAcks.remove(msgId)?.complete(false)
-                        }
+                        activeMsgId.set(null)
                         _inFlight.value = false
+                        for (msgId in acksToFail) {
+                            pendingAcks.remove(msgId)?.complete(SendResult.FAILED)
+                        }
                     }
                 }
             }
@@ -110,15 +120,16 @@ class AutoSendController(
     }
 
     fun clearInFlight() {
+        activeMsgId.set(null)
         _inFlight.value = false
         val keys = pendingAcks.keys.toList()
         for (key in keys) {
-            pendingAcks.remove(key)?.complete(false)
+            pendingAcks.remove(key)?.complete(SendResult.CANCELLED)
         }
     }
 
     suspend fun attemptSend(text: String, trigger: SendTrigger): Boolean {
-        Log.d("AutoSendController", "attemptSend called: text=\"$text\", trigger=$trigger, inFlight=${_inFlight.value}")
+        Log.d("AutoSendController", "attemptSend called: textLen=${text.length}, trigger=$trigger, inFlight=${_inFlight.value}")
         val trimmed = text.trim()
         if (trimmed.isEmpty()) {
             Log.d("AutoSendController", "attemptSend returned early: text is empty")
@@ -134,50 +145,63 @@ class AutoSendController(
         }
 
         stopCountdown()
-        
+
         val msgId = UUID.randomUUID().toString()
-        val deferred = CompletableDeferred<Boolean>()
+        activeMsgId.set(msgId)
+        val deferred = CompletableDeferred<SendResult>()
         pendingAcks[msgId] = deferred
         Log.d("AutoSendController", "Created pending ack for msgId=$msgId")
-        
+
         val textMessage = ProtocolMessage(
             type = "text",
             id = msgId,
             content = text,
             ts = System.currentTimeMillis() / 1000
         )
-        
+
         val sent = connectionManager.send(textMessage)
         if (!sent) {
             Log.d("AutoSendController", "Failed to send message over ConnectionManager: msgId=$msgId")
             pendingAcks.remove(msgId)
-            _inFlight.value = false
-            onSentAck(false, text, trigger)
+            if (activeMsgId.compareAndSet(msgId, null)) {
+                _inFlight.value = false
+            }
+            onSentAck(SendResult.FAILED, text, trigger)
             return false
         }
 
-        val success = try {
+        val result = try {
             Log.d("AutoSendController", "Awaiting deferred for msgId=$msgId")
             withTimeout(5000L) {
                 deferred.await()
             }
         } catch (e: TimeoutCancellationException) {
             Log.d("AutoSendController", "Timeout awaiting ack for msgId=$msgId")
-            false
+            SendResult.FAILED
         } finally {
             pendingAcks.remove(msgId)
-            _inFlight.value = false
-            Log.d("AutoSendController", "Cleaned up msgId=$msgId, set inFlight to false")
+            if (activeMsgId.compareAndSet(msgId, null)) {
+                _inFlight.value = false
+            }
+            Log.d("AutoSendController", "Cleaned up msgId=$msgId")
         }
 
-        Log.d("AutoSendController", "attemptSend finished: success=$success")
-        if (success) {
-            lastAckedText = text
-            onSentAck(true, text, trigger)
-        } else {
-            onSentAck(false, text, trigger)
+        Log.d("AutoSendController", "attemptSend finished: msgId=$msgId, result=$result")
+        when (result) {
+            SendResult.SUCCESS -> {
+                lastAckedText = text
+                onSentAck(SendResult.SUCCESS, text, trigger)
+                return true
+            }
+            SendResult.FAILED -> {
+                onSentAck(SendResult.FAILED, text, trigger)
+                return false
+            }
+            SendResult.CANCELLED -> {
+                onSentAck(SendResult.CANCELLED, text, trigger)
+                return false
+            }
         }
-        return success
     }
 
     private fun startCountdown() {
@@ -193,7 +217,7 @@ class AutoSendController(
     fun resetLastAcked() {
         lastAckedText = ""
     }
-    
+
     fun cleanup() {
         scope.cancel()
     }

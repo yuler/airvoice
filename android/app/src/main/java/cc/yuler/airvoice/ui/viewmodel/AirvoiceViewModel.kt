@@ -1,16 +1,21 @@
 package cc.yuler.airvoice.ui.viewmodel
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import cc.yuler.airvoice.AirvoiceApplication
 import cc.yuler.airvoice.models.PairingPayload
-import android.util.Log
+import cc.yuler.airvoice.models.PairingValidationResult
+import cc.yuler.airvoice.models.PairingValidator
 import cc.yuler.airvoice.services.AutoSendController
 import cc.yuler.airvoice.services.ConnectionManager
 import cc.yuler.airvoice.services.ConnectionStatus
+import cc.yuler.airvoice.services.SendResult
 import cc.yuler.airvoice.services.SendTrigger
 import cc.yuler.airvoice.services.StorageManager
 import cc.yuler.airvoice.utils.VibratorHelper
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,12 +28,18 @@ enum class Screen {
     HOME
 }
 
-class AirvoiceViewModel(application: Application) : AndroidViewModel(application) {
-    private val storage = StorageManager(application)
-    private val client = (application as cc.yuler.airvoice.AirvoiceApplication).okHttpClient
-    val connectionManager = ConnectionManager(client)
-    private val vibratorHelper = VibratorHelper(application)
+class AirvoiceViewModel internal constructor(
+    application: Application,
+    private val storage: StorageManager,
+    val connectionManager: ConnectionManager
+) : AndroidViewModel(application) {
+    constructor(application: Application) : this(
+        application = application,
+        storage = StorageManager(application),
+        connectionManager = ConnectionManager((application as AirvoiceApplication).okHttpClient)
+    )
 
+    private val vibratorHelper = VibratorHelper(application)
 
     private val _appTheme = MutableStateFlow("light")
     val appTheme: StateFlow<String> = _appTheme.asStateFlow()
@@ -48,21 +59,22 @@ class AirvoiceViewModel(application: Application) : AndroidViewModel(application
     val autoSendController: AutoSendController
 
     private var isRetry = false
-    private var toastJob: kotlinx.coroutines.Job? = null
+    private var retryJob: Job? = null
+    private var toastJob: Job? = null
 
     init {
         viewModelScope.launch {
-            // Read settings on startup
             _appTheme.value = storage.themeFlow.first()
-            
-            val conn = storage.connectionInfoFlow.first()
+
+            val conn = storage.readConnectionAndMigrateLegacy()
             if (!conn.wsUrl.isNullOrEmpty() && !conn.token.isNullOrEmpty()) {
-                connectionManager.connect(conn.wsUrl, conn.token)
+                connectionManager.connect(conn.wsUrl, conn.token, allowRemote = conn.allowRemote)
             }
         }
 
         viewModelScope.launch {
             connectionManager.authExpiredEvents.collect {
+                cancelPendingRetry()
                 storage.clearConnection()
                 showToast("配对已失效，请重新扫码", isError = true)
             }
@@ -71,8 +83,8 @@ class AirvoiceViewModel(application: Application) : AndroidViewModel(application
         autoSendController = AutoSendController(
             textFlow = _inputText,
             connectionManager = connectionManager,
-            onSentAck = { success, sentText, trigger ->
-                handleSentAck(success, sentText, trigger)
+            onSentAck = { result, sentText, trigger ->
+                handleSentAck(result, sentText, trigger)
             }
         )
     }
@@ -85,7 +97,6 @@ class AirvoiceViewModel(application: Application) : AndroidViewModel(application
     fun triggerImmediateSend() {
         autoSendController.triggerImmediateSend()
     }
-
 
     fun toggleTheme() {
         viewModelScope.launch {
@@ -119,7 +130,7 @@ class AirvoiceViewModel(application: Application) : AndroidViewModel(application
             showToast("上一条仍在发送中", isError = true)
             return
         }
-        isRetry = false
+        cancelPendingRetry()
         _sendTimedOut.value = false
         viewModelScope.launch {
             autoSendController.attemptSend(currentText, SendTrigger.MANUAL)
@@ -127,58 +138,90 @@ class AirvoiceViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun cancelSend() {
-        if (autoSendController.inFlight.value) {
+        val hadPendingRetry = retryJob?.isActive == true
+        cancelPendingRetry()
+        if (autoSendController.inFlight.value || hadPendingRetry) {
             autoSendController.clearInFlight()
             showToast("已取消发送", isError = false)
         }
     }
 
-    private fun handleSentAck(success: Boolean, sentText: String, trigger: SendTrigger) {
-        Log.d("AirvoiceViewModel", "handleSentAck called: success=$success, sentText=\"$sentText\", currentText=\"${_inputText.value}\"")
-        if (success) {
-            val currentText = _inputText.value
-            val remaining = if (currentText.startsWith(sentText)) {
-                currentText.removePrefix(sentText)
-            } else {
-                currentText
-            }
-            _inputText.value = remaining
-            autoSendController.textDidChange(remaining)
-            _sendTimedOut.value = false
-            isRetry = false
-            vibratorHelper.triggerHapticClick()
-            showToast("已发送到电脑", isError = false)
-        } else {
-            val shouldRetry = (trigger == SendTrigger.AUTO) && !isRetry
-            Log.d("AirvoiceViewModel", "handleSentAck failure: shouldRetry=$shouldRetry")
-            if (shouldRetry && !sentText.trim().isEmpty()) {
-                isRetry = true
-                viewModelScope.launch {
-                    delay(400)
-                    if (connectionManager.status.value is ConnectionStatus.Connected && !autoSendController.inFlight.value) {
-                        autoSendController.attemptSend(sentText, SendTrigger.AUTO)
-                    } else {
-                        isRetry = false
-                    }
+    private fun cancelPendingRetry() {
+        retryJob?.cancel()
+        retryJob = null
+        isRetry = false
+    }
+
+    internal fun handleSentAck(result: SendResult, sentText: String, trigger: SendTrigger) {
+        Log.d(
+            "AirvoiceViewModel",
+            "handleSentAck: result=$result, sentLen=${sentText.length}, currentLen=${_inputText.value.length}, trigger=$trigger"
+        )
+        when (result) {
+            SendResult.SUCCESS -> {
+                val currentText = _inputText.value
+                val remaining = if (currentText.startsWith(sentText)) {
+                    currentText.removePrefix(sentText)
+                } else {
+                    currentText
                 }
-            } else {
-                _sendTimedOut.value = true
-                isRetry = false
-                showToast("发送失败，请检查连接", isError = true)
+                _inputText.value = remaining
+                autoSendController.textDidChange(remaining)
+                _sendTimedOut.value = false
+                cancelPendingRetry()
+                vibratorHelper.triggerHapticClick()
+                showToast("已发送到电脑", isError = false)
+            }
+            SendResult.CANCELLED -> {
+                cancelPendingRetry()
+            }
+            SendResult.FAILED -> {
+                val shouldRetry = (trigger == SendTrigger.AUTO) && !isRetry
+                Log.d("AirvoiceViewModel", "handleSentAck failure: shouldRetry=$shouldRetry")
+                if (shouldRetry && sentText.trim().isNotEmpty()) {
+                    isRetry = true
+                    retryJob?.cancel()
+                    retryJob = viewModelScope.launch {
+                        delay(400)
+                        retryJob = null
+                        if (connectionManager.status.value is ConnectionStatus.Connected && !autoSendController.inFlight.value) {
+                            autoSendController.attemptSend(sentText, SendTrigger.AUTO)
+                        } else {
+                            isRetry = false
+                        }
+                    }
+                } else {
+                    _sendTimedOut.value = true
+                    cancelPendingRetry()
+                    showToast("发送失败，请检查连接", isError = true)
+                }
             }
         }
     }
 
-    fun pairAndConnect(payload: PairingPayload) {
+    fun pairAndConnect(payload: PairingPayload, allowRemote: Boolean = false) {
+        val validation = PairingValidator.validate(payload)
+        if (validation is PairingValidationResult.Invalid) {
+            showToast(PairingValidator.errorMessage(validation.reason), isError = true)
+            return
+        }
+        val valid = validation as PairingValidationResult.Valid
+        if (!valid.isLocal && !allowRemote) {
+            showToast("非局域网地址未经确认", isError = true)
+            return
+        }
+
         viewModelScope.launch {
-            storage.saveConnection(payload.ws, payload.token)
+            cancelPendingRetry()
+            storage.saveConnection(valid.normalizedUrl, payload.token.trim(), allowRemote = allowRemote)
             autoSendController.resetLastAcked()
-            connectionManager.connect(payload.ws, payload.token)
+            connectionManager.connect(valid.normalizedUrl, payload.token.trim(), allowRemote = allowRemote)
         }
     }
 
     fun disconnectAndClear() {
         viewModelScope.launch {
+            cancelPendingRetry()
             connectionManager.disconnect()
             storage.clearConnection()
             _inputText.value = ""
@@ -187,6 +230,7 @@ class AirvoiceViewModel(application: Application) : AndroidViewModel(application
 
     override fun onCleared() {
         super.onCleared()
+        cancelPendingRetry()
         connectionManager.disconnect()
         autoSendController.cleanup()
     }
