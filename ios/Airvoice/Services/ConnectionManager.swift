@@ -12,6 +12,13 @@ class ConnectionManager: ObservableObject {
     }
 
     static let savedPayloadKey = "savedPairingPayload"
+    static let savedMetadataKey = "savedPairingMetadata"
+
+    private struct SavedPairingMetadata: Codable, Equatable {
+        let v: Int
+        let ws: String
+        let allowRemote: Bool
+    }
 
     @Published var state: ConnectionState = .disconnected
     @Published var hostName: String? = nil
@@ -20,10 +27,12 @@ class ConnectionManager: ObservableObject {
     var onTransportError: ((String) -> Void)?
     var onAuthExpired: (() -> Void)?
 
-    /// The most recent pairing payload, persisted to UserDefaults for reconnection across launches.
+    /// The most recent pairing payload (URL metadata in UserDefaults, token in Keychain).
     private(set) var lastPayload: PairingPayload?
+    private var lastAllowRemote = false
 
     private let userDefaults: UserDefaults
+    private let tokenStore: TokenStore
     private let initialBackoffNanoseconds: UInt64
     private let maxBackoffNanoseconds: UInt64
 
@@ -41,14 +50,19 @@ class ConnectionManager: ObservableObject {
 
     init(
         userDefaults: UserDefaults = .standard,
+        tokenStore: TokenStore = KeychainTokenStore(),
         initialBackoffNanoseconds: UInt64 = 2_000_000_000,
         maxBackoffNanoseconds: UInt64 = 30_000_000_000
     ) {
         self.userDefaults = userDefaults
+        self.tokenStore = tokenStore
         self.initialBackoffNanoseconds = initialBackoffNanoseconds
         self.maxBackoffNanoseconds = maxBackoffNanoseconds
         self.backoffNanoseconds = initialBackoffNanoseconds
-        self.lastPayload = Self.loadSavedPayload(from: userDefaults)
+        if let saved = Self.loadAndMigrateSavedPairing(from: userDefaults, tokenStore: tokenStore) {
+            self.lastPayload = saved.payload
+            self.lastAllowRemote = saved.allowRemote
+        }
     }
 
     /// Auto-connect using the previously saved pairing payload on app launch.
@@ -59,22 +73,39 @@ class ConnectionManager: ObservableObject {
         isPaused = false
         state = .connecting
         hostName = nil
-        connectWithPayload(payload)
+        connectWithPayload(payload, allowRemote: lastAllowRemote)
     }
 
-    func connect(payload: PairingPayload) {
+    func connect(payload: PairingPayload, allowRemote: Bool = false) {
+        let validated: ValidatedPairing
+        do {
+            validated = try payload.validate()
+        } catch let error as PairingValidationError {
+            state = .error(error.errorDescription ?? "无效的服务器地址")
+            return
+        } catch {
+            state = .error("无效的服务器地址")
+            return
+        }
+
+        guard validated.isLocal || allowRemote else {
+            state = .error("非局域网地址未经确认")
+            return
+        }
+
         cancelActiveSocket()
         cancelReconnectTimer()
 
         lastPayload = payload
-        savePayload(payload)
+        lastAllowRemote = allowRemote
+        savePayload(payload, allowRemote: allowRemote)
         backoffNanoseconds = initialBackoffNanoseconds
         isDisconnecting = false
         isPaused = false
         state = .connecting
         hostName = nil
 
-        connectWithPayload(payload)
+        connectWithPayload(payload, allowRemote: allowRemote)
     }
 
     /// Reconnect using the stored payload. No-op if no payload or already connected/connecting.
@@ -87,7 +118,7 @@ class ConnectionManager: ObservableObject {
         state = .connecting
         hostName = nil
 
-        connectWithPayload(payload)
+        connectWithPayload(payload, allowRemote: lastAllowRemote)
     }
 
     /// Pause scheduled reconnect attempts while the app is in the background.
@@ -116,7 +147,10 @@ class ConnectionManager: ObservableObject {
     /// Clear stored payload (e.g. on 401 when the host refreshed its pairing token).
     func clearStoredPayload() {
         lastPayload = nil
+        lastAllowRemote = false
+        userDefaults.removeObject(forKey: Self.savedMetadataKey)
         userDefaults.removeObject(forKey: Self.savedPayloadKey)
+        tokenStore.deleteToken()
     }
 
     /// Whether we have credentials to attempt reconnection.
@@ -177,17 +211,55 @@ class ConnectionManager: ObservableObject {
 
     // MARK: - Persistence
 
-    static func loadSavedPayload(from defaults: UserDefaults) -> PairingPayload? {
-        guard let data = defaults.data(forKey: savedPayloadKey) else {
-            return nil
-        }
-        return try? JSONDecoder().decode(PairingPayload.self, from: data)
+    static func loadSavedPayload(
+        from defaults: UserDefaults,
+        tokenStore: TokenStore = KeychainTokenStore()
+    ) -> PairingPayload? {
+        loadAndMigrateSavedPairing(from: defaults, tokenStore: tokenStore)?.payload
     }
 
-    private func savePayload(_ payload: PairingPayload) {
-        if let data = try? JSONEncoder().encode(payload) {
-            userDefaults.set(data, forKey: Self.savedPayloadKey)
+    private static func loadAndMigrateSavedPairing(
+        from defaults: UserDefaults,
+        tokenStore: TokenStore
+    ) -> (payload: PairingPayload, allowRemote: Bool)? {
+        if let metaData = defaults.data(forKey: savedMetadataKey),
+           let meta = try? JSONDecoder().decode(SavedPairingMetadata.self, from: metaData),
+           let token = tokenStore.loadToken() {
+            let payload = PairingPayload(v: meta.v, ws: meta.ws, token: token)
+            if let validated = try? payload.validate(), validated.isLocal || meta.allowRemote {
+                defaults.removeObject(forKey: savedPayloadKey)
+                return (payload, meta.allowRemote)
+            }
+            return nil
         }
+
+        // One-way migration from legacy plaintext UserDefaults storage to Keychain.
+        guard let legacyData = defaults.data(forKey: savedPayloadKey) else {
+            return nil
+        }
+        defaults.removeObject(forKey: savedPayloadKey)
+
+        guard let legacy = try? JSONDecoder().decode(PairingPayload.self, from: legacyData),
+              let validated = try? legacy.validate(),
+              validated.isLocal else {
+            return nil
+        }
+
+        tokenStore.saveToken(legacy.token)
+        let meta = SavedPairingMetadata(v: legacy.v, ws: legacy.ws, allowRemote: false)
+        if let encoded = try? JSONEncoder().encode(meta) {
+            defaults.set(encoded, forKey: savedMetadataKey)
+        }
+        return (legacy, false)
+    }
+
+    private func savePayload(_ payload: PairingPayload, allowRemote: Bool) {
+        userDefaults.removeObject(forKey: Self.savedPayloadKey)
+        let meta = SavedPairingMetadata(v: payload.v, ws: payload.ws, allowRemote: allowRemote)
+        if let data = try? JSONEncoder().encode(meta) {
+            userDefaults.set(data, forKey: Self.savedMetadataKey)
+        }
+        tokenStore.saveToken(payload.token)
     }
 
     // MARK: - Failure & Reconnect Handling
@@ -284,25 +356,35 @@ class ConnectionManager: ObservableObject {
 
     // MARK: - Private Networking
 
-    private func connectWithPayload(_ payload: PairingPayload) {
+    static func makeWebSocketRequest(
+        for payload: PairingPayload,
+        allowRemote: Bool = false
+    ) throws -> URLRequest {
+        let validated = try payload.validate()
+        guard validated.isLocal || allowRemote else {
+            throw PairingValidationError.cleartextRemoteNotAllowed(host: validated.host)
+        }
+        var request = URLRequest(url: validated.url)
+        request.setValue("Bearer \(payload.token)", forHTTPHeaderField: "Authorization")
+        return request
+    }
+
+    private func connectWithPayload(_ payload: PairingPayload, allowRemote: Bool) {
         cancelActiveSocket()
+
+        let request: URLRequest
+        do {
+            request = try Self.makeWebSocketRequest(for: payload, allowRemote: allowRemote)
+        } catch let error as PairingValidationError {
+            state = .error(error.errorDescription ?? "无效的服务器地址")
+            return
+        } catch {
+            state = .error("无效的服务器地址")
+            return
+        }
 
         if let handler = connectHandlerForTesting {
             handler(payload)
-            return
-        }
-
-        guard var components = URLComponents(string: payload.ws) else {
-            state = .error("Invalid WebSocket URL")
-            return
-        }
-
-        var queryItems = components.queryItems ?? []
-        queryItems.append(URLQueryItem(name: "token", value: payload.token))
-        components.queryItems = queryItems
-
-        guard let url = components.url else {
-            state = .error("Invalid URL generated")
             return
         }
 
@@ -310,7 +392,7 @@ class ConnectionManager: ObservableObject {
         self.delegateProxy = proxy
         let session = URLSession(configuration: .default, delegate: proxy, delegateQueue: nil)
         self.session = session
-        let task = session.webSocketTask(with: url)
+        let task = session.webSocketTask(with: request)
         self.webSocketTask = task
 
         task.resume()
@@ -400,7 +482,9 @@ class ConnectionManager: ObservableObject {
                 break
             }
         } catch {
-            print("[airvoice] decode error: \(error) raw=\(text)")
+            #if DEBUG
+            print("[airvoice] decode error: \(type(of: error)) len=\(text.count)")
+            #endif
         }
     }
 

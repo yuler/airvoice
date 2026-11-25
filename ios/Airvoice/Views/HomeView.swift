@@ -12,6 +12,7 @@ struct HomeView: View {
     @FocusState private var isEditorFocused: Bool
 
     @State private var showScanner = false
+    @State private var pendingRemotePairing: ValidatedPairing?
     @State private var isBreathing = false
 
     private var theme: AppTheme {
@@ -45,6 +46,25 @@ struct HomeView: View {
         .toast(message: $viewModel.toastMessage, isError: $viewModel.isToastError, theme: theme)
         .sheet(isPresented: $showScanner) {
             scannerSheetView
+        }
+        .alert(
+            "确认连接外部服务器",
+            isPresented: Binding(
+                get: { pendingRemotePairing != nil },
+                set: { if !$0 { pendingRemotePairing = nil } }
+            ),
+            presenting: pendingRemotePairing
+        ) { pending in
+            Button("取消", role: .cancel) {
+                pendingRemotePairing = nil
+            }
+            Button("确认连接") {
+                autoSend.resetLastAcked()
+                connection.connect(payload: pending.payload, allowRemote: true)
+                pendingRemotePairing = nil
+            }
+        } message: { pending in
+            Text("该二维码指向非局域网地址：\n\(pending.host)\n\n确认连接后，您的输入将自动发送到该服务器。请仅在信任该服务器时继续。")
         }
         .onAppear {
             viewModel.wire(connection: connection, autoSend: autoSend)
@@ -298,9 +318,17 @@ struct HomeView: View {
                 onScan: { rawPayload in
                     do {
                         let payload = try PairingPayload.decode(from: rawPayload)
-                        autoSend.resetLastAcked()
-                        connection.connect(payload: payload)
-                        showScanner = false
+                        let validated = try payload.validate()
+                        if validated.isLocal {
+                            autoSend.resetLastAcked()
+                            connection.connect(payload: validated.payload)
+                            showScanner = false
+                        } else {
+                            pendingRemotePairing = validated
+                            showScanner = false
+                        }
+                    } catch let error as PairingValidationError {
+                        viewModel.showToast(error.errorDescription ?? "无效的二维码", isError: true)
                     } catch {
                         viewModel.showToast("无效的二维码", isError: true)
                     }

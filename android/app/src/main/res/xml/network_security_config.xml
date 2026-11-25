@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!--
+        Android network-security-config does not support CIDR ranges for dynamic LAN IPs
+        (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 100.64.0.0/10).
+        Cleartext traffic is restricted to validated local/private hosts and resolved
+        local IP addresses at runtime by PairingValidator and OkHttp interceptors.
+    -->
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

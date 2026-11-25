@@ -1,5 +1,8 @@
 package cc.yuler.airvoice.services
 
+import android.util.Log
+import cc.yuler.airvoice.models.PairingValidationResult
+import cc.yuler.airvoice.models.PairingValidator
 import cc.yuler.airvoice.models.ProtocolMessage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -12,10 +15,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import android.net.Uri
-import android.util.Log
 import kotlinx.serialization.json.Json
-import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -49,39 +49,41 @@ class ConnectionManager(private val client: OkHttpClient) {
     @Volatile private var webSocket: WebSocket? = null
     @Volatile private var currentUrl: String? = null
     @Volatile private var currentToken: String? = null
+    @Volatile private var currentAllowRemote: Boolean = false
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     @Volatile private var reconnectJob: kotlinx.coroutines.Job? = null
     private var backoffMs = 2000L
 
     @Synchronized
-    fun connect(wsUrl: String, token: String) {
-        currentUrl = wsUrl
-        currentToken = token
+    fun connect(wsUrl: String, token: String, allowRemote: Boolean = false) {
+        val validation = PairingValidator.validate(wsUrl, token)
+        if (validation is PairingValidationResult.Invalid) {
+            _status.value = ConnectionStatus.Error(PairingValidator.errorMessage(validation.reason))
+            return
+        }
+        val valid = validation as PairingValidationResult.Valid
+        if (!valid.isLocal && !allowRemote) {
+            _status.value = ConnectionStatus.Error("非局域网地址未经确认")
+            return
+        }
+
+        val trimmedToken = token.trim()
+        val request = try {
+            Request.Builder()
+                .url(valid.normalizedUrl)
+                .header("Authorization", "Bearer $trimmedToken")
+                .build()
+        } catch (e: IllegalArgumentException) {
+            _status.value = ConnectionStatus.Error("无效的服务器地址")
+            return
+        }
+
+        currentUrl = valid.normalizedUrl
+        currentToken = trimmedToken
+        currentAllowRemote = allowRemote
         reconnectJob?.cancel()
         webSocket?.close(1000, "Reconnecting")
         webSocket = null
-
-        val normalizedUrl = wsUrl
-            .replaceFirst("ws://", "http://", ignoreCase = true)
-            .replaceFirst("wss://", "https://", ignoreCase = true)
-
-        val requestUrl = try {
-            normalizedUrl.toHttpUrl().newBuilder()
-                .addQueryParameter("token", token)
-                .build()
-                .toString()
-                .replaceFirst("http://", "ws://", ignoreCase = true)
-                .replaceFirst("https://", "wss://", ignoreCase = true)
-        } catch (e: Exception) {
-            _status.value = ConnectionStatus.Error("Invalid URL: $wsUrl")
-            return
-        }
-        val request = try {
-            Request.Builder().url(requestUrl).build()
-        } catch (e: IllegalArgumentException) {
-            _status.value = ConnectionStatus.Error("Invalid URL: $requestUrl")
-            return
-        }
 
         _status.value = ConnectionStatus.Connecting
         webSocket = client.newWebSocket(request, object : WebSocketListener() {
@@ -96,7 +98,7 @@ class ConnectionManager(private val client: OkHttpClient) {
 
             override fun onMessage(webSocket: WebSocket, text: String) {
                 if (webSocket !== this@ConnectionManager.webSocket) return
-                Log.d("ConnectionManager", "Received WebSocket message: $text")
+                Log.d("ConnectionManager", "Received WebSocket message: len=${text.length}")
                 try {
                     val msg = lenientJson.decodeFromString<ProtocolMessage>(text)
                     if (msg.type == "hello") {
@@ -104,7 +106,7 @@ class ConnectionManager(private val client: OkHttpClient) {
                     }
                     _incomingMessages.tryEmit(msg)
                 } catch (e: Exception) {
-                    Log.e("ConnectionManager", "Failed to decode message", e)
+                    Log.e("ConnectionManager", "Failed to decode message: ${e.javaClass.simpleName}")
                 }
             }
 
@@ -116,6 +118,7 @@ class ConnectionManager(private val client: OkHttpClient) {
                         reconnectJob?.cancel()
                         currentUrl = null
                         currentToken = null
+                        currentAllowRemote = false
                         this@ConnectionManager.webSocket = null
                         backoffMs = 2000L
                         _status.value = ConnectionStatus.Disconnected
@@ -145,6 +148,7 @@ class ConnectionManager(private val client: OkHttpClient) {
         reconnectJob?.cancel()
         currentUrl = null
         currentToken = null
+        currentAllowRemote = false
         webSocket?.close(1000, "User disconnect")
         webSocket = null
         _status.value = ConnectionStatus.Disconnected
@@ -171,8 +175,9 @@ class ConnectionManager(private val client: OkHttpClient) {
                 if (!isActive) return@launch
                 val url = currentUrl
                 val token = currentToken
+                val allowRemote = currentAllowRemote
                 if (url != null && token != null) {
-                    connect(url, token)
+                    connect(url, token, allowRemote = allowRemote)
                 }
             }
         }

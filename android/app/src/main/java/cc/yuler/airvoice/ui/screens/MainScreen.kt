@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cc.yuler.airvoice.models.PairingValidationResult
 import cc.yuler.airvoice.ui.theme.LocalIsDarkTheme
 import cc.yuler.airvoice.ui.theme.toastBackgroundColor
 import cc.yuler.airvoice.ui.viewmodel.AirvoiceViewModel
@@ -35,8 +36,7 @@ fun MainScreen(viewModel: AirvoiceViewModel) {
     val isToastError by viewModel.isToastError.collectAsState()
 
     var currentScreen by rememberSaveable { mutableStateOf(Screen.HOME) }
-
-
+    var pendingRemotePairing by remember { mutableStateOf<PairingValidationResult.Valid?>(null) }
 
     val isDark = appTheme == "dark"
 
@@ -45,9 +45,16 @@ fun MainScreen(viewModel: AirvoiceViewModel) {
             when (currentScreen) {
 
                 Screen.SCANNER -> QRScannerScreen(
-                    onQrCodeScanned = { payload ->
-                        viewModel.pairAndConnect(payload)
+                    onQrCodeScanned = { validated ->
+                        if (validated.isLocal) {
+                            viewModel.pairAndConnect(validated.payload)
+                        } else {
+                            pendingRemotePairing = validated
+                        }
                         currentScreen = Screen.HOME
+                    },
+                    onScanError = { message ->
+                        viewModel.showToast(message, isError = true)
                     },
                     onCancel = {
                         currentScreen = Screen.HOME
@@ -57,6 +64,33 @@ fun MainScreen(viewModel: AirvoiceViewModel) {
                     viewModel = viewModel,
                     onScanQr = {
                         currentScreen = Screen.SCANNER
+                    }
+                )
+            }
+
+            pendingRemotePairing?.let { pending ->
+                AlertDialog(
+                    onDismissRequest = { pendingRemotePairing = null },
+                    title = { Text("确认连接外部服务器") },
+                    text = {
+                        Text(
+                            "该二维码指向非局域网地址：\n\n${pending.host}\n\n确认连接后，您的输入将自动发送到该服务器。请仅在信任该服务器时继续。"
+                        )
+                    },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                viewModel.pairAndConnect(pending.payload, allowRemote = true)
+                                pendingRemotePairing = null
+                            }
+                        ) {
+                            Text("确认连接")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { pendingRemotePairing = null }) {
+                            Text("取消")
+                        }
                     }
                 )
             }

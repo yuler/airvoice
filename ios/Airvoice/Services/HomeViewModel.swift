@@ -9,6 +9,7 @@ final class HomeViewModel: ObservableObject {
     @Published var sendTimedOut = false
 
     private var sendTimeoutTask: Task<Void, Never>?
+    private var retryTask: Task<Void, Never>?
     /// Maps in-flight message IDs to the content actually sent (for dedup after ack).
     private var pendingSendContent: [String: String] = [:]
     private var pendingSendMsgId: String?
@@ -91,12 +92,17 @@ final class HomeViewModel: ObservableObject {
 
     /// Stop waiting on the in-flight send so the user can keep editing immediately.
     func cancelSend(autoSend: AutoSendController) {
-        guard autoSend.inFlight else { return }
+        let hadPendingRetry = retryTask != nil
+        retryTask?.cancel()
+        retryTask = nil
+        guard autoSend.inFlight || hadPendingRetry else { return }
         sendTimeoutTask?.cancel()
         sendTimeoutTask = nil
         if let msgId = pendingSendMsgId {
             clearPendingSend(msgId: msgId)
         }
+        inFlightContent = nil
+        inFlightIsRetry = false
         autoSend.clearInFlight()
         showToast("已取消发送", isError: false)
     }
@@ -128,6 +134,8 @@ final class HomeViewModel: ObservableObject {
             return false
         }
 
+        retryTask?.cancel()
+        retryTask = nil
         autoSend.beginSend()
         sendTimedOut = false
 
@@ -140,6 +148,8 @@ final class HomeViewModel: ObservableObject {
         pendingSendContent[msgId] = content
         guard connection.sendText(id: msgId, content: content) else {
             clearPendingSend(msgId: msgId)
+            inFlightContent = nil
+            inFlightIsRetry = false
             autoSend.clearInFlight()
             showToast("发送失败：未连接到电脑", isError: true)
             return false
@@ -161,6 +171,7 @@ final class HomeViewModel: ObservableObject {
                 }
                 autoSend.clearInFlight()
                 self.inFlightContent = nil
+                self.inFlightIsRetry = false
                 self.sendTimedOut = true
                 self.showToast("发送超时，请重试", isError: true)
             }
@@ -171,6 +182,8 @@ final class HomeViewModel: ObservableObject {
 
     private func handleTransportError(_ message: String, autoSend: AutoSendController) {
         let wasInFlight = autoSend.inFlight
+        retryTask?.cancel()
+        retryTask = nil
         sendTimeoutTask?.cancel()
         sendTimeoutTask = nil
         if let msgId = pendingSendMsgId {
@@ -178,6 +191,7 @@ final class HomeViewModel: ObservableObject {
         }
         autoSend.clearInFlight()
         inFlightContent = nil
+        inFlightIsRetry = false
         // Keep background reconnect failures silent in the status bar; only alert
         // when an active send was interrupted.
         if wasInFlight {
@@ -187,6 +201,8 @@ final class HomeViewModel: ObservableObject {
     }
 
     private func handleAuthExpired(autoSend: AutoSendController) {
+        retryTask?.cancel()
+        retryTask = nil
         sendTimeoutTask?.cancel()
         sendTimeoutTask = nil
         if let msgId = pendingSendMsgId {
@@ -195,6 +211,7 @@ final class HomeViewModel: ObservableObject {
         pendingAutoSendText = nil
         autoSend.clearInFlight()
         inFlightContent = nil
+        inFlightIsRetry = false
         sendTimedOut = false
         showToast("配对已失效，请重新扫码", isError: true)
     }
@@ -213,50 +230,54 @@ final class HomeViewModel: ObservableObject {
         connection: ConnectionManager,
         autoSend: AutoSendController
     ) {
-        sendTimeoutTask?.cancel()
-        sendTimeoutTask = nil
-        let sentContent = pendingSendContent.removeValue(forKey: id)
+        // Ignore stale, duplicate, or unknown ACKs (e.g. after timeout or user cancel)
+        // so they never cancel an active send's timeout, clear newly typed text, or
+        // release a newer in-flight lock.
+        guard let sentContent = pendingSendContent.removeValue(forKey: id) else {
+            return
+        }
         if pendingSendMsgId == id {
             pendingSendMsgId = nil
         }
+        sendTimeoutTask?.cancel()
+        sendTimeoutTask = nil
 
         if ok {
             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
             sendTimedOut = false
             showToast("已发送到电脑", isError: false)
-            // Always release the in-flight lock on success, even if the acked id
-            // didn't match a tracked message (otherwise "发送中" sticks forever).
+            autoSend.markAcked(sentContent)
             let remaining: String
-            if let sentContent {
-                autoSend.markAcked(sentContent)
-                if text.hasPrefix(sentContent) {
-                    remaining = String(text.dropFirst(sentContent.count))
-                } else {
-                    remaining = text
-                }
+            if text.hasPrefix(sentContent) {
+                remaining = String(text.dropFirst(sentContent.count))
             } else {
-                autoSend.clearInFlight()
-                remaining = ""
+                remaining = text
             }
             text = remaining
             autoSend.textDidChange(remaining)
             inFlightContent = nil
+            inFlightIsRetry = false
         } else {
             autoSend.clearInFlight()
 
             // The desktop's first paste right after (re)connecting can transiently
             // fail. Auto-retry an auto-send once before surfacing the error so the
             // user doesn't have to manually re-send.
-            let retryContent = inFlightContent
+            let retryContent = inFlightContent ?? sentContent
             let shouldRetry = (inFlightTrigger == .auto) && !inFlightIsRetry
             inFlightContent = nil
 
             if shouldRetry,
-               let retryContent,
                !retryContent.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                Task { @MainActor [weak self] in
-                    try? await Task.sleep(nanoseconds: 400_000_000)
-                    guard let self else { return }
+                retryTask?.cancel()
+                retryTask = Task { @MainActor [weak self] in
+                    do {
+                        try await Task.sleep(nanoseconds: 400_000_000)
+                    } catch {
+                        return
+                    }
+                    guard !Task.isCancelled, let self else { return }
+                    self.retryTask = nil
                     guard connection.state == .connected, !autoSend.inFlight else { return }
                     _ = self.handleSend(
                         content: retryContent,
@@ -267,6 +288,7 @@ final class HomeViewModel: ObservableObject {
                     )
                 }
             } else {
+                inFlightIsRetry = false
                 showToast(errMsg ?? "发送失败", isError: true)
             }
         }
