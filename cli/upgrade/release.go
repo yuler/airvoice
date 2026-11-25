@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -18,14 +19,16 @@ const (
 	// DefaultBaseURL is the GitHub repository base URL used for releases.
 	DefaultBaseURL = "https://github.com/yuler/airvoice"
 
-	maxChecksumBytes = 1 << 20 // 1 MiB
+	maxChecksumBytes      = 1 << 20   // 1 MiB
+	defaultMaxBinaryBytes = 100 << 20 // 100 MiB
 )
 
 // Client fetches release metadata, checksums, and CLI binaries.
 type Client struct {
-	BaseURL    string
-	HTTPClient *http.Client
-	UserAgent  string
+	BaseURL        string
+	HTTPClient     *http.Client
+	UserAgent      string
+	MaxBinaryBytes int64
 }
 
 // NewClient returns a release client targeting DefaultBaseURL.
@@ -33,7 +36,8 @@ func NewClient(userAgent string) *Client {
 	return &Client{
 		BaseURL: DefaultBaseURL,
 		HTTPClient: &http.Client{
-			Timeout: 2 * time.Minute,
+			Timeout:       2 * time.Minute,
+			CheckRedirect: checkRedirect,
 		},
 		UserAgent: userAgent,
 	}
@@ -46,11 +50,51 @@ func (c *Client) baseURL() string {
 	return DefaultBaseURL
 }
 
+func (c *Client) maxBinaryBytes() int64 {
+	if c != nil && c.MaxBinaryBytes > 0 {
+		return c.MaxBinaryBytes
+	}
+	return defaultMaxBinaryBytes
+}
+
 func (c *Client) httpClient() *http.Client {
 	if c != nil && c.HTTPClient != nil {
 		return c.HTTPClient
 	}
-	return &http.Client{Timeout: 2 * time.Minute}
+	return &http.Client{
+		Timeout:       2 * time.Minute,
+		CheckRedirect: checkRedirect,
+	}
+}
+
+func (c *Client) downloadHTTPClient() *http.Client {
+	base := c.httpClient()
+	wrapped := *base
+	prev := base.CheckRedirect
+	wrapped.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		if err := checkRedirect(req, via); err != nil {
+			return err
+		}
+		if prev != nil {
+			return prev(req, via)
+		}
+		return nil
+	}
+	return &wrapped
+}
+
+func checkRedirect(req *http.Request, via []*http.Request) error {
+	if len(via) >= 10 {
+		return errors.New("stopped after 10 redirects")
+	}
+	scheme := strings.ToLower(req.URL.Scheme)
+	if scheme != "https" && scheme != "http" {
+		return fmt.Errorf("refusing redirect to unsupported scheme %q", req.URL.Scheme)
+	}
+	if len(via) > 0 && strings.EqualFold(via[0].URL.Scheme, "https") && scheme != "https" {
+		return fmt.Errorf("refusing redirect downgrade from https to %s", req.URL.Scheme)
+	}
+	return nil
 }
 
 func (c *Client) newRequest(ctx context.Context, method, targetURL string) (*http.Request, error) {
@@ -125,7 +169,7 @@ func (c *Client) FetchChecksum(ctx context.Context, version, asset string) (stri
 	if err != nil {
 		return "", err
 	}
-	resp, err := c.httpClient().Do(req)
+	resp, err := c.downloadHTTPClient().Do(req)
 	if err != nil {
 		return "", fmt.Errorf("download checksums: %w", err)
 	}
@@ -187,7 +231,7 @@ func (c *Client) DownloadVerified(ctx context.Context, version, asset, expectedS
 		cleanup()
 		return "", err
 	}
-	resp, err := c.httpClient().Do(req)
+	resp, err := c.downloadHTTPClient().Do(req)
 	if err != nil {
 		cleanup()
 		return "", fmt.Errorf("download %s: %w", asset, err)
@@ -199,10 +243,21 @@ func (c *Client) DownloadVerified(ctx context.Context, version, asset, expectedS
 		return "", fmt.Errorf("failed to download %s for v%s (HTTP %d)", asset, ver, resp.StatusCode)
 	}
 
+	limit := c.maxBinaryBytes()
+	if resp.ContentLength > limit {
+		cleanup()
+		return "", fmt.Errorf("download %s exceeds maximum allowed size (%d bytes)", asset, limit)
+	}
+
 	hasher := sha256.New()
-	if _, err := io.Copy(io.MultiWriter(tmp, hasher), resp.Body); err != nil {
+	written, err := io.Copy(io.MultiWriter(tmp, hasher), io.LimitReader(resp.Body, limit+1))
+	if err != nil {
 		cleanup()
 		return "", fmt.Errorf("save %s: %w", asset, err)
+	}
+	if written > limit {
+		cleanup()
+		return "", fmt.Errorf("download %s exceeds maximum allowed size (%d bytes)", asset, limit)
 	}
 	if err := tmp.Close(); err != nil {
 		_ = os.Remove(tmpPath)

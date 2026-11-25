@@ -63,10 +63,15 @@ jobs:
         env:
           INPUT_VERSION: ${{ inputs.version || '' }}
         run: |
+          set -euo pipefail
           if [ -n "$INPUT_VERSION" ]; then
             APP_VERSION="${INPUT_VERSION#v}"
           else
             APP_VERSION="$(./scripts/resolve-version.sh)"
+          fi
+          if [[ ! "$APP_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::Invalid version: $APP_VERSION" >&2
+            exit 1
           fi
           echo "version=$APP_VERSION" >> "$GITHUB_OUTPUT"
           echo "Building iOS version: $APP_VERSION"
@@ -76,10 +81,17 @@ jobs:
           IOS_DISTRIBUTION_CERT_P12_BASE64: ${{ secrets.IOS_DISTRIBUTION_CERT_P12_BASE64 }}
           IOS_DISTRIBUTION_CERT_PASSWORD: ${{ secrets.IOS_DISTRIBUTION_CERT_PASSWORD }}
         run: |
+          set -euo pipefail
           KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
           KEYCHAIN_PASSWORD="$(openssl rand -hex 24)"
           printf '%s' "$IOS_DISTRIBUTION_CERT_P12_BASE64" | openssl base64 -d -A -out "$RUNNER_TEMP/distribution.p12"
-          curl -fsSL -o "$RUNNER_TEMP/AppleWWDRCAG3.cer" https://www.apple.com/certificateauthority/AppleWWDRCAG3.cer
+          EXPECTED_WWDR_SHA256="dcf21878c77f4198e4b4614f03d696d89c66c66008d4244e1b99161aac91601f"
+          curl -fsSL --proto '=https' --proto-redir '=https' --tlsv1.2 -o "$RUNNER_TEMP/AppleWWDRCAG3.cer" https://www.apple.com/certificateauthority/AppleWWDRCAG3.cer
+          ACTUAL_WWDR_SHA256="$(shasum -a 256 "$RUNNER_TEMP/AppleWWDRCAG3.cer" | awk '{print $1}')"
+          if [ "$ACTUAL_WWDR_SHA256" != "$EXPECTED_WWDR_SHA256" ]; then
+            echo "::error::AppleWWDRCAG3.cer SHA-256 mismatch: expected ${EXPECTED_WWDR_SHA256}, got ${ACTUAL_WWDR_SHA256}" >&2
+            exit 1
+          fi
 
           security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"

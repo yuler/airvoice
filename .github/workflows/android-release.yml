@@ -44,12 +44,18 @@ jobs:
         env:
           INPUT_VERSION: ${{ inputs.version || '' }}
         run: |
+          set -euo pipefail
           if [ -n "$INPUT_VERSION" ]; then
-            echo "version=${INPUT_VERSION#v}" >> "$GITHUB_OUTPUT"
+            VERSION="${INPUT_VERSION#v}"
           else
             BASE_VERSION="$(./scripts/resolve-version.sh)"
-            echo "version=${BASE_VERSION}-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+            VERSION="${BASE_VERSION}-$(git rev-parse --short HEAD)"
           fi
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::Invalid version: $VERSION" >&2
+            exit 1
+          fi
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Prepare release keystore
         env:
@@ -85,9 +91,11 @@ jobs:
 
       - name: Collect APK
         shell: bash
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
           mkdir -p release
-          cp android/app/build/outputs/apk/release/app-release.apk "release/airvoice-android-${{ steps.version.outputs.version }}.apk"
+          cp android/app/build/outputs/apk/release/app-release.apk "release/airvoice-android-${VERSION}.apk"
           ls -lh release
 
       - name: Upload APK artifact

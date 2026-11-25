@@ -277,3 +277,137 @@ func TestReplaceExecutableWindowsFlowAndCleanup(t *testing.T) {
 		t.Fatalf("expected %q to be removed, err=%v", oldPath, err)
 	}
 }
+
+func TestDownloadVerifiedEnforcesMaxBinaryBytes(t *testing.T) {
+	exactPayload := bytes.Repeat([]byte("a"), 32)
+	oversizedPayload := bytes.Repeat([]byte("b"), 33)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/releases/download/v0.4.8/exact-bin":
+			_, _ = w.Write(exactPayload)
+		case "/releases/download/v0.4.8/oversized-known":
+			_, _ = w.Write(oversizedPayload)
+		case "/releases/download/v0.4.8/oversized-chunked":
+			w.WriteHeader(http.StatusOK)
+			flusher, ok := w.(http.Flusher)
+			for i := 0; i < 33; i++ {
+				_, _ = w.Write([]byte("x"))
+				if ok {
+					flusher.Flush()
+				}
+			}
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	client := &Client{
+		BaseURL:        srv.URL,
+		HTTPClient:     srv.Client(),
+		MaxBinaryBytes: 32,
+	}
+
+	// Exact limit succeeds.
+	dir := t.TempDir()
+	tmpPath, err := client.DownloadVerified(context.Background(), "0.4.8", "exact-bin", sha256Hex(exactPayload), dir)
+	if err != nil {
+		t.Fatalf("exact limit failed: %v", err)
+	}
+	_ = os.Remove(tmpPath)
+
+	// Exceeding limit with known Content-Length fails and leaves no temp file.
+	for _, asset := range []string{"oversized-known", "oversized-chunked"} {
+		dir := t.TempDir()
+		_, err := client.DownloadVerified(context.Background(), "0.4.8", asset, sha256Hex(oversizedPayload), dir)
+		if err == nil || !strings.Contains(err.Error(), "exceeds maximum allowed size") {
+			t.Fatalf("%s: expected size limit error, got %v", asset, err)
+		}
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(entries) != 0 {
+			t.Fatalf("%s: expected temp dir to be clean, found %d leftover entries", asset, len(entries))
+		}
+	}
+}
+
+func TestClientBlocksHTTPSRedirectDowngrade(t *testing.T) {
+	payload := []byte("plain-http-payload")
+	sum := sha256Hex(payload)
+
+	httpSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "checksums-cli.txt") {
+			fmt.Fprintf(w, "%s  airvoice-cli-linux-amd64\n", sum)
+			return
+		}
+		_, _ = w.Write(payload)
+	}))
+	defer httpSrv.Close()
+
+	httpsRedirect := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, httpSrv.URL+r.URL.Path, http.StatusFound)
+	}))
+	defer httpsRedirect.Close()
+
+	client := &Client{
+		BaseURL:    httpsRedirect.URL,
+		HTTPClient: httpsRedirect.Client(),
+	}
+
+	// HTTPS -> HTTP downgrade must be refused on FetchChecksum.
+	if _, err := client.FetchChecksum(context.Background(), "0.4.8", "airvoice-cli-linux-amd64"); err == nil || !strings.Contains(err.Error(), "refusing redirect downgrade") {
+		t.Fatalf("FetchChecksum expected downgrade error, got %v", err)
+	}
+
+	// HTTPS -> HTTP downgrade must be refused on DownloadVerified and clean up temp file.
+	dir := t.TempDir()
+	if _, err := client.DownloadVerified(context.Background(), "0.4.8", "airvoice-cli-linux-amd64", sum, dir); err == nil || !strings.Contains(err.Error(), "refusing redirect downgrade") {
+		t.Fatalf("DownloadVerified expected downgrade error, got %v", err)
+	}
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 0 {
+		t.Fatalf("expected temp dir to be clean after redirect error, found %d entries", len(entries))
+	}
+
+	// HTTPS -> HTTPS redirect must be allowed (same TLS server redirecting to another HTTPS path).
+	httpsSelf := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/releases/download/v0.4.9/checksums-cli.txt":
+			http.Redirect(w, r, "/cdn/checksums-cli.txt", http.StatusFound)
+		case "/cdn/checksums-cli.txt":
+			fmt.Fprintf(w, "%s  airvoice-cli-linux-amd64\n", sum)
+		case "/releases/download/v0.4.9/airvoice-cli-linux-amd64":
+			http.Redirect(w, r, "/cdn/airvoice-cli-linux-amd64", http.StatusFound)
+		case "/cdn/airvoice-cli-linux-amd64":
+			_, _ = w.Write(payload)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer httpsSelf.Close()
+
+	okClient := &Client{
+		BaseURL:    httpsSelf.URL,
+		HTTPClient: httpsSelf.Client(),
+	}
+	gotSum, err := okClient.FetchChecksum(context.Background(), "0.4.9", "airvoice-cli-linux-amd64")
+	if err != nil || gotSum != sum {
+		t.Fatalf("FetchChecksum over HTTPS redirect failed: sum=%q err=%v", gotSum, err)
+	}
+	tmpPath, err := okClient.DownloadVerified(context.Background(), "0.4.9", "airvoice-cli-linux-amd64", sum, t.TempDir())
+	if err != nil {
+		t.Fatalf("DownloadVerified over HTTPS redirect failed: %v", err)
+	}
+	_ = os.Remove(tmpPath)
+
+	// NewClient must have CheckRedirect configured.
+	if NewClient("test").HTTPClient.CheckRedirect == nil {
+		t.Fatal("NewClient().HTTPClient.CheckRedirect should not be nil")
+	}
+}
