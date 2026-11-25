@@ -107,10 +107,27 @@ jobs:
       ref: ${{ needs.plan.outputs.sha }}
     secrets: inherit
 
+  ios:
+    name: Upload iOS TestFlight
+    needs: plan
+    if: needs.plan.outputs.skip != 'true' && needs.plan.outputs.ios_changed == 'true'
+    uses: ./.github/workflows/ios-release.yml
+    with:
+      version: ${{ needs.plan.outputs.version }}
+      ref: ${{ needs.plan.outputs.sha }}
+    secrets: inherit
+
   publish:
     name: Tag, Release & Homebrew
-    needs: [plan, cli, desktop, android]
-    if: needs.plan.outputs.skip != 'true'
+    needs: [plan, cli, desktop, android, ios]
+    if: >-
+      always() &&
+      needs.plan.result == 'success' &&
+      needs.plan.outputs.skip != 'true' &&
+      needs.cli.result == 'success' &&
+      needs.desktop.result == 'success' &&
+      needs.android.result == 'success' &&
+      (needs.ios.result == 'success' || needs.ios.result == 'skipped')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -265,13 +282,3 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh workflow run www-deploy.yml --ref main
-
-  ios:
-    name: Upload iOS TestFlight
-    needs: [plan, publish]
-    if: needs.plan.outputs.skip != 'true' && needs.plan.outputs.ios_changed == 'true'
-    uses: ./.github/workflows/ios-release.yml
-    with:
-      version: ${{ needs.plan.outputs.version }}
-      ref: ${{ needs.plan.outputs.sha }}
-    secrets: inherit

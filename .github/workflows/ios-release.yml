@@ -77,14 +77,18 @@ jobs:
           echo "Building iOS version: $APP_VERSION"
 
       - name: Import signing certificate
+        id: cert
+        shell: bash
         env:
           IOS_DISTRIBUTION_CERT_P12_BASE64: ${{ secrets.IOS_DISTRIBUTION_CERT_P12_BASE64 }}
           IOS_DISTRIBUTION_CERT_PASSWORD: ${{ secrets.IOS_DISTRIBUTION_CERT_PASSWORD }}
         run: |
           set -euo pipefail
+          umask 077
           KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
           KEYCHAIN_PASSWORD="$(openssl rand -hex 24)"
           printf '%s' "$IOS_DISTRIBUTION_CERT_P12_BASE64" | openssl base64 -d -A -out "$RUNNER_TEMP/distribution.p12"
+          chmod 600 "$RUNNER_TEMP/distribution.p12"
           EXPECTED_WWDR_SHA256="dcf21878c77f4198e4b4614f03d696d89c66c66008d4244e1b99161aac91601f"
           curl -fsSL --proto '=https' --proto-redir '=https' --tlsv1.2 -o "$RUNNER_TEMP/AppleWWDRCAG3.cer" https://www.apple.com/certificateauthority/AppleWWDRCAG3.cer
           ACTUAL_WWDR_SHA256="$(shasum -a 256 "$RUNNER_TEMP/AppleWWDRCAG3.cer" | awk '{print $1}')"
@@ -102,16 +106,136 @@ jobs:
           security list-keychains -d user -s "$KEYCHAIN_PATH" $(security list-keychains -d user | tr -d '"')
           security default-keychain -s "$KEYCHAIN_PATH"
 
-      - name: Prepare signing config and API key
+          SIGN_IDENTITY="$(security find-identity -v -p codesigning "$KEYCHAIN_PATH" | awk -F'"' '/Apple Distribution:|iPhone Distribution:/ { print $2; exit }')"
+          if [ -z "$SIGN_IDENTITY" ]; then
+            echo "::error::No Apple Distribution signing identity found in imported keychain"
+            security find-identity -v -p codesigning "$KEYCHAIN_PATH"
+            exit 1
+          fi
+          CERT_SERIAL="$(security find-certificate -c "$SIGN_IDENTITY" -p "$KEYCHAIN_PATH" | openssl x509 -noout -serial | cut -d= -f2 | tr '[:lower:]' '[:upper:]' | sed 's/^0*//')"
+
+          echo "sign_identity=$SIGN_IDENTITY" >> "$GITHUB_OUTPUT"
+          echo "cert_serial=$CERT_SERIAL" >> "$GITHUB_OUTPUT"
+          echo "Using signing identity: $SIGN_IDENTITY"
+
+      - name: Prepare App Store Connect API key and asc CLI
+        shell: bash
         env:
-          IOS_DEVELOPMENT_TEAM: ${{ secrets.IOS_DEVELOPMENT_TEAM }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
           APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
         run: |
-          cat > ios/Signing.xcconfig <<EOF
-          CODE_SIGN_STYLE = Automatic
-          DEVELOPMENT_TEAM = ${IOS_DEVELOPMENT_TEAM}
-          EOF
+          set -euo pipefail
+          umask 077
           printf '%s' "$APP_STORE_CONNECT_API_KEY_BASE64" | openssl base64 -d -A -out "$RUNNER_TEMP/AuthKey.p8"
+          chmod 600 "$RUNNER_TEMP/AuthKey.p8"
+
+          curl -fsSL https://asccli.sh/install | INSTALL_DIR="$HOME/.local/bin" bash
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+          "$HOME/.local/bin/asc" auth login --bypass-keychain \
+            --name "Airvoice CI" \
+            --key-id "$APP_STORE_CONNECT_KEY_ID" \
+            --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
+            --private-key "$RUNNER_TEMP/AuthKey.p8"
+
+      - name: Fetch and install App Store provisioning profile
+        id: signing
+        shell: bash
+        env:
+          BUNDLE_ID: cc.yuler.airvoice
+          CERT_SERIAL: ${{ steps.cert.outputs.cert_serial }}
+        run: |
+          set -euo pipefail
+          PROFILE_ID=""
+          while IFS= read -r pid; do
+            [ -z "$pid" ] && continue
+            MATCH="$(asc profiles view --id "$pid" --include bundleId,certificates --output json | python3 -c '
+          import json, os, sys
+          doc = json.load(sys.stdin)
+          want_bid = os.environ["BUNDLE_ID"]
+          want_serial = os.environ["CERT_SERIAL"].lstrip("0").upper()
+          inc = doc.get("included", [])
+          has_bid = any(i.get("type") == "bundleIds" and i.get("attributes", {}).get("identifier") == want_bid for i in inc)
+          has_cert = any(
+            i.get("type") == "certificates"
+            and i.get("attributes", {}).get("serialNumber", "").lstrip("0").upper() == want_serial
+            for i in inc
+          )
+          print("yes" if (has_bid and has_cert) else "no")
+          ')"
+            if [ "$MATCH" = "yes" ]; then
+              PROFILE_ID="$pid"
+              break
+            fi
+          done < <(asc profiles list --profile-type IOS_APP_STORE --paginate --output json | python3 -c '
+          import json, sys
+          for p in json.load(sys.stdin).get("data", []):
+            if p.get("attributes", {}).get("profileState") == "ACTIVE":
+              print(p["id"])
+          ')
+
+          if [ -z "$PROFILE_ID" ]; then
+            echo "No active IOS_APP_STORE profile found for $BUNDLE_ID matching cert serial $CERT_SERIAL; creating one..."
+            BUNDLE_RES_ID="$(asc bundle-ids list --paginate --output json | python3 -c '
+          import json, os, sys
+          want = os.environ["BUNDLE_ID"]
+          for b in json.load(sys.stdin).get("data", []):
+            if b.get("attributes", {}).get("identifier") == want:
+              print(b["id"])
+              break
+          ')"
+            CERT_RES_ID="$(asc certificates list --paginate --output json | python3 -c '
+          import json, os, sys
+          want = os.environ["CERT_SERIAL"].lstrip("0").upper()
+          for c in json.load(sys.stdin).get("data", []):
+            if c.get("attributes", {}).get("serialNumber", "").lstrip("0").upper() == want:
+              print(c["id"])
+              break
+          ')"
+            if [ -z "$BUNDLE_RES_ID" ] || [ -z "$CERT_RES_ID" ]; then
+              echo "::error::Failed to resolve Bundle ID ($BUNDLE_RES_ID) or Distribution certificate ($CERT_RES_ID) in App Store Connect"
+              exit 1
+            fi
+            PROFILE_ID="$(asc profiles create \
+              --name "Airvoice App Store ${CERT_SERIAL:0:8}" \
+              --profile-type IOS_APP_STORE \
+              --bundle "$BUNDLE_RES_ID" \
+              --certificate "$CERT_RES_ID" \
+              --output json | python3 -c 'import json,sys; d=json.load(sys.stdin)["data"]; print((d[0] if isinstance(d, list) else d)["id"])')"
+          fi
+
+          PROFILE_PATH="$RUNNER_TEMP/AppStore.mobileprovision"
+          asc profiles download --id "$PROFILE_ID" --output "$PROFILE_PATH" --overwrite
+          asc profiles local install --path "$PROFILE_PATH" --force
+
+          PROFILE_INFO="$(asc profiles inspect --path "$PROFILE_PATH" --output json)"
+          PROFILE_UUID="$(printf '%s' "$PROFILE_INFO" | python3 -c 'import json,sys; print(json.load(sys.stdin)["uuid"])')"
+          PROFILE_NAME="$(printf '%s' "$PROFILE_INFO" | python3 -c 'import json,sys; print(json.load(sys.stdin)["name"])')"
+
+          echo "Installed App Store profile: $PROFILE_NAME ($PROFILE_UUID)"
+          {
+            echo "bundle_id=$BUNDLE_ID"
+            echo "profile_uuid=$PROFILE_UUID"
+            echo "profile_name=$PROFILE_NAME"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Prepare signing config and ExportOptions
+        shell: bash
+        env:
+          IOS_DEVELOPMENT_TEAM: ${{ secrets.IOS_DEVELOPMENT_TEAM }}
+          SIGN_IDENTITY: ${{ steps.cert.outputs.sign_identity }}
+          BUNDLE_ID: ${{ steps.signing.outputs.bundle_id }}
+          PROFILE_UUID: ${{ steps.signing.outputs.profile_uuid }}
+        run: |
+          set -euo pipefail
+          cat > ios/Signing.xcconfig <<EOF
+          CODE_SIGN_STYLE = Manual
+          DEVELOPMENT_TEAM = ${IOS_DEVELOPMENT_TEAM}
+          CODE_SIGN_IDENTITY = ${SIGN_IDENTITY}
+          PROVISIONING_PROFILE_SPECIFIER = ${PROFILE_UUID}
+          EOF
+
           cat > "$RUNNER_TEMP/ExportOptions.plist" <<EOF
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -122,9 +246,16 @@ jobs:
             <key>destination</key>
             <string>upload</string>
             <key>signingStyle</key>
-            <string>automatic</string>
+            <string>manual</string>
+            <key>signingCertificate</key>
+            <string>Apple Distribution</string>
             <key>teamID</key>
             <string>${IOS_DEVELOPMENT_TEAM}</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>${BUNDLE_ID}</key>
+              <string>${PROFILE_UUID}</string>
+            </dict>
             <key>manageAppVersionAndBuildNumber</key>
             <false/>
           </dict>
@@ -141,6 +272,8 @@ jobs:
           APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
           IOS_DEVELOPMENT_TEAM: ${{ secrets.IOS_DEVELOPMENT_TEAM }}
+          SIGN_IDENTITY: ${{ steps.cert.outputs.sign_identity }}
+          PROFILE_UUID: ${{ steps.signing.outputs.profile_uuid }}
         run: |
           xcodebuild \
             -project ios/Airvoice.xcodeproj \
@@ -148,12 +281,10 @@ jobs:
             -configuration Release \
             -destination 'generic/platform=iOS' \
             -archivePath "$RUNNER_TEMP/Airvoice.xcarchive" \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8" \
-            -authenticationKeyID "$APP_STORE_CONNECT_KEY_ID" \
-            -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID" \
             DEVELOPMENT_TEAM="$IOS_DEVELOPMENT_TEAM" \
-            CODE_SIGN_STYLE=Automatic \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="$SIGN_IDENTITY" \
+            PROVISIONING_PROFILE_SPECIFIER="$PROFILE_UUID" \
             archive
 
           xcodebuild \
@@ -161,7 +292,18 @@ jobs:
             -archivePath "$RUNNER_TEMP/Airvoice.xcarchive" \
             -exportPath "$RUNNER_TEMP/export" \
             -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
-            -allowProvisioningUpdates \
             -authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8" \
             -authenticationKeyID "$APP_STORE_CONNECT_KEY_ID" \
             -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID"
+
+      - name: Clean up signing materials
+        if: always()
+        shell: bash
+        run: |
+          security delete-keychain "$RUNNER_TEMP/app-signing.keychain-db" 2>/dev/null || true
+          rm -rf \
+            "$RUNNER_TEMP/distribution.p12" \
+            "$RUNNER_TEMP/AuthKey.p8" \
+            "$RUNNER_TEMP/AppleWWDRCAG3.cer" \
+            "$RUNNER_TEMP/AppStore.mobileprovision" \
+            "$HOME/.asc"
