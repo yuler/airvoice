@@ -60,7 +60,7 @@ struct HomeView: View {
                 connection: connection,
                 theme: theme,
                 onDisconnectAndClear: {
-                    viewModel.disconnectAndClear(connection: connection, autoSend: autoSend)
+                    viewModel.disconnectAndClear(connection: connection, autoSend: autoSend, showToast: false)
                 },
                 onSettingsReset: {
                     syncSettingsToControllers()

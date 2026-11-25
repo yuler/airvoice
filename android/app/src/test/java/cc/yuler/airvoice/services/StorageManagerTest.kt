@@ -105,10 +105,10 @@ class StorageManagerTest {
     }
 
     @Test
-    fun testSaveTheme() = runBlocking {
-        assertEquals("system", storageManager.themeFlow.first())
-        storageManager.saveTheme("dark")
-        assertEquals("dark", storageManager.themeFlow.first())
+    fun testLegacyThemeKeyReadsCleanlyViaSettingsFlow() = runBlocking {
+        assertEquals(ThemeMode.SYSTEM, storageManager.settingsFlow.first().themeMode)
+        context.dataStore.edit { prefs -> prefs[StorageManager.KEY_THEME] = "dark" }
+        assertEquals(ThemeMode.DARK, storageManager.settingsFlow.first().themeMode)
     }
 
     @Test
@@ -116,24 +116,20 @@ class StorageManagerTest {
         assertEquals(AppSettings(), storageManager.settingsFlow.first())
 
         storageManager.saveConnection("ws://192.168.1.5:7655/ws", "keep-token", allowRemote = false)
-        storageManager.saveThemeMode(ThemeMode.DARK)
-        storageManager.saveLanguage(AppLanguage.EN)
-        storageManager.saveAutoSendEnabled(false)
-        storageManager.saveAutoSendDelayMs(2500L)
-        storageManager.saveHapticFeedbackEnabled(false)
-        storageManager.saveKeepScreenAwake(false)
-        storageManager.saveShowInputTips(false)
-        storageManager.saveSendTimeoutMs(10000L)
+        val updated = AppSettings(
+            themeMode = ThemeMode.DARK,
+            language = AppLanguage.EN,
+            autoSendEnabled = false,
+            autoSendDelayMs = 2500L,
+            hapticFeedbackEnabled = false,
+            keepScreenAwake = false,
+            showInputTips = false,
+            sendTimeoutMs = 10000L
+        )
+        storageManager.saveSettings(updated)
 
         val saved = storageManager.settingsFlow.first()
-        assertEquals(ThemeMode.DARK, saved.themeMode)
-        assertEquals(AppLanguage.EN, saved.language)
-        assertFalse(saved.autoSendEnabled)
-        assertEquals(2500L, saved.autoSendDelayMs)
-        assertFalse(saved.hapticFeedbackEnabled)
-        assertFalse(saved.keepScreenAwake)
-        assertFalse(saved.showInputTips)
-        assertEquals(10000L, saved.sendTimeoutMs)
+        assertEquals(updated, saved)
 
         storageManager.resetSettings()
         assertEquals(AppSettings(), storageManager.settingsFlow.first())

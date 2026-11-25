@@ -1,6 +1,7 @@
 package cc.yuler.airvoice.services
 
 import android.util.Log
+import cc.yuler.airvoice.models.AppSettings
 import cc.yuler.airvoice.models.ProtocolMessage
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -35,9 +36,7 @@ enum class SendResult {
 class AutoSendController(
     private val textFlow: StateFlow<String>,
     private val connectionManager: ConnectionManager,
-    private val isAutoSendEnabled: () -> Boolean = { true },
-    private val autoSendDelayMs: () -> Long = { 1500L },
-    private val sendTimeoutMs: () -> Long = { 5000L },
+    private val settingsProvider: () -> AppSettings = { AppSettings() },
     private val onSentAck: (SendResult, String, SendTrigger) -> Unit
 ) {
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
@@ -97,16 +96,17 @@ class AutoSendController(
             stopCountdown()
             return
         }
-        if (!isAutoSendEnabled() || _inFlight.value) {
+        val currentSettings = settingsProvider()
+        if (!currentSettings.autoSendEnabled || _inFlight.value) {
             stopCountdown()
             return
         }
 
-        val delayDuration = autoSendDelayMs()
+        val delayDuration = currentSettings.autoSendDelayMs
         startCountdown()
         debounceJob = scope.launch {
             delay(delayDuration)
-            if (!isActive || !isAutoSendEnabled()) return@launch
+            if (!isActive || !settingsProvider().autoSendEnabled) return@launch
             _countdownActive.value = false
             scope.launch {
                 attemptSend(textFlow.value, SendTrigger.AUTO)
@@ -119,7 +119,7 @@ class AutoSendController(
     }
 
     fun triggerImmediateSend() {
-        if (!isAutoSendEnabled()) return
+        if (!settingsProvider().autoSendEnabled) return
         val text = textFlow.value
         if (text.isNotEmpty() && text != lastAckedText) {
             scope.launch {
@@ -181,7 +181,7 @@ class AutoSendController(
 
         val result = try {
             Log.d("AutoSendController", "Awaiting deferred for msgId=$msgId")
-            withTimeout(sendTimeoutMs()) {
+            withTimeout(settingsProvider().sendTimeoutMs) {
                 deferred.await()
             }
         } catch (e: TimeoutCancellationException) {

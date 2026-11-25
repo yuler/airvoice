@@ -43,6 +43,7 @@ import cc.yuler.airvoice.ui.viewmodel.AirvoiceViewModel
 @Composable
 fun HomeScreen(
     viewModel: AirvoiceViewModel,
+    isSettingsOpen: Boolean = false,
     onScanQr: () -> Unit = {},
     onOpenSettings: () -> Unit = {}
 ) {
@@ -68,6 +69,9 @@ fun HomeScreen(
 
     val density = LocalDensity.current
     val imeInsets = WindowInsets.ime
+    val currentIsSettingsOpen by rememberUpdatedState(isSettingsOpen)
+    var suppressNextImeSend by remember { mutableStateOf(false) }
+
     LaunchedEffect(Unit) {
         kotlinx.coroutines.delay(350)
         focusRequester.requestFocus()
@@ -78,7 +82,13 @@ fun HomeScreen(
         snapshotFlow { imeInsets.getBottom(density) > 0 }
             .collect { isImeVisible ->
                 if (prevImeVisible && !isImeVisible) {
-                    viewModel.triggerImmediateSend()
+                    if (suppressNextImeSend || currentIsSettingsOpen) {
+                        suppressNextImeSend = false
+                    } else {
+                        viewModel.triggerImmediateSend()
+                    }
+                } else if (isImeVisible) {
+                    suppressNextImeSend = false
                 }
                 prevImeVisible = isImeVisible
             }
@@ -179,6 +189,7 @@ fun HomeScreen(
                     // Settings button
                     IconButton(
                         onClick = {
+                            suppressNextImeSend = true
                             keyboardController?.hide()
                             onOpenSettings()
                         },

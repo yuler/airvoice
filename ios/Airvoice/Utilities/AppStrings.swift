@@ -118,7 +118,9 @@ struct AppStrings: Equatable {
     let tapToCopyHint: String
 
     func statusConnected(_ host: String?) -> String {
-        "\(statusConnectedPrefix): \(host ?? defaultHostName)"
+        let trimmed = host?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let resolvedHost = (trimmed?.isEmpty == false) ? trimmed! : defaultHostName
+        return "\(statusConnectedPrefix): \(resolvedHost)"
     }
 
     func remoteAlertBody(_ host: String) -> String {
@@ -217,11 +219,11 @@ struct AppStrings: Equatable {
         isChinese: false,
         statusDisconnected: "Disconnected",
         statusConnecting: "Connecting...",
-        statusError: "Connection failed, retrying",
+        statusError: "Connection failed, retrying...",
         defaultHostName: "Computer",
         statusConnectedPrefix: "Connected",
         editorPlaceholder: "Type here, or tap the keyboard mic for voice input...",
-        sending: "Sending",
+        sending: "Sending...",
         cancel: "Cancel",
         promptReconnect: "Connection lost, reconnecting...",
         promptScanQr: "Scan QR code to connect",

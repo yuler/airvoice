@@ -1,6 +1,7 @@
 package cc.yuler.airvoice.services
 
 import android.content.Context
+import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
@@ -53,10 +54,6 @@ class StorageManager(
         .handleIOException()
         .map { prefs -> decodeConnectionInfo(prefs) }
 
-    val themeFlow: Flow<String> = context.dataStore.data
-        .handleIOException()
-        .map { prefs -> prefs[KEY_THEME] ?: ThemeMode.SYSTEM.storageValue }
-
     val settingsFlow: Flow<AppSettings> = context.dataStore.data
         .handleIOException()
         .map { prefs -> decodeSettings(prefs) }
@@ -81,6 +78,12 @@ class StorageManager(
         }
         val allowRemote = prefs[KEY_ALLOW_REMOTE] ?: false
         return ConnectionInfo(wsUrl = wsUrl, token = token, allowRemote = allowRemote)
+    }
+
+    private suspend fun editPrefs(block: (MutablePreferences) -> Unit) {
+        withContext(Dispatchers.IO) {
+            context.dataStore.edit(block)
+        }
     }
 
     /**
@@ -113,93 +116,33 @@ class StorageManager(
     }
 
     suspend fun saveConnection(wsUrl: String, token: String, allowRemote: Boolean = false) {
-        withContext(Dispatchers.IO) {
-            val encryptedToken = tokenCipher.encrypt(token)
-            context.dataStore.edit { prefs ->
-                prefs[KEY_WS] = wsUrl
-                prefs[KEY_ENCRYPTED_TOKEN] = encryptedToken
-                prefs[KEY_ALLOW_REMOTE] = allowRemote
-                prefs.remove(KEY_LEGACY_TOKEN)
-            }
+        editPrefs { prefs ->
+            prefs[KEY_WS] = wsUrl
+            prefs[KEY_ENCRYPTED_TOKEN] = tokenCipher.encrypt(token)
+            prefs[KEY_ALLOW_REMOTE] = allowRemote
+            prefs.remove(KEY_LEGACY_TOKEN)
         }
     }
 
     suspend fun clearConnection() {
-        withContext(Dispatchers.IO) {
-            context.dataStore.edit { prefs ->
-                prefs.remove(KEY_WS)
-                prefs.remove(KEY_ENCRYPTED_TOKEN)
-                prefs.remove(KEY_LEGACY_TOKEN)
-                prefs.remove(KEY_ALLOW_REMOTE)
-            }
+        editPrefs { prefs ->
+            prefs.remove(KEY_WS)
+            prefs.remove(KEY_ENCRYPTED_TOKEN)
+            prefs.remove(KEY_LEGACY_TOKEN)
+            prefs.remove(KEY_ALLOW_REMOTE)
         }
     }
 
-    suspend fun saveTheme(theme: String) {
-        withContext(Dispatchers.IO) {
-            context.dataStore.edit { prefs ->
-                prefs[KEY_THEME] = theme
-            }
-        }
-    }
-
-    suspend fun saveThemeMode(mode: ThemeMode) {
-        saveTheme(mode.storageValue)
-    }
-
-    suspend fun saveLanguage(language: AppLanguage) {
-        withContext(Dispatchers.IO) {
-            context.dataStore.edit { prefs ->
-                prefs[KEY_LANGUAGE] = language.storageValue
-            }
-        }
-    }
-
-    suspend fun saveAutoSendEnabled(enabled: Boolean) {
-        withContext(Dispatchers.IO) {
-            context.dataStore.edit { prefs ->
-                prefs[KEY_AUTO_SEND_ENABLED] = enabled
-            }
-        }
-    }
-
-    suspend fun saveAutoSendDelayMs(delayMs: Long) {
-        withContext(Dispatchers.IO) {
-            context.dataStore.edit { prefs ->
-                prefs[KEY_AUTO_SEND_DELAY_MS] = AppSettings.sanitizeDelayMs(delayMs)
-            }
-        }
-    }
-
-    suspend fun saveHapticFeedbackEnabled(enabled: Boolean) {
-        withContext(Dispatchers.IO) {
-            context.dataStore.edit { prefs ->
-                prefs[KEY_HAPTIC_FEEDBACK] = enabled
-            }
-        }
-    }
-
-    suspend fun saveKeepScreenAwake(enabled: Boolean) {
-        withContext(Dispatchers.IO) {
-            context.dataStore.edit { prefs ->
-                prefs[KEY_KEEP_SCREEN_AWAKE] = enabled
-            }
-        }
-    }
-
-    suspend fun saveShowInputTips(enabled: Boolean) {
-        withContext(Dispatchers.IO) {
-            context.dataStore.edit { prefs ->
-                prefs[KEY_SHOW_INPUT_TIPS] = enabled
-            }
-        }
-    }
-
-    suspend fun saveSendTimeoutMs(timeoutMs: Long) {
-        withContext(Dispatchers.IO) {
-            context.dataStore.edit { prefs ->
-                prefs[KEY_SEND_TIMEOUT_MS] = AppSettings.sanitizeTimeoutMs(timeoutMs)
-            }
+    suspend fun saveSettings(settings: AppSettings) {
+        editPrefs { prefs ->
+            prefs[KEY_THEME] = settings.themeMode.storageValue
+            prefs[KEY_LANGUAGE] = settings.language.storageValue
+            prefs[KEY_AUTO_SEND_ENABLED] = settings.autoSendEnabled
+            prefs[KEY_AUTO_SEND_DELAY_MS] = AppSettings.sanitizeDelayMs(settings.autoSendDelayMs)
+            prefs[KEY_HAPTIC_FEEDBACK] = settings.hapticFeedbackEnabled
+            prefs[KEY_KEEP_SCREEN_AWAKE] = settings.keepScreenAwake
+            prefs[KEY_SHOW_INPUT_TIPS] = settings.showInputTips
+            prefs[KEY_SEND_TIMEOUT_MS] = AppSettings.sanitizeTimeoutMs(settings.sendTimeoutMs)
         }
     }
 
@@ -207,17 +150,15 @@ class StorageManager(
      * Resets all user preferences back to defaults while preserving paired connection credentials.
      */
     suspend fun resetSettings() {
-        withContext(Dispatchers.IO) {
-            context.dataStore.edit { prefs ->
-                prefs.remove(KEY_THEME)
-                prefs.remove(KEY_LANGUAGE)
-                prefs.remove(KEY_AUTO_SEND_ENABLED)
-                prefs.remove(KEY_AUTO_SEND_DELAY_MS)
-                prefs.remove(KEY_HAPTIC_FEEDBACK)
-                prefs.remove(KEY_KEEP_SCREEN_AWAKE)
-                prefs.remove(KEY_SHOW_INPUT_TIPS)
-                prefs.remove(KEY_SEND_TIMEOUT_MS)
-            }
+        editPrefs { prefs ->
+            prefs.remove(KEY_THEME)
+            prefs.remove(KEY_LANGUAGE)
+            prefs.remove(KEY_AUTO_SEND_ENABLED)
+            prefs.remove(KEY_AUTO_SEND_DELAY_MS)
+            prefs.remove(KEY_HAPTIC_FEEDBACK)
+            prefs.remove(KEY_KEEP_SCREEN_AWAKE)
+            prefs.remove(KEY_SHOW_INPUT_TIPS)
+            prefs.remove(KEY_SEND_TIMEOUT_MS)
         }
     }
 }

@@ -20,7 +20,11 @@ import cc.yuler.airvoice.services.StorageManager
 import cc.yuler.airvoice.ui.i18n.AppStrings
 import cc.yuler.airvoice.ui.i18n.stringsFor
 import cc.yuler.airvoice.utils.VibratorHelper
+import java.util.concurrent.atomic.AtomicBoolean
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -45,6 +49,9 @@ class AirvoiceViewModel internal constructor(
     )
 
     private val vibratorHelper = VibratorHelper(application)
+    private val persistenceQueue = Channel<suspend () -> Unit>(Channel.UNLIMITED)
+    private val settingsTouched = AtomicBoolean(false)
+    private val pairingTouched = AtomicBoolean(false)
 
     private val _settings = MutableStateFlow(AppSettings())
     val settings: StateFlow<AppSettings> = _settings.asStateFlow()
@@ -71,21 +78,33 @@ class AirvoiceViewModel internal constructor(
     private var toastJob: Job? = null
 
     init {
+        viewModelScope.launch(Dispatchers.IO) {
+            for (op in persistenceQueue) {
+                op()
+            }
+        }
+
         viewModelScope.launch {
-            _settings.value = storage.settingsFlow.first()
+            val loadedSettings = storage.settingsFlow.first()
+            if (!settingsTouched.get()) {
+                _settings.value = loadedSettings
+            }
 
             val conn = storage.readConnectionAndMigrateLegacy()
-            _pairedWsUrl.value = conn.wsUrl
-            if (!conn.wsUrl.isNullOrEmpty() && !conn.token.isNullOrEmpty()) {
-                connectionManager.connect(conn.wsUrl, conn.token, allowRemote = conn.allowRemote)
+            if (!pairingTouched.get()) {
+                _pairedWsUrl.value = conn.wsUrl
+                if (!conn.wsUrl.isNullOrEmpty() && !conn.token.isNullOrEmpty()) {
+                    connectionManager.connect(conn.wsUrl, conn.token, allowRemote = conn.allowRemote)
+                }
             }
         }
 
         viewModelScope.launch {
             connectionManager.authExpiredEvents.collect {
                 cancelPendingRetry()
-                storage.clearConnection()
+                pairingTouched.set(true)
                 _pairedWsUrl.value = null
+                persistenceQueue.trySend { storage.clearConnection() }
                 showToast(currentStrings().toastAuthExpired, isError = true)
             }
         }
@@ -93,9 +112,7 @@ class AirvoiceViewModel internal constructor(
         autoSendController = AutoSendController(
             textFlow = _inputText,
             connectionManager = connectionManager,
-            isAutoSendEnabled = { _settings.value.autoSendEnabled },
-            autoSendDelayMs = { _settings.value.autoSendDelayMs },
-            sendTimeoutMs = { _settings.value.sendTimeoutMs },
+            settingsProvider = { _settings.value },
             onSentAck = { result, sentText, trigger ->
                 handleSentAck(result, sentText, trigger)
             }
@@ -113,57 +130,63 @@ class AirvoiceViewModel internal constructor(
         autoSendController.triggerImmediateSend()
     }
 
+    private fun updateSettings(transform: (AppSettings) -> AppSettings) {
+        settingsTouched.set(true)
+        val next = transform(_settings.value)
+        _settings.value = next
+        persistenceQueue.trySend { storage.saveSettings(next) }
+    }
+
     fun setThemeMode(mode: ThemeMode) {
-        _settings.value = _settings.value.copy(themeMode = mode)
-        viewModelScope.launch { storage.saveThemeMode(mode) }
+        updateSettings { it.copy(themeMode = mode) }
     }
 
     fun setLanguage(language: AppLanguage) {
-        _settings.value = _settings.value.copy(language = language)
-        viewModelScope.launch { storage.saveLanguage(language) }
+        updateSettings { it.copy(language = language) }
     }
 
     fun setAutoSendEnabled(enabled: Boolean) {
-        _settings.value = _settings.value.copy(autoSendEnabled = enabled)
+        updateSettings { it.copy(autoSendEnabled = enabled) }
         if (!enabled) {
             autoSendController.cancelCountdown()
         }
-        viewModelScope.launch { storage.saveAutoSendEnabled(enabled) }
     }
 
     fun setAutoSendDelayMs(delayMs: Long) {
         val sanitized = AppSettings.sanitizeDelayMs(delayMs)
-        _settings.value = _settings.value.copy(autoSendDelayMs = sanitized)
-        viewModelScope.launch { storage.saveAutoSendDelayMs(sanitized) }
+        updateSettings { it.copy(autoSendDelayMs = sanitized) }
     }
 
     fun setHapticFeedbackEnabled(enabled: Boolean) {
-        _settings.value = _settings.value.copy(hapticFeedbackEnabled = enabled)
-        viewModelScope.launch { storage.saveHapticFeedbackEnabled(enabled) }
+        updateSettings { it.copy(hapticFeedbackEnabled = enabled) }
     }
 
     fun setKeepScreenAwake(enabled: Boolean) {
-        _settings.value = _settings.value.copy(keepScreenAwake = enabled)
-        viewModelScope.launch { storage.saveKeepScreenAwake(enabled) }
+        updateSettings { it.copy(keepScreenAwake = enabled) }
     }
 
     fun setShowInputTips(enabled: Boolean) {
-        _settings.value = _settings.value.copy(showInputTips = enabled)
-        viewModelScope.launch { storage.saveShowInputTips(enabled) }
+        updateSettings { it.copy(showInputTips = enabled) }
     }
 
     fun setSendTimeoutMs(timeoutMs: Long) {
         val sanitized = AppSettings.sanitizeTimeoutMs(timeoutMs)
-        _settings.value = _settings.value.copy(sendTimeoutMs = sanitized)
-        viewModelScope.launch { storage.saveSendTimeoutMs(sanitized) }
+        updateSettings { it.copy(sendTimeoutMs = sanitized) }
     }
 
-    fun resetSettings() {
+    fun resetSettings(showToast: Boolean = true) {
+        settingsTouched.set(true)
         _settings.value = AppSettings()
-        viewModelScope.launch {
-            storage.resetSettings()
+        persistenceQueue.trySend { storage.resetSettings() }
+        if (showToast) {
+            showToast(currentStrings().toastSettingsReset, isError = false)
         }
-        showToast(currentStrings().toastSettingsReset, isError = false)
+    }
+
+    internal suspend fun awaitPendingPersistence() {
+        val marker = CompletableDeferred<Unit>()
+        persistenceQueue.send { marker.complete(Unit) }
+        marker.await()
     }
 
     fun showToast(message: String, isError: Boolean = false) {
@@ -276,32 +299,36 @@ class AirvoiceViewModel internal constructor(
             return
         }
 
+        pairingTouched.set(true)
         _pairedWsUrl.value = valid.normalizedUrl
-        viewModelScope.launch {
-            cancelPendingRetry()
-            storage.saveConnection(valid.normalizedUrl, payload.token.trim(), allowRemote = allowRemote)
-            autoSendController.resetLastAcked()
-            connectionManager.connect(valid.normalizedUrl, payload.token.trim(), allowRemote = allowRemote)
+        cancelPendingRetry()
+        autoSendController.resetLastAcked()
+        val trimmedToken = payload.token.trim()
+        persistenceQueue.trySend {
+            storage.saveConnection(valid.normalizedUrl, trimmedToken, allowRemote = allowRemote)
         }
+        connectionManager.connect(valid.normalizedUrl, trimmedToken, allowRemote = allowRemote)
     }
 
-    fun disconnectAndClear() {
+    fun disconnectAndClear(showToast: Boolean = true) {
+        pairingTouched.set(true)
         _pairedWsUrl.value = null
         _inputText.value = ""
         _sendTimedOut.value = false
-        viewModelScope.launch {
-            cancelPendingRetry()
-            autoSendController.cancelCountdown()
-            autoSendController.clearInFlight()
-            connectionManager.disconnect()
-            storage.clearConnection()
+        cancelPendingRetry()
+        autoSendController.cancelCountdown()
+        autoSendController.clearInFlight()
+        connectionManager.disconnect()
+        persistenceQueue.trySend { storage.clearConnection() }
+        if (showToast) {
+            showToast(currentStrings().toastPairingCleared, isError = false)
         }
-        showToast(currentStrings().toastPairingCleared, isError = false)
     }
 
     override fun onCleared() {
         super.onCleared()
         cancelPendingRetry()
+        persistenceQueue.close()
         connectionManager.disconnect()
         autoSendController.cleanup()
     }

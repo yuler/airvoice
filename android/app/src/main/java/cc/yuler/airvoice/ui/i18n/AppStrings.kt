@@ -86,7 +86,8 @@ data class AppStrings(
     val systemVersionLabel: String,
     val tapToCopyHint: String
 ) {
-    fun statusConnected(host: String): String = "$statusConnectedPrefix: $host"
+    fun statusConnected(host: String?): String =
+        "$statusConnectedPrefix: ${host?.takeIf { it.isNotBlank() } ?: defaultHostName}"
 
     fun remoteAlertBody(host: String): String = remoteAlertBodyTemplate.replace("%HOST%", host)
 }
@@ -170,11 +171,11 @@ val EnStrings = AppStrings(
     isChinese = false,
     statusDisconnected = "Disconnected",
     statusConnecting = "Connecting...",
-    statusError = "Connection failed, retrying",
+    statusError = "Connection failed, retrying...",
     defaultHostName = "Computer",
     statusConnectedPrefix = "Connected",
     editorPlaceholder = "Type here, or tap the keyboard mic for voice input...",
-    sending = "Sending",
+    sending = "Sending...",
     cancel = "Cancel",
     promptScanQr = "Scan QR code to connect",
     sendToPc = "Send to PC",

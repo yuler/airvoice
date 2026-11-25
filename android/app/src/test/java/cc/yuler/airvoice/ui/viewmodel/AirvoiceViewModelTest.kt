@@ -159,8 +159,15 @@ class AirvoiceViewModelTest {
 
         viewModel.setLanguage(AppLanguage.ZH)
         assertEquals("已取消发送", viewModel.currentStrings().toastSendCancelled)
+        assertEquals("已连接: 电脑", viewModel.currentStrings().statusConnected(null))
+
+        viewModel.awaitPendingPersistence()
+        assertEquals(AppLanguage.ZH, storageManager.settingsFlow.first().language)
+        assertEquals(ThemeMode.DARK, storageManager.settingsFlow.first().themeMode)
 
         viewModel.resetSettings()
+        viewModel.awaitPendingPersistence()
         assertEquals(AppSettings(), viewModel.settings.value)
+        assertEquals(AppSettings(), storageManager.settingsFlow.first())
     }
 }

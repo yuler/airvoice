@@ -1,5 +1,6 @@
 package cc.yuler.airvoice.services
 
+import cc.yuler.airvoice.models.AppSettings
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
@@ -85,12 +86,11 @@ class AutoSendControllerTest {
 
     @Test
     fun testAutoSendDisabledSkipsCountdownAndImmediateSend() {
-        var enabled = false
+        var currentSettings = AppSettings(autoSendEnabled = false, autoSendDelayMs = 800L)
         val controller = AutoSendController(
             textFlow = textFlow,
             connectionManager = connectionManager,
-            isAutoSendEnabled = { enabled },
-            autoSendDelayMs = { 800L }
+            settingsProvider = { currentSettings }
         ) { _, _, _ -> }
 
         textFlow.value = "hello"
@@ -101,7 +101,7 @@ class AutoSendControllerTest {
         controller.triggerImmediateSend()
         assertFalse(controller.inFlight.value)
 
-        enabled = true
+        currentSettings = currentSettings.copy(autoSendEnabled = true)
         controller.textDidChange("hello")
         assertTrue(controller.countdownActive.value)
         controller.cancelCountdown()

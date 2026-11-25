@@ -22,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -58,7 +59,8 @@ fun MainScreen(viewModel: AirvoiceViewModel) {
         ThemeMode.LIGHT -> false
         ThemeMode.DARK -> true
     }
-    val appStrings = remember(settings.language) { stringsFor(settings.language) }
+    val configuration = LocalConfiguration.current
+    val appStrings = remember(settings.language, configuration) { stringsFor(settings.language) }
 
     val context = LocalContext.current
     val activity = context as? Activity
@@ -99,6 +101,7 @@ fun MainScreen(viewModel: AirvoiceViewModel) {
                 )
                 Screen.HOME -> HomeScreen(
                     viewModel = viewModel,
+                    isSettingsOpen = showSettings,
                     onScanQr = {
                         currentScreen = Screen.SCANNER
                     },

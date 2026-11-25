@@ -64,6 +64,10 @@ final class HomeViewModel: ObservableObject {
     }
 
     func flushPendingAutoSend(connection: ConnectionManager, autoSend: AutoSendController) {
+        guard settings.autoSendEnabled else {
+            pendingAutoSendText = nil
+            return
+        }
         guard connection.state == .connected, let pending = pendingAutoSendText else { return }
         pendingAutoSendText = nil
         _ = handleSend(
@@ -113,7 +117,11 @@ final class HomeViewModel: ObservableObject {
         showToast(settings.strings.toastSendCancelled, isError: false)
     }
 
-    func disconnectAndClear(connection: ConnectionManager, autoSend: AutoSendController) {
+    func disconnectAndClear(
+        connection: ConnectionManager,
+        autoSend: AutoSendController,
+        showToast: Bool = true
+    ) {
         retryTask?.cancel()
         retryTask = nil
         sendTimeoutTask?.cancel()
@@ -130,7 +138,9 @@ final class HomeViewModel: ObservableObject {
         autoSend.resetLastAcked()
         text = ""
         connection.disconnectAndClear()
-        showToast(settings.strings.toastPairingCleared, isError: false)
+        if showToast {
+            self.showToast(settings.strings.toastPairingCleared, isError: false)
+        }
     }
 
     @discardableResult

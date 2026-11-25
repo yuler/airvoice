@@ -83,11 +83,7 @@ struct SettingsSheetView: View {
 
     private var appearanceSection: some View {
         SettingsSectionCard(title: strings.sectionAppearance, theme: theme) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text(strings.themeLabel)
-                    .font(.subheadline)
-                    .foregroundStyle(theme.primaryText)
-
+            SettingsLabelledControl(label: strings.themeLabel, theme: theme) {
                 SettingsSegmentedControl(
                     options: [
                         (ThemeMode.system, strings.themeSystem),
@@ -100,16 +96,10 @@ struct SettingsSheetView: View {
                     settings.themeMode = mode
                 }
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 12)
 
             sectionDivider
 
-            VStack(alignment: .leading, spacing: 8) {
-                Text(strings.languageLabel)
-                    .font(.subheadline)
-                    .foregroundStyle(theme.primaryText)
-
+            SettingsLabelledControl(label: strings.languageLabel, theme: theme) {
                 SettingsSegmentedControl(
                     options: [
                         (AppLanguage.system, strings.languageSystem),
@@ -122,8 +112,6 @@ struct SettingsSheetView: View {
                     settings.language = language
                 }
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 12)
         }
     }
 
@@ -133,11 +121,7 @@ struct SettingsSheetView: View {
 
             if settings.autoSendEnabled {
                 sectionDivider
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(strings.autoSendDelayLabel)
-                        .font(.subheadline)
-                        .foregroundStyle(theme.primaryText)
-
+                SettingsLabelledControl(label: strings.autoSendDelayLabel, theme: theme) {
                     SettingsSegmentedControl(
                         options: AppSettings.autoSendDelayOptions.map { ms in
                             (ms, formatSeconds(ms))
@@ -148,8 +132,6 @@ struct SettingsSheetView: View {
                         settings.autoSendDelayMs = delayMs
                     }
                 }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 12)
             }
 
             sectionDivider
@@ -162,11 +144,7 @@ struct SettingsSheetView: View {
             toggleRow(title: strings.showInputTipsLabel, isOn: $settings.showInputTips)
 
             sectionDivider
-            VStack(alignment: .leading, spacing: 8) {
-                Text(strings.sendTimeoutLabel)
-                    .font(.subheadline)
-                    .foregroundStyle(theme.primaryText)
-
+            SettingsLabelledControl(label: strings.sendTimeoutLabel, theme: theme) {
                 SettingsSegmentedControl(
                     options: AppSettings.sendTimeoutOptions.map { ms in
                         (ms, "\(Int(ms / 1000))s")
@@ -177,8 +155,6 @@ struct SettingsSheetView: View {
                     settings.sendTimeoutMs = timeoutMs
                 }
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 12)
         }
     }
 
@@ -207,7 +183,7 @@ struct SettingsSheetView: View {
             } label: {
                 Text(strings.disconnectAndClear)
                     .font(.subheadline.weight(.medium))
-                    .foregroundStyle(theme.statusBarError.opacity(hasPairing ? 1.0 : 0.35))
+                    .foregroundStyle(theme.statusBarError.opacity(hasPairing ? 1.0 : 0.30))
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 13)
@@ -299,8 +275,7 @@ struct SettingsSheetView: View {
     }
 
     private func formatSeconds(_ ms: Int) -> String {
-        let tenths = ms / 100
-        return tenths % 10 == 0 ? "\(tenths / 10)s" : "\(tenths / 10).\(tenths % 10)s"
+        String(format: "%.1fs", Double(ms) / 1000.0)
     }
 }
 
@@ -329,6 +304,24 @@ private struct SettingsSectionCard<Content: View>: View {
     }
 }
 
+private struct SettingsLabelledControl<Content: View>: View {
+    let label: String
+    let theme: AppTheme
+    @ViewBuilder let content: () -> Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(label)
+                .font(.subheadline)
+                .foregroundStyle(theme.primaryText)
+
+            content()
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+    }
+}
+
 private struct SettingsSegmentedControl<T: Equatable>: View {
     let options: [(T, String)]
     let selected: T
@@ -350,13 +343,13 @@ private struct SettingsSegmentedControl<T: Equatable>: View {
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 7)
                         .background(isSelected ? theme.accent : Color.clear)
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
                 }
                 .buttonStyle(.plain)
             }
         }
         .padding(3)
         .background(theme.chipBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 }

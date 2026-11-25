@@ -481,7 +481,8 @@ class ConnectionManager: ObservableObject {
             case "hello":
                 backoffNanoseconds = initialBackoffNanoseconds
                 state = .connected
-                hostName = msg.host ?? "Unknown Server"
+                let trimmedHost = msg.host?.trimmingCharacters(in: .whitespacesAndNewlines)
+                hostName = (trimmedHost?.isEmpty == false) ? trimmedHost : nil
             case "ack":
                 if let id = msg.id {
                     onAck?(id, msg.ok ?? false, msg.message)
