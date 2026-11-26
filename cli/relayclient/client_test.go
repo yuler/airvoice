@@ -632,14 +632,40 @@ func TestClientConcurrentWritesPreserveMonotonicSequence(t *testing.T) {
 	if reply := phone.readEncrypted(); reply.Type != "hello" {
 		t.Fatalf("expected hello, got %+v", reply)
 	}
-	for i := 0; i < count; i++ {
-		phone.sendEncrypted(protocol.Inbound{
-			Type:    "text",
-			ID:      fmt.Sprintf("msg-%d", i),
-			Content: fmt.Sprintf("hello %d", i),
-		})
-		phone.sendEncrypted(protocol.Inbound{Type: "ping"})
-	}
+	sendErrCh := make(chan error, 1)
+	go func() {
+		for i := 0; i < count; i++ {
+			for _, msg := range []protocol.Inbound{
+				{
+					Type:    "text",
+					ID:      fmt.Sprintf("msg-%d", i),
+					Content: fmt.Sprintf("hello %d", i),
+				},
+				{Type: "ping"},
+			} {
+				raw, err := json.Marshal(msg)
+				if err != nil {
+					sendErrCh <- err
+					return
+				}
+				env, err := phone.sender.Seal(raw)
+				if err != nil {
+					sendErrCh <- err
+					return
+				}
+				wire, err := json.Marshal(env)
+				if err != nil {
+					sendErrCh <- err
+					return
+				}
+				if err := phone.conn.WriteMessage(websocket.TextMessage, wire); err != nil {
+					sendErrCh <- err
+					return
+				}
+			}
+		}
+		sendErrCh <- nil
+	}()
 
 	acks := 0
 	pongs := 0
@@ -656,6 +682,9 @@ func TestClientConcurrentWritesPreserveMonotonicSequence(t *testing.T) {
 		default:
 			t.Fatalf("unexpected outbound message: %+v", out)
 		}
+	}
+	if err := <-sendErrCh; err != nil {
+		t.Fatalf("concurrent send failed: %v", err)
 	}
 	if acks != count || pongs != count {
 		t.Fatalf("got acks=%d pongs=%d, want %d/%d", acks, pongs, count, count)
