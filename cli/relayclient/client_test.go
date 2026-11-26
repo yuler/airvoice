@@ -607,7 +607,13 @@ func TestClientConcurrentWritesPreserveMonotonicSequence(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	const count = 20
+	// Keep each in-flight wave (waveSize * 2 = 16 frames) well below the
+	// relay's per-peer send buffer (32) so CI under -race never triggers
+	// slow-consumer eviction while still exercising concurrent ack+pong writes.
+	const (
+		waves    = 3
+		waveSize = 8
+	)
 	paster := newStubPaster()
 	client, err := New(Config{
 		RelayURL:         wsURL,
@@ -615,7 +621,7 @@ func TestClientConcurrentWritesPreserveMonotonicSequence(t *testing.T) {
 		Hostname:         "dev-box",
 		Version:          "0.6.0",
 		Paster:           paster,
-		MaxPendingPastes: count,
+		MaxPendingPastes: waveSize,
 		InitialBackoff:   50 * time.Millisecond,
 	})
 	if err != nil {
@@ -632,61 +638,36 @@ func TestClientConcurrentWritesPreserveMonotonicSequence(t *testing.T) {
 	if reply := phone.readEncrypted(); reply.Type != "hello" {
 		t.Fatalf("expected hello, got %+v", reply)
 	}
-	sendErrCh := make(chan error, 1)
-	go func() {
-		for i := 0; i < count; i++ {
-			for _, msg := range []protocol.Inbound{
-				{
-					Type:    "text",
-					ID:      fmt.Sprintf("msg-%d", i),
-					Content: fmt.Sprintf("hello %d", i),
-				},
-				{Type: "ping"},
-			} {
-				raw, err := json.Marshal(msg)
-				if err != nil {
-					sendErrCh <- err
-					return
-				}
-				env, err := phone.sender.Seal(raw)
-				if err != nil {
-					sendErrCh <- err
-					return
-				}
-				wire, err := json.Marshal(env)
-				if err != nil {
-					sendErrCh <- err
-					return
-				}
-				if err := phone.conn.WriteMessage(websocket.TextMessage, wire); err != nil {
-					sendErrCh <- err
-					return
-				}
-			}
-		}
-		sendErrCh <- nil
-	}()
 
 	acks := 0
 	pongs := 0
-	for i := 0; i < count*2; i++ {
-		out := phone.readEncrypted()
-		switch out.Type {
-		case "ack":
-			if !out.OK {
-				t.Fatalf("unexpected failed ack: %+v", out)
+	for w := 0; w < waves; w++ {
+		for i := 0; i < waveSize; i++ {
+			idx := w*waveSize + i
+			phone.sendEncrypted(protocol.Inbound{
+				Type:    "text",
+				ID:      fmt.Sprintf("msg-%d", idx),
+				Content: fmt.Sprintf("hello %d", idx),
+			})
+			phone.sendEncrypted(protocol.Inbound{Type: "ping"})
+		}
+		for i := 0; i < waveSize*2; i++ {
+			out := phone.readEncrypted()
+			switch out.Type {
+			case "ack":
+				if !out.OK {
+					t.Fatalf("unexpected failed ack: %+v", out)
+				}
+				acks++
+			case "pong":
+				pongs++
+			default:
+				t.Fatalf("unexpected outbound message: %+v", out)
 			}
-			acks++
-		case "pong":
-			pongs++
-		default:
-			t.Fatalf("unexpected outbound message: %+v", out)
 		}
 	}
-	if err := <-sendErrCh; err != nil {
-		t.Fatalf("concurrent send failed: %v", err)
-	}
-	if acks != count || pongs != count {
-		t.Fatalf("got acks=%d pongs=%d, want %d/%d", acks, pongs, count, count)
+	want := waves * waveSize
+	if acks != want || pongs != want {
+		t.Fatalf("got acks=%d pongs=%d, want %d/%d", acks, pongs, want, want)
 	}
 }
