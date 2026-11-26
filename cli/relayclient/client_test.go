@@ -607,14 +607,16 @@ func TestClientConcurrentWritesPreserveMonotonicSequence(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	const count = 20
 	paster := newStubPaster()
 	client, err := New(Config{
-		RelayURL:       wsURL,
-		RelayKey:       relayKey,
-		Hostname:       "dev-box",
-		Version:        "0.6.0",
-		Paster:         paster,
-		InitialBackoff: 50 * time.Millisecond,
+		RelayURL:         wsURL,
+		RelayKey:         relayKey,
+		Hostname:         "dev-box",
+		Version:          "0.6.0",
+		Paster:           paster,
+		MaxPendingPastes: count,
+		InitialBackoff:   50 * time.Millisecond,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -630,8 +632,6 @@ func TestClientConcurrentWritesPreserveMonotonicSequence(t *testing.T) {
 	if reply := phone.readEncrypted(); reply.Type != "hello" {
 		t.Fatalf("expected hello, got %+v", reply)
 	}
-
-	const count = 20
 	for i := 0; i < count; i++ {
 		phone.sendEncrypted(protocol.Inbound{
 			Type:    "text",
