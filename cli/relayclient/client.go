@@ -390,7 +390,10 @@ func (c *Client) serveConn(ctx context.Context, conn *websocket.Conn, keys e2e.D
 		return
 	}
 
-	var writeMu sync.Mutex
+	var (
+		writeMu    sync.Mutex
+		sessionGen uint64
+	)
 	conn.SetReadLimit(defaultMaxReadBytes)
 	_ = conn.SetReadDeadline(time.Now().Add(c.cfg.ReadTimeout))
 	conn.SetPingHandler(func(appData string) error {
@@ -407,23 +410,28 @@ func (c *Client) serveConn(ctx context.Context, conn *websocket.Conn, keys e2e.D
 		return conn.SetReadDeadline(time.Now().Add(c.cfg.ReadTimeout))
 	})
 
-	writeEncrypted := func(outbound protocol.Outbound) error {
-		plaintext, err := outbound.Bytes()
-		if err != nil {
-			return err
+	writeEncryptedFor := func(gen uint64) func(protocol.Outbound) error {
+		return func(outbound protocol.Outbound) error {
+			plaintext, err := outbound.Bytes()
+			if err != nil {
+				return err
+			}
+			writeMu.Lock()
+			defer writeMu.Unlock()
+			if gen != sessionGen {
+				return nil
+			}
+			env, err := sender.Seal(plaintext)
+			if err != nil {
+				return err
+			}
+			wire, err := json.Marshal(env)
+			if err != nil {
+				return err
+			}
+			_ = conn.SetWriteDeadline(time.Now().Add(c.cfg.WriteTimeout))
+			return conn.WriteMessage(websocket.TextMessage, wire)
 		}
-		env, err := sender.Seal(plaintext)
-		if err != nil {
-			return err
-		}
-		wire, err := json.Marshal(env)
-		if err != nil {
-			return err
-		}
-		writeMu.Lock()
-		defer writeMu.Unlock()
-		_ = conn.SetWriteDeadline(time.Now().Add(c.cfg.WriteTimeout))
-		return conn.WriteMessage(websocket.TextMessage, wire)
 	}
 
 	var (
@@ -437,8 +445,12 @@ func (c *Client) serveConn(ctx context.Context, conn *websocket.Conn, keys e2e.D
 			proc = nil
 		}
 		guard.RetireCurrent()
-		if err := sender.Reset(); err != nil {
-			server.LogStatus("relay e2e sender reset failed: %v", err)
+		writeMu.Lock()
+		sessionGen++
+		resetErr := sender.Reset()
+		writeMu.Unlock()
+		if resetErr != nil {
+			server.LogStatus("relay e2e sender reset failed: %v", resetErr)
 		}
 		if peerConnected {
 			peerConnected = false
@@ -452,6 +464,9 @@ func (c *Client) serveConn(ctx context.Context, conn *websocket.Conn, keys e2e.D
 	}
 
 	newProc := func() *server.MessageProcessor {
+		writeMu.Lock()
+		gen := sessionGen
+		writeMu.Unlock()
 		return server.NewMessageProcessor(server.ProcessorConfig{
 			Hostname:         c.cfg.Hostname,
 			Version:          c.cfg.Version,
@@ -467,7 +482,7 @@ func (c *Client) serveConn(ctx context.Context, conn *websocket.Conn, keys e2e.D
 				c.emitState(StateConnected, device)
 			},
 			OnTextReceived: c.cfg.OnTextReceived,
-			WriteOutbound:  writeEncrypted,
+			WriteOutbound:  writeEncryptedFor(gen),
 		})
 	}
 

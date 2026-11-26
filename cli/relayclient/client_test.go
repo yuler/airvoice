@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -492,5 +493,171 @@ func TestClientSurfacesRelayErrorFrames(t *testing.T) {
 		}
 	case <-time.After(2 * time.Second):
 		t.Fatal("timed out waiting for relay error callback")
+	}
+}
+
+type gatePaster struct {
+	mu      sync.Mutex
+	gateFor string
+	started chan struct{}
+	release chan struct{}
+	done    chan struct{}
+}
+
+func (p *gatePaster) Paste(text string) error {
+	p.mu.Lock()
+	gated := text == p.gateFor
+	p.mu.Unlock()
+	if gated {
+		close(p.started)
+		<-p.release
+		close(p.done)
+	}
+	return nil
+}
+
+func (p *gatePaster) Name() string { return "gate" }
+
+func TestClientDropsStaleAckAfterSessionReset(t *testing.T) {
+	wsURL, _, _ := startTestRelay(t, "")
+	relayKey, err := e2e.GenerateKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	paster := &gatePaster{
+		gateFor: "stale-paste",
+		started: make(chan struct{}),
+		release: make(chan struct{}),
+		done:    make(chan struct{}),
+	}
+	peerEvents := make(chan bool, 8)
+	client, err := New(Config{
+		RelayURL:       wsURL,
+		RelayKey:       relayKey,
+		Hostname:       "dev-box",
+		Version:        "0.6.0",
+		Paster:         paster,
+		InitialBackoff: 50 * time.Millisecond,
+		OnPeerStatus: func(online bool, _ string) {
+			peerEvents <- online
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	client.Start()
+	defer func() { _ = client.Close() }()
+
+	phone1 := dialSimPhone(t, wsURL, relayKey, "")
+	phone1.waitPeerOnline()
+	phone1.sendEncrypted(protocol.Inbound{Type: "hello", Device: "Phone1", TS: time.Now().Unix()})
+	if reply := phone1.readEncrypted(); reply.Type != "hello" {
+		t.Fatalf("phone1 expected hello, got %+v", reply)
+	}
+	<-peerEvents
+
+	// Start a paste on phone1 and hold it in flight across peer disconnect/reconnect.
+	phone1.sendEncrypted(protocol.Inbound{Type: "text", ID: "stale-1", Content: "stale-paste"})
+	select {
+	case <-paster.started:
+	case <-time.After(2 * time.Second):
+		t.Fatal("timed out waiting for stale paste to start")
+	}
+
+	phone1.close()
+	select {
+	case online := <-peerEvents:
+		if online {
+			t.Fatal("expected peer offline after phone1 closed")
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("timed out waiting for peer offline")
+	}
+
+	phone2 := dialSimPhone(t, wsURL, relayKey, "")
+	defer phone2.close()
+	phone2.waitPeerOnline()
+
+	// Release phone1's in-flight paste; its stale ack must be dropped so it
+	// does not consume seq=1 of phone2's fresh session.
+	close(paster.release)
+	select {
+	case <-paster.done:
+	case <-time.After(2 * time.Second):
+		t.Fatal("timed out waiting for stale paste to finish")
+	}
+
+	phone2.sendEncrypted(protocol.Inbound{Type: "hello", Device: "Phone2", TS: time.Now().Unix()})
+	if reply := phone2.readEncrypted(); reply.Type != "hello" {
+		t.Fatalf("phone2 expected hello on seq=1, got %+v", reply)
+	}
+
+	phone2.sendEncrypted(protocol.Inbound{Type: "text", ID: "fresh-1", Content: "fresh-paste"})
+	ack := phone2.readEncrypted()
+	if ack.Type != "ack" || ack.ID != "fresh-1" || !ack.OK {
+		t.Fatalf("phone2 expected fresh ack, got %+v", ack)
+	}
+}
+
+func TestClientConcurrentWritesPreserveMonotonicSequence(t *testing.T) {
+	wsURL, _, _ := startTestRelay(t, "")
+	relayKey, err := e2e.GenerateKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	paster := newStubPaster()
+	client, err := New(Config{
+		RelayURL:       wsURL,
+		RelayKey:       relayKey,
+		Hostname:       "dev-box",
+		Version:        "0.6.0",
+		Paster:         paster,
+		InitialBackoff: 50 * time.Millisecond,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	client.Start()
+	defer func() { _ = client.Close() }()
+
+	phone := dialSimPhone(t, wsURL, relayKey, "")
+	defer phone.close()
+	phone.waitPeerOnline()
+
+	phone.sendEncrypted(protocol.Inbound{Type: "hello", Device: "Phone", TS: time.Now().Unix()})
+	if reply := phone.readEncrypted(); reply.Type != "hello" {
+		t.Fatalf("expected hello, got %+v", reply)
+	}
+
+	const count = 20
+	for i := 0; i < count; i++ {
+		phone.sendEncrypted(protocol.Inbound{
+			Type:    "text",
+			ID:      fmt.Sprintf("msg-%d", i),
+			Content: fmt.Sprintf("hello %d", i),
+		})
+		phone.sendEncrypted(protocol.Inbound{Type: "ping"})
+	}
+
+	acks := 0
+	pongs := 0
+	for i := 0; i < count*2; i++ {
+		out := phone.readEncrypted()
+		switch out.Type {
+		case "ack":
+			if !out.OK {
+				t.Fatalf("unexpected failed ack: %+v", out)
+			}
+			acks++
+		case "pong":
+			pongs++
+		default:
+			t.Fatalf("unexpected outbound message: %+v", out)
+		}
+	}
+	if acks != count || pongs != count {
+		t.Fatalf("got acks=%d pongs=%d, want %d/%d", acks, pongs, count, count)
 	}
 }
