@@ -325,6 +325,13 @@ func (s *Server) writeLoop(p *peer) {
 			writeClose(req)
 			return
 		case <-p.done:
+			// Drain any pending close request so explicit close codes are never
+			// dropped when closeCh and done become ready simultaneously.
+			select {
+			case req := <-p.closeCh:
+				writeClose(req)
+			default:
+			}
 			return
 		case msg := <-p.send:
 			_ = p.conn.SetWriteDeadline(time.Now().Add(s.cfg.WriteTimeout))
