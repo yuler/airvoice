@@ -59,8 +59,8 @@ jobs:
         with:
           go-version-file: 'go.mod'
 
-      - name: Run CLI Tests
-        run: go test -v ./cli/...
+      - name: Run CLI and Relay Tests
+        run: go test -v ./cli/... ./relay/... ./cmd/...
 
   desktop-test:
     name: Desktop Go Tests

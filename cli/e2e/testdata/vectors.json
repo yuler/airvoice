@@ -1,0 +1,81 @@
+{
+  "description": "Deterministic Airvoice Relay E2E (HKDF-SHA256 + AES-256-GCM) cross-platform test vectors",
+  "relayKey": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA",
+  "derived": {
+    "roomId": "tvE6WUq2rNOJtjrfZ8B5WA",
+    "hostAuth": "emjuHqMkH1xwo7fRGzrJrhedyNd9EWYIpw7gGcP9m1E",
+    "clientAuth": "fOltZYyocuRBE6PJIfnKOMLhA5XFMIrjIDVIOFkuUJ4",
+    "keyC2H": "6A1F35DKLAU1bUimH85-mPYzNSjH2TN52XemjMhzeBk",
+    "keyH2C": "p19kK3FEG1AoUbOBgDNioMRS2KPhIeUCgb2yi8rEeDU"
+  },
+  "frames": [
+    {
+      "name": "c2h_hello",
+      "direction": "c2h",
+      "sid": "EBESExQVFhc",
+      "seq": 1,
+      "iv": "AQIDBAUGBwgJCgsM",
+      "aad": "airvoice-e2e-v1|c2h|tvE6WUq2rNOJtjrfZ8B5WA|EBESExQVFhc|1",
+      "plaintext": "{\"type\":\"hello\",\"device\":\"iPhone 16\",\"app\":\"airvoice-ios\",\"ts\":1700000000}",
+      "envelope": {
+        "type": "e2e",
+        "v": 1,
+        "sid": "EBESExQVFhc",
+        "seq": 1,
+        "iv": "AQIDBAUGBwgJCgsM",
+        "ct": "CW2qPeumogvWR9yyejrdInacRKz8eL2onY13yndlJr1O9DOcm5Ca6_l_Pji_X1BfCZ-yOAHHvifDRDwdmPbMopTfpI3qXDwyuLO0E_-EvByzPBxbmiBcI4z_"
+      }
+    },
+    {
+      "name": "h2c_hello",
+      "direction": "h2c",
+      "sid": "ICEiIyQlJic",
+      "seq": 1,
+      "iv": "ERITFBUWFxgZGhsc",
+      "aad": "airvoice-e2e-v1|h2c|tvE6WUq2rNOJtjrfZ8B5WA|ICEiIyQlJic|1",
+      "plaintext": "{\"type\":\"hello\",\"host\":\"dev-mac\",\"version\":\"0.5.0\",\"ts\":1700000001}",
+      "envelope": {
+        "type": "e2e",
+        "v": 1,
+        "sid": "ICEiIyQlJic",
+        "seq": 1,
+        "iv": "ERITFBUWFxgZGhsc",
+        "ct": "57XOmX1E5iRLOmd4QpW3DbLEMUqCa7DD5Ue7LtToMTS4Z8Fm5uip0uUPBlDaVtTKB7NX-l7yntNrczZ8QfZG10AuAl7moL26wI1EJ4BV0CDATZM"
+      }
+    },
+    {
+      "name": "c2h_text_unicode",
+      "direction": "c2h",
+      "sid": "EBESExQVFhc",
+      "seq": 2,
+      "iv": "ISIjJCUmJygpKiss",
+      "aad": "airvoice-e2e-v1|c2h|tvE6WUq2rNOJtjrfZ8B5WA|EBESExQVFhc|2",
+      "plaintext": "{\"type\":\"text\",\"id\":\"msg-1\",\"content\":\"你好 Airvoice 🎙️\"}",
+      "envelope": {
+        "type": "e2e",
+        "v": 1,
+        "sid": "EBESExQVFhc",
+        "seq": 2,
+        "iv": "ISIjJCUmJygpKiss",
+        "ct": "KGIl7GseOjxywCa_VfCYabZ_s9DNYxjd3e9Nd24Ruqz9UDVz_pAfYRDU7tXg0N9uHslIiV3HRDqluqkT57h-1S_SNpQJhia3stLlNhhEK0Y"
+      }
+    },
+    {
+      "name": "h2c_ack",
+      "direction": "h2c",
+      "sid": "ICEiIyQlJic",
+      "seq": 2,
+      "iv": "MTIzNDU2Nzg5Ojs8",
+      "aad": "airvoice-e2e-v1|h2c|tvE6WUq2rNOJtjrfZ8B5WA|ICEiIyQlJic|2",
+      "plaintext": "{\"type\":\"ack\",\"id\":\"msg-1\",\"ok\":true}",
+      "envelope": {
+        "type": "e2e",
+        "v": 1,
+        "sid": "ICEiIyQlJic",
+        "seq": 2,
+        "iv": "MTIzNDU2Nzg5Ojs8",
+        "ct": "-wUlsNZ_fnNxOX_CChJSZQuiEd3e-eVL7bWXJFJQNgPbiui5qMpk1O_dn9J84NPAsfiNgA4"
+      }
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{$RELAY_DOMAIN:relay.airvoice.yuler.cc} {
+	# Zero-knowledge relay: keep access logging off so auth headers are never recorded.
+	reverse_proxy relay:8787 {
+		header_up X-Real-IP {remote_host}
+	}
+}

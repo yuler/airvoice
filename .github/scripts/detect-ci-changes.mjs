@@ -7,6 +7,8 @@ export function matchScope(file) {
   return {
     cli:
       file.startsWith("cli/") ||
+      file.startsWith("relay/") ||
+      file.startsWith("cmd/") ||
       file === "go.mod" ||
       file === "go.sum" ||
       file === "scripts/resolve-version.sh" ||
