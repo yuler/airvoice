@@ -6,22 +6,48 @@ import { useConnection } from '../composables/useConnection'
 const { status } = useConnection()
 const { t } = useI18n()
 
+const isRelay = computed(() => status.value.mode === 'relay')
 const isConnected = computed(() => status.value.state === 'connected')
-const isConnecting = computed(() => status.value.state === 'connecting' || status.value.state === 'waiting')
+const isWarning = computed(() =>
+  status.value.state === 'connecting' ||
+  status.value.state === 'waiting' ||
+  (isRelay.value && status.value.state === 'disconnected')
+)
+const isError = computed(() => status.value.state === 'error')
 
 const badgeClass = computed(() => {
   if (isConnected.value) return 'bg-status-success'
-  if (isConnecting.value) return 'bg-status-warning'
+  if (isError.value) return 'bg-status-error'
+  if (isWarning.value) return 'bg-status-warning'
   return 'bg-status-neutral'
 })
 
 const statusLabel = computed(() => {
-  if (isConnected.value) return t('status.connectedShort')
-  if (isConnecting.value) return t('status.connecting')
+  if (isConnected.value) {
+    return isRelay.value ? t('status.connectedRelay') : t('status.connectedLan')
+  }
+  if (status.value.state === 'waiting') {
+    return t('status.waiting')
+  }
+  if (status.value.state === 'connecting') {
+    return isRelay.value ? t('status.relayConnecting') : t('status.connecting')
+  }
+  if (isError.value) {
+    return status.value.error || t('status.relayError')
+  }
+  if (isRelay.value) {
+    return t('status.relayReconnecting')
+  }
   return t('status.disconnected')
 })
 
 const connectionAddress = computed(() => {
+  if (isRelay.value) {
+    if (status.value.deviceName && status.value.host) {
+      return `${status.value.deviceName} · ${status.value.host}`
+    }
+    return status.value.host || status.value.deviceName || ''
+  }
   if (status.value.host && status.value.port) {
     return `${status.value.host}:${status.value.port}`
   }

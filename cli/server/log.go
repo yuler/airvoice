@@ -20,6 +20,11 @@ func SetLogHook(fn func(string)) {
 	logHookMu.Unlock()
 }
 
+// LogStatus formats and writes a host status log line to stderr and the optional log hook.
+func LogStatus(format string, args ...any) {
+	logStatus(format, args...)
+}
+
 func logStatus(format string, args ...any) {
 	msg := fmt.Sprintf(format, args...)
 	fmt.Fprintf(os.Stderr, " [airvoice] %s\n", msg)

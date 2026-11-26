@@ -5,9 +5,9 @@ import (
 	"encoding/base64"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -15,30 +15,39 @@ import (
 	"github.com/yuler/airvoice/cli/config"
 	"github.com/yuler/airvoice/cli/pairing"
 	"github.com/yuler/airvoice/cli/paste"
+	"github.com/yuler/airvoice/cli/relayclient"
 	"github.com/yuler/airvoice/cli/server"
 	qr "rsc.io/qr"
 )
 
 type ConnectionStatus struct {
 	State      string `json:"state"`
+	Mode       string `json:"mode"`
 	DeviceName string `json:"deviceName"`
 	Host       string `json:"host"`
 	Port       int    `json:"port"`
+	Error      string `json:"error,omitempty"`
 }
 
 type Settings struct {
-	Token     string `json:"token,omitempty"`
-	Port      int    `json:"port"`
-	AutoStart bool   `json:"autoStart"`
-	Language  string `json:"language"`
+	Token          string `json:"token,omitempty"`
+	RelayKey       string `json:"relayKey,omitempty"`
+	Port           int    `json:"port"`
+	AutoStart      bool   `json:"autoStart"`
+	Language       string `json:"language"`
+	ConnectionMode string `json:"connectionMode"`
+	RelayURL       string `json:"relayUrl"`
+	RelayAuthKey   string `json:"relayAuthKey"`
 }
 
 type App struct {
 	ctx          context.Context
 	server       *server.Server
+	relayClient  *relayclient.Client
 	history      *HistoryStore
 	paster       paste.Paster
 	token        string
+	relayKey     string
 	port         int
 	settingsPath string
 	settings     Settings
@@ -68,8 +77,15 @@ func NewApp() (*App, error) {
 		history:      history,
 		port:         7655,
 		settingsPath: settingsPath,
-		settings:     Settings{Port: 7655, Language: "zh-CN"},
-		status:       ConnectionStatus{State: "disconnected"},
+		settings: Settings{
+			Port:           7655,
+			Language:       "zh-CN",
+			ConnectionMode: config.ModeLAN,
+		},
+		status: ConnectionStatus{
+			State: "disconnected",
+			Mode:  config.ModeLAN,
+		},
 	}
 
 	if err := app.loadSettings(); err != nil {
@@ -88,8 +104,8 @@ func (a *App) getContext() context.Context {
 func (a *App) startup(ctx context.Context) {
 	a.mu.Lock()
 	a.ctx = ctx
-	port := a.port
 	token := a.token
+	relayKey := a.relayKey
 	path := a.settingsPath
 	a.mu.Unlock()
 
@@ -101,97 +117,107 @@ func (a *App) startup(ctx context.Context) {
 			runtime.EventsEmit(c, "log_added", msg)
 		}
 	})
-	if err := a.StartServer(port); err != nil {
-		log.Printf("Failed to start server: %v", err)
+	if err := a.startActiveTransport(); err != nil {
+		log.Printf("Failed to start transport: %v", err)
 		runtime.MessageDialog(ctx, runtime.MessageDialogOptions{
 			Type:    runtime.ErrorDialog,
 			Title:   "Server Error",
-			Message: fmt.Sprintf("Failed to start server: %v\n\nPlease check your settings and port occupancy.", err),
+			Message: fmt.Sprintf("Failed to start Airvoice: %v\n\nPlease check your settings.", err),
 		})
 	}
 
-	go config.WatchToken(ctx, path, time.Second, token, func(newToken string) {
-		a.applyToken(newToken, true)
+	go config.WatchCredentials(ctx, path, time.Second, token, relayKey, func(updated config.Settings) {
+		a.applyCredentials(updated.Token, updated.RelayKey, true)
 	})
 }
 
+func (a *App) shutdown(ctx context.Context) {
+	_ = a.StopServer()
+}
+
+// GetPairingLink returns an airvoice://pair?... URI in Relay mode, or the v1 JSON payload in LAN mode.
 func (a *App) GetPairingLink() (string, error) {
+	a.mu.RLock()
+	mode := config.NormalizeConnectionMode(a.settings.ConnectionMode)
+	port := a.port
+	token := a.token
+	relayURL := config.ResolveRelayURL(a.settings.RelayURL, "")
+	relayAuthKey := strings.TrimSpace(a.settings.RelayAuthKey)
+	a.mu.RUnlock()
+
+	if mode == config.ModeRelay {
+		relayKey, err := a.ensureRelayKey()
+		if err != nil {
+			return "", err
+		}
+		return pairing.BuildPairingURI(relayURL, relayKey, relayAuthKey)
+	}
+
 	ip, err := pairing.LocalIPv4()
 	if err != nil {
 		return "", fmt.Errorf("failed to get LAN IP: %w", err)
 	}
 
-	a.mu.RLock()
-	port := a.port
-	token := a.token
-	a.mu.RUnlock()
-
 	payload := pairing.Payload{
-		Version: 1,
+		Version: pairing.VersionLAN,
 		WS:      fmt.Sprintf("ws://%s:%d/ws", ip, port),
 		Token:   token,
 	}
-
 	payloadBytes, err := payload.Marshal()
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal payload: %w", err)
 	}
-
 	return string(payloadBytes), nil
 }
 
-// RefreshPairing generates a new pairing token, persists it, and disconnects clients.
+// RefreshPairing rotates both the LAN pairing token and the E2E relayKey,
+// persists them, and disconnects/reconnects active sessions.
 func (a *App) RefreshPairing() error {
 	s, err := config.RotateToken(a.settingsPath)
 	if err != nil {
 		return err
 	}
-	a.applyToken(s.Token, true)
+	a.applyCredentials(s.Token, s.RelayKey, true)
 	return nil
 }
 
-func (a *App) applyToken(newToken string, disconnect bool) {
-	a.mu.Lock()
-	if newToken == "" || newToken == a.token {
-		a.mu.Unlock()
-		return
-	}
-	a.token = newToken
-	srv := a.server
-	ctx := a.ctx
-	a.mu.Unlock()
-
-	if srv != nil {
-		srv.SetToken(newToken)
-		if disconnect {
-			srv.DisconnectClients()
-		}
-	}
-
-	if ctx != nil {
-		runtime.EventsEmit(ctx, "log_added", " [airvoice] pairing token refreshed")
-		runtime.EventsEmit(ctx, "pairing_changed")
-	}
-}
-
 func (a *App) GetQRCode() (string, error) {
-	ip, err := pairing.LocalIPv4()
-	if err != nil {
-		return "", fmt.Errorf("failed to get LAN IP: %w", err)
-	}
-
 	a.mu.RLock()
+	mode := config.NormalizeConnectionMode(a.settings.ConnectionMode)
 	port := a.port
 	token := a.token
+	relayURL := config.ResolveRelayURL(a.settings.RelayURL, "")
+	relayAuthKey := strings.TrimSpace(a.settings.RelayAuthKey)
 	a.mu.RUnlock()
 
-	payload := pairing.Payload{
-		Version: 1,
-		WS:      fmt.Sprintf("ws://%s:%d/ws", ip, port),
-		Token:   token,
-	}
+	var payloadBytes []byte
+	var err error
 
-	payloadBytes, err := payload.Marshal()
+	if mode == config.ModeRelay {
+		relayKey, keyErr := a.ensureRelayKey()
+		if keyErr != nil {
+			return "", keyErr
+		}
+		payload := pairing.PayloadV2{
+			Version: pairing.VersionRelay,
+			Mode:    pairing.ModeRelay,
+			WS:      relayURL,
+			Key:     relayKey,
+			Auth:    relayAuthKey,
+		}
+		payloadBytes, err = payload.Marshal()
+	} else {
+		ip, ipErr := pairing.LocalIPv4()
+		if ipErr != nil {
+			return "", fmt.Errorf("failed to get LAN IP: %w", ipErr)
+		}
+		payload := pairing.Payload{
+			Version: pairing.VersionLAN,
+			WS:      fmt.Sprintf("ws://%s:%d/ws", ip, port),
+			Token:   token,
+		}
+		payloadBytes, err = payload.Marshal()
+	}
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal payload: %w", err)
 	}
@@ -210,200 +236,17 @@ func (a *App) GetConnectionStatus() ConnectionStatus {
 	return a.status
 }
 
-func (a *App) StartServer(port int) error {
-	if err := server.CheckPortAvailable(port); err != nil {
-		return err
-	}
-
-	a.mu.Lock()
-	if a.server != nil {
-		a.mu.Unlock()
-		return fmt.Errorf("server already running")
-	}
-	a.port = port
-	a.status = ConnectionStatus{
-		State: "waiting",
-		Port:  port,
-	}
-	paster := a.paster
-	ctx := a.ctx
-	a.mu.Unlock()
-	if a.tray != nil {
-		a.tray.UpdateStatus()
-	}
-
-	if paster == nil {
-		var err error
-		paster, err = paste.New()
-		if err != nil {
-			a.mu.Lock()
-			a.status = ConnectionStatus{State: "disconnected"}
-			status := a.status
-			ctx = a.ctx
-			a.mu.Unlock()
-			if a.tray != nil {
-				a.tray.UpdateStatus()
-			}
-			if ctx != nil {
-				runtime.EventsEmit(ctx, "status_changed", status)
-			}
-			return fmt.Errorf("failed to initialize paster: %w", err)
-		}
-		a.mu.Lock()
-		if a.paster == nil {
-			a.paster = paster
-		} else {
-			paster = a.paster
-		}
-		a.mu.Unlock()
-	}
-
-	if ctx != nil {
-		runtime.EventsEmit(ctx, "log_added", fmt.Sprintf(" [airvoice] listening on :%d (health: /health, ws: /ws)", port))
-	}
-
-	srv := server.New(server.Config{
-		Addr:     fmt.Sprintf(":%d", port),
-		Port:     port,
-		Hostname: getLocalHostname(),
-		Paster:   paster,
-		OnTextReceived: func(content, device string) {
-			if a.history != nil {
-				a.history.Add(content, device)
-			}
-		},
-		OnConnect: func(device string) {
-			host := ""
-			if ip, err := pairing.LocalIPv4(); err == nil {
-				host = ip
-			}
-			a.mu.Lock()
-			a.status = ConnectionStatus{
-				State:      "connected",
-				DeviceName: device,
-				Host:       host,
-				Port:       a.port,
-			}
-			status := a.status
-			ctx := a.ctx
-			a.mu.Unlock()
-			if a.tray != nil {
-				a.tray.UpdateStatus()
-			}
-			if ctx != nil {
-				runtime.EventsEmit(ctx, "status_changed", status)
-			}
-		},
-		OnDisconnect: func() {
-			a.mu.Lock()
-			a.status = ConnectionStatus{
-				State: "waiting",
-				Port:  a.port,
-			}
-			status := a.status
-			ctx := a.ctx
-			a.mu.Unlock()
-			if a.tray != nil {
-				a.tray.UpdateStatus()
-			}
-			if ctx != nil {
-				runtime.EventsEmit(ctx, "status_changed", status)
-			}
-		},
-	})
-
-	a.mu.Lock()
-	if a.server != nil {
-		a.mu.Unlock()
-		return fmt.Errorf("server already running")
-	}
-	token := a.token
-	a.server = srv
-	a.mu.Unlock()
-	srv.SetToken(token)
-
-	go func() {
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			a.mu.Lock()
-			if a.server == srv {
-				a.server = nil
-			}
-			a.status = ConnectionStatus{
-				State: "disconnected",
-				Port:  a.port,
-			}
-			status := a.status
-			ctx := a.ctx
-			a.mu.Unlock()
-			if a.tray != nil {
-				a.tray.UpdateStatus()
-			}
-			if ctx != nil {
-				runtime.EventsEmit(ctx, "status_changed", status)
-			}
-		}
-	}()
-
-	return nil
-}
-
-// DisconnectClients disconnects all active WebSocket clients while keeping the server running.
-func (a *App) DisconnectClients() {
-	a.mu.RLock()
-	srv := a.server
-	a.mu.RUnlock()
-	if srv == nil {
-		return
-	}
-	srv.DisconnectClients()
-
-	a.mu.Lock()
-	changed := a.status.State != "waiting"
-	if changed {
-		a.status = ConnectionStatus{
-			State: "waiting",
-			Port:  a.port,
-		}
-	}
-	status := a.status
-	ctx := a.ctx
-	a.mu.Unlock()
-	if changed {
-		if a.tray != nil {
-			a.tray.UpdateStatus()
-		}
-		if ctx != nil {
-			runtime.EventsEmit(ctx, "status_changed", status)
-		}
-	}
-}
-
-func (a *App) StopServer() error {
-	a.mu.Lock()
-	srv := a.server
-	a.server = nil
-	a.status = ConnectionStatus{State: "disconnected"}
-	status := a.status
-	ctx := a.ctx
-	a.mu.Unlock()
-	if a.tray != nil {
-		a.tray.UpdateStatus()
-	}
-
-	if ctx != nil {
-		runtime.EventsEmit(ctx, "status_changed", status)
-	}
-
-	if srv != nil {
-		return srv.Close()
-	}
-	return nil
-}
-
 func (a *App) loadSettings() error {
 	s, err := config.EnsureToken(a.settingsPath)
 	if err != nil {
 		return fmt.Errorf("failed to load settings: %w", err)
+	}
+	mode := config.NormalizeConnectionMode(s.ConnectionMode)
+	if mode == config.ModeRelay && strings.TrimSpace(s.RelayKey) == "" {
+		s, err = config.EnsureRelayKey(a.settingsPath)
+		if err != nil {
+			return fmt.Errorf("failed to ensure relay key: %w", err)
+		}
 	}
 	port := s.Port
 	if port < 1024 || port > 65535 {
@@ -414,14 +257,38 @@ func (a *App) loadSettings() error {
 		lang = "zh-CN"
 	}
 	a.settings = Settings{
-		Token:     s.Token,
-		Port:      port,
-		AutoStart: s.AutoStart,
-		Language:  lang,
+		Token:          s.Token,
+		RelayKey:       s.RelayKey,
+		Port:           port,
+		AutoStart:      s.AutoStart,
+		Language:       lang,
+		ConnectionMode: mode,
+		RelayURL:       strings.TrimSpace(s.RelayURL),
+		RelayAuthKey:   strings.TrimSpace(s.RelayAuthKey),
 	}
 	a.token = s.Token
+	a.relayKey = s.RelayKey
 	a.port = port
+	a.status.Mode = mode
 	return nil
+}
+
+func (a *App) ensureRelayKey() (string, error) {
+	a.mu.RLock()
+	existing := strings.TrimSpace(a.relayKey)
+	a.mu.RUnlock()
+	if existing != "" {
+		return existing, nil
+	}
+	s, err := config.EnsureRelayKey(a.settingsPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate relay key: %w", err)
+	}
+	a.mu.Lock()
+	a.relayKey = s.RelayKey
+	a.settings.RelayKey = s.RelayKey
+	a.mu.Unlock()
+	return s.RelayKey, nil
 }
 
 func (a *App) GetSettings() Settings {
@@ -431,27 +298,49 @@ func (a *App) GetSettings() Settings {
 }
 
 func (a *App) SaveSettings(s Settings) error {
+	mode := config.NormalizeConnectionMode(s.ConnectionMode)
 	if s.Port < 1024 || s.Port > 65535 {
 		return fmt.Errorf("invalid port: must be between 1024 and 65535")
 	}
 
+	relayURL := strings.TrimSpace(s.RelayURL)
+	relayAuthKey := strings.TrimSpace(s.RelayAuthKey)
+	if mode == config.ModeRelay {
+		resolved := config.ResolveRelayURL(relayURL, "")
+		if err := relayclient.ValidateRelayURL(resolved); err != nil {
+			return err
+		}
+	}
+
 	a.mu.RLock()
+	oldMode := config.NormalizeConnectionMode(a.settings.ConnectionMode)
+	modeChanged := oldMode != mode
 	portChanged := a.port != s.Port
+	relayChanged := a.settings.RelayURL != relayURL || a.settings.RelayAuthKey != relayAuthKey
+	wasRunning := a.server != nil || a.relayClient != nil
 	a.mu.RUnlock()
 
-	if portChanged {
+	if mode == config.ModeLAN && (portChanged || modeChanged) {
 		if err := server.CheckPortAvailable(s.Port); err != nil {
 			return fmt.Errorf("port %d is already in use: %w", s.Port, err)
 		}
 	}
 
 	if err := config.Save(a.settingsPath, config.Settings{
-		Token:     "",
-		Port:      s.Port,
-		AutoStart: s.AutoStart,
-		Language:  s.Language,
+		Port:           s.Port,
+		AutoStart:      s.AutoStart,
+		Language:       s.Language,
+		ConnectionMode: mode,
+		RelayURL:       relayURL,
+		RelayAuthKey:   relayAuthKey,
 	}); err != nil {
 		return err
+	}
+
+	if mode == config.ModeRelay {
+		if _, err := config.EnsureRelayKey(a.settingsPath); err != nil {
+			return err
+		}
 	}
 
 	disk, err := config.Load(a.settingsPath)
@@ -459,30 +348,53 @@ func (a *App) SaveSettings(s Settings) error {
 		return err
 	}
 
+	lang := s.Language
+	if lang == "" {
+		lang = a.settings.Language
+	}
+
 	a.mu.Lock()
 	oldToken := a.token
+	oldRelayKey := a.relayKey
 	a.settings = Settings{
-		Token:     disk.Token,
-		Port:      s.Port,
-		AutoStart: s.AutoStart,
-		Language:  s.Language,
+		Token:          disk.Token,
+		RelayKey:       disk.RelayKey,
+		Port:           s.Port,
+		AutoStart:      s.AutoStart,
+		Language:       lang,
+		ConnectionMode: mode,
+		RelayURL:       relayURL,
+		RelayAuthKey:   relayAuthKey,
 	}
 	a.port = s.Port
 	a.token = disk.Token
+	a.relayKey = disk.RelayKey
 	srv := a.server
+	rc := a.relayClient
 	ctx := a.ctx
 	a.mu.Unlock()
+
+	transportChanged := modeChanged || (mode == config.ModeLAN && portChanged) || (mode == config.ModeRelay && relayChanged)
+	if transportChanged && (ctx != nil || wasRunning) {
+		_ = a.StopServer()
+		if err := a.startActiveTransport(); err != nil {
+			return err
+		}
+		if ctx != nil {
+			runtime.EventsEmit(ctx, "server_restarted")
+			runtime.EventsEmit(ctx, "pairing_changed")
+		}
+		return nil
+	}
 
 	if srv != nil && disk.Token != "" && disk.Token != oldToken {
 		srv.SetToken(disk.Token)
 	}
-
-	if portChanged && ctx != nil {
-		_ = a.StopServer()
-		if err := a.StartServer(s.Port); err != nil {
-			return err
-		}
-		runtime.EventsEmit(ctx, "server_restarted")
+	if rc != nil && disk.RelayKey != "" && disk.RelayKey != oldRelayKey {
+		_ = rc.UpdateRelayKey(disk.RelayKey)
+	}
+	if ctx != nil && (modeChanged || relayChanged) {
+		runtime.EventsEmit(ctx, "pairing_changed")
 	}
 
 	return nil

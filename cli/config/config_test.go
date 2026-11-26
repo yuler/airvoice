@@ -10,6 +10,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/yuler/airvoice/cli/e2e"
 )
 
 func TestPathUsesHomeAirvoice(t *testing.T) {
@@ -270,5 +272,175 @@ func TestWriteFileAtomicPermissionsAndConcurrentSaves(t *testing.T) {
 		if strings.HasPrefix(e.Name(), ".settings-") {
 			t.Fatalf("leftover temp file found: %s", e.Name())
 		}
+	}
+}
+
+func TestEnsureRelayKeyLazilyCreatesWithoutTouchingToken(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "settings.json")
+	raw := []byte(`{"token":"existing-lan-token","port":7655,"futureFlag":true}`)
+	if err := os.WriteFile(path, raw, 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	first, err := EnsureRelayKey(path)
+	if err != nil {
+		t.Fatalf("EnsureRelayKey: %v", err)
+	}
+	if first.Token != "existing-lan-token" {
+		t.Fatalf("token modified: got %q, want %q", first.Token, "existing-lan-token")
+	}
+	if _, err := e2e.ParseKey(first.RelayKey); err != nil {
+		t.Fatalf("invalid relayKey %q: %v", first.RelayKey, err)
+	}
+
+	second, err := EnsureRelayKey(path)
+	if err != nil {
+		t.Fatalf("second EnsureRelayKey: %v", err)
+	}
+	if second.RelayKey != first.RelayKey {
+		t.Fatalf("relayKey rotated unexpectedly: %q vs %q", second.RelayKey, first.RelayKey)
+	}
+
+	// Verify unknown fields on disk are preserved.
+	diskBytes, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var rawMap map[string]any
+	if err := json.Unmarshal(diskBytes, &rawMap); err != nil {
+		t.Fatal(err)
+	}
+	if rawMap["futureFlag"] != true {
+		t.Fatalf("unknown field futureFlag lost: %v", rawMap)
+	}
+}
+
+func TestRotateTokenRotatesBothTokenAndRelayKey(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "settings.json")
+
+	s1, err := EnsureToken(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s1, err = EnsureRelayKey(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	s2, err := RotateToken(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s2.Token == "" || s2.Token == s1.Token {
+		t.Fatalf("token not rotated: %q vs %q", s2.Token, s1.Token)
+	}
+	if s2.RelayKey == "" || s2.RelayKey == s1.RelayKey {
+		t.Fatalf("relayKey not rotated: %q vs %q", s2.RelayKey, s1.RelayKey)
+	}
+	if _, err := e2e.ParseKey(s2.RelayKey); err != nil {
+		t.Fatalf("rotated relayKey invalid: %v", err)
+	}
+}
+
+func TestSavePreservesRelayKeyAndUnknownFields(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "settings.json")
+	if err := os.WriteFile(path, []byte(`{"token":"tok1","unknownKey":"keep-me"}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	s, err := EnsureRelayKey(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := Save(path, Settings{
+		Port:           7656,
+		Language:       "en-US",
+		ConnectionMode: ModeRelay,
+		RelayURL:       "wss://relay.example.com/ws",
+		RelayAuthKey:   "secret-auth",
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	loaded, err := Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if loaded.Token != "tok1" {
+		t.Fatalf("token = %q, want tok1", loaded.Token)
+	}
+	if loaded.RelayKey != s.RelayKey {
+		t.Fatalf("relayKey lost: %q vs %q", loaded.RelayKey, s.RelayKey)
+	}
+	if loaded.ConnectionMode != ModeRelay || loaded.RelayURL != "wss://relay.example.com/ws" || loaded.RelayAuthKey != "secret-auth" {
+		t.Fatalf("relay settings not saved: %+v", loaded)
+	}
+
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var m map[string]any
+	if err := json.Unmarshal(raw, &m); err != nil {
+		t.Fatal(err)
+	}
+	if m["unknownKey"] != "keep-me" {
+		t.Fatalf("unknownKey lost: %v", m)
+	}
+}
+
+func TestWatchCredentialsDetectsRelayKeyChange(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "settings.json")
+	s, err := EnsureToken(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s, err = EnsureRelayKey(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	got := make(chan Settings, 2)
+	go WatchCredentials(ctx, path, 20*time.Millisecond, s.Token, s.RelayKey, func(updated Settings) {
+		got <- updated
+	})
+
+	rotated, err := RotateToken(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	select {
+	case u := <-got:
+		if u.Token != rotated.Token || u.RelayKey != rotated.RelayKey {
+			t.Fatalf("got %+v, want token=%q relayKey=%q", u, rotated.Token, rotated.RelayKey)
+		}
+	case <-time.After(500 * time.Millisecond):
+		t.Fatal("timed out waiting for credential rotation")
+	}
+}
+
+func TestHelpersNormalizeAndResolve(t *testing.T) {
+	if got := NormalizeConnectionMode("RELAY"); got != ModeRelay {
+		t.Fatalf("NormalizeConnectionMode(RELAY) = %q", got)
+	}
+	if got := NormalizeConnectionMode(""); got != ModeLAN {
+		t.Fatalf("NormalizeConnectionMode('') = %q", got)
+	}
+	if got := ResolveRelayURL("", ""); got != DefaultRelayURL {
+		t.Fatalf("ResolveRelayURL default = %q", got)
+	}
+	if got := ResolveRelayURL("", "wss://saved.example/ws"); got != "wss://saved.example/ws" {
+		t.Fatalf("ResolveRelayURL saved = %q", got)
+	}
+	if got := ResolveRelayURL("wss://flag.example/ws", "wss://saved.example/ws"); got != "wss://flag.example/ws" {
+		t.Fatalf("ResolveRelayURL override = %q", got)
 	}
 }

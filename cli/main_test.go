@@ -209,3 +209,111 @@ func captureStderr(t *testing.T, fn func()) string {
 	}
 	return buf.String()
 }
+
+func TestParseServeFlagsRelaySemantics(t *testing.T) {
+	// Bare invocation stays LAN mode.
+	opts, err := parseServeFlags(nil, io.Discard)
+	if err != nil {
+		t.Fatalf("parseServeFlags(nil): %v", err)
+	}
+	if opts.useRelay() || opts.port != 7654 {
+		t.Fatalf("bare opts = %+v, want LAN port 7654", opts)
+	}
+
+	// --relay enables relay mode without URL override.
+	opts, err = parseServeFlags([]string{"--relay"}, io.Discard)
+	if err != nil {
+		t.Fatalf("parseServeFlags(--relay): %v", err)
+	}
+	if !opts.useRelay() || opts.relayURL != "" {
+		t.Fatalf("--relay opts = %+v", opts)
+	}
+
+	// --relay-url implicitly enables relay mode.
+	opts, err = parseServeFlags([]string{"--relay-url", "wss://custom.example/ws", "--relay-auth-key", "k123"}, io.Discard)
+	if err != nil {
+		t.Fatalf("parseServeFlags(--relay-url): %v", err)
+	}
+	if !opts.useRelay() || opts.relayURL != "wss://custom.example/ws" || opts.relayAuthKey != "k123" {
+		t.Fatalf("--relay-url opts = %+v", opts)
+	}
+}
+
+func TestRunSettingsMasksRelayAuthKey(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+
+	if err := config.Save(config.Path(), config.Settings{
+		Port:           7655,
+		ConnectionMode: config.ModeRelay,
+		RelayURL:       "wss://relay.example.com/ws",
+		RelayAuthKey:   "top-secret-key",
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	stdout := captureStdout(t, func() {
+		if code := run([]string{"settings"}); code != 0 {
+			t.Fatalf("code = %d", code)
+		}
+	})
+	if strings.Contains(stdout, "top-secret-key") {
+		t.Fatalf("settings output leaked raw relayAuthKey:\n%s", stdout)
+	}
+	idx := strings.Index(stdout, "{")
+	if idx < 0 {
+		t.Fatalf("stdout missing JSON:\n%s", stdout)
+	}
+	var s config.Settings
+	if err := json.Unmarshal([]byte(stdout[idx:]), &s); err != nil {
+		t.Fatalf("invalid JSON: %v", err)
+	}
+	if s.RelayAuthKey != "********" {
+		t.Fatalf("RelayAuthKey = %q, want masked", s.RelayAuthKey)
+	}
+	if s.RelayURL != "wss://relay.example.com/ws" || s.ConnectionMode != config.ModeRelay {
+		t.Fatalf("unexpected relay settings: %+v", s)
+	}
+}
+
+func TestRunTokenRefreshRotatesRelayKeyToo(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+
+	s1, err := config.EnsureRelayKey(config.Path())
+	if err != nil {
+		t.Fatal(err)
+	}
+	stdout := captureStdout(t, func() {
+		if code := run([]string{"token", "refresh"}); code != 0 {
+			t.Fatalf("code = %d", code)
+		}
+	})
+	if strings.TrimSpace(stdout) == "" {
+		t.Fatal("expected refreshed token on stdout")
+	}
+	s2, err := config.Load(config.Path())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s2.RelayKey == "" || s2.RelayKey == s1.RelayKey {
+		t.Fatalf("relayKey not rotated: %q vs %q", s2.RelayKey, s1.RelayKey)
+	}
+}
+
+func TestRunRelayRejectsInsecurePublicWS(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+
+	stderr := captureStderr(t, func() {
+		if code := runServer([]string{"--relay-url", "ws://relay.airvoice.yuler.cc/ws"}); code != 1 {
+			t.Fatalf("code = %d, want 1", code)
+		}
+	})
+	if !strings.Contains(stderr, "wss://") {
+		t.Fatalf("expected wss:// error in stderr, got:\n%s", stderr)
+	}
+}

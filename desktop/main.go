@@ -30,7 +30,8 @@ func main() {
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
-		OnStartup: app.startup,
+		OnStartup:  app.startup,
+		OnShutdown: app.shutdown,
 		Menu:      trayManager.GetTrayMenu(),
 		Bind: []interface{}{
 			app,
