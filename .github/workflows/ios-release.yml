@@ -244,7 +244,7 @@ jobs:
             <key>method</key>
             <string>app-store-connect</string>
             <key>destination</key>
-            <string>upload</string>
+            <string>export</string>
             <key>signingStyle</key>
             <string>manual</string>
             <key>signingCertificate</key>
@@ -258,6 +258,8 @@ jobs:
             </dict>
             <key>manageAppVersionAndBuildNumber</key>
             <false/>
+            <key>uploadSymbols</key>
+            <true/>
           </dict>
           </plist>
           EOF
@@ -267,14 +269,14 @@ jobs:
           AIRVOICE_VERSION: ${{ steps.version.outputs.version }}
         run: ./scripts/ios-xcodegen.sh
 
-      - name: Archive and upload to TestFlight
+      - name: Archive and export IPA
+        shell: bash
         env:
-          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
-          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
           IOS_DEVELOPMENT_TEAM: ${{ secrets.IOS_DEVELOPMENT_TEAM }}
           SIGN_IDENTITY: ${{ steps.cert.outputs.sign_identity }}
           PROFILE_UUID: ${{ steps.signing.outputs.profile_uuid }}
         run: |
+          set -euo pipefail
           xcodebuild \
             -project ios/Airvoice.xcodeproj \
             -scheme Airvoice \
@@ -291,10 +293,37 @@ jobs:
             -exportArchive \
             -archivePath "$RUNNER_TEMP/Airvoice.xcarchive" \
             -exportPath "$RUNNER_TEMP/export" \
-            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
-            -authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8" \
-            -authenticationKeyID "$APP_STORE_CONNECT_KEY_ID" \
-            -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID"
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist"
+
+      - name: Upload IPA to TestFlight
+        shell: bash
+        env:
+          ASC_APP_ID: ${{ vars.ASC_APP_ID }}
+          BUNDLE_ID: ${{ steps.signing.outputs.bundle_id }}
+        run: |
+          set -euo pipefail
+          IPA_PATH="$RUNNER_TEMP/export/Airvoice.ipa"
+          if [ ! -f "$IPA_PATH" ]; then
+            echo "::error::Expected exported IPA at $IPA_PATH"
+            ls -la "$RUNNER_TEMP/export" || true
+            exit 1
+          fi
+
+          APP_TARGET="${ASC_APP_ID:-$BUNDLE_ID}"
+          for attempt in 1 2 3; do
+            if asc builds upload \
+              --app "$APP_TARGET" \
+              --ipa "$IPA_PATH" \
+              --platform IOS; then
+              exit 0
+            fi
+            if [ "$attempt" -eq 3 ]; then
+              echo "::error::Failed to upload $IPA_PATH to App Store Connect after 3 attempts"
+              exit 1
+            fi
+            echo "::warning::asc builds upload attempt ${attempt}/3 failed; retrying in 15s..."
+            sleep 15
+          done
 
       - name: Clean up signing materials
         if: always()
