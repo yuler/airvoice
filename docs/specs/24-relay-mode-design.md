@@ -12,7 +12,7 @@ LAN mode remains the default with zero external network traffic. Relay mode is e
 
 | Area                 | Decision                                                                                                                                                     |
 | :------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Connection Modes     | Explicit mode switch: LAN by default (zero outbound traffic); CLI enables Relay via `--relay [url]`, Desktop switches `LAN / Relay` in Settings              |
+| Connection Modes     | Explicit mode switch: LAN by default (zero outbound traffic); CLI enables Relay via `--relay` / `--relay-url`, Desktop switches `LAN / Relay` in Settings    |
 | Room & Device Model  | 1 room = 1 Host (PC) + at most 1 active Phone (new phone replaces previous phone); mobile stays paired to 1 host at a time                                   |
 | Pairing Entry        | QR code primary + copyable/pasteable pairing link (`airvoice://pair?...`); mobile QR scanner screen adds a bottom "Paste Pairing Link" action                |
 | E2E Encryption       | 32-byte random PSK (`relayKey`) in QR/link + HKDF-SHA256 subkeys + AES-256-GCM (0-RTT, per-direction keys, session replay guard, zero 3rd-party crypto libs) |
@@ -122,9 +122,9 @@ Every application message (`hello`, `text`, `ack`, `ping`, `pong`) is JSON-encod
 ```
 
 - **AAD**: UTF-8 bytes of `airvoice-e2e-v1|<dir>|<roomId>|<sid>|<seq>` where `<dir>` is `c2h` (Phone → Host) or `h2c` (Host → Phone).
-- **Per-connection session (`sid` + `seq`)**: Each peer generates a fresh random 8-byte `sid` when a connection opens or `peer_status(online: true)` transitions to online, starting `seq = 1` and incrementing by 1 per frame.
-- **Anti-replay**: Receivers track the peer's active `sid` and require `seq > lastSeq`. Previously retired `sid`s seen during the process lifetime are rejected (bounded ring/set of last 256 `sid`s). `hello` includes `ts` (Unix seconds) checked within ±5 minutes to block cross-restart replay of captured sessions.
-- **Failure handling**: Any authentication tag failure or replay violation drops the frame and closes/resets the session cleanly; no plaintext ever leaks on error.
+- **Per-connection session (`sid` + `seq`)**: Each peer generates a fresh random 8-byte `sid` on connect or `peer_status(online: true)`, starting `seq = 1` and incrementing by 1 per frame.
+- **Anti-replay & `hello` gating**: Every new `sid` MUST start with a valid `hello` at `seq == 1` carrying `ts` (Unix seconds) within ±5 minutes (both Phone `hello` and Host `hello` reply). Any `text` or other app frame arriving for a `sid` before its `hello` (`seq == 1`) is validated MUST be rejected; subsequent frames require `seq > lastSeq`. Retired `sid`s are rejected for the process lifetime (bounded ring of 256 `sid`s).
+- **Failure handling**: Any AEAD auth failure, unauthenticated-`sid` frame, or replay violation drops the frame and closes/resets the session cleanly; no plaintext leaks on error.
 
 ---
 
@@ -133,14 +133,14 @@ Every application message (`hello`, `text`, `ack`, `ping`, `pong`) is JSON-encod
 ### Endpoints & Connection Handshake
 
 - `GET /health` → `200 ok`
-- `GET /ws` → WebSocket upgrade. Headers (with query parameter fallback for diagnostics):
+- `GET /ws` → WebSocket upgrade. **Header-only** authentication (no query-string fallback, preventing credentials from leaking into Caddy/Nginx access logs; Go, iOS `URLSessionWebSocketTask`, and Android `OkHttp` all send custom upgrade headers). The relay must never log `X-Airvoice-Auth` or `Authorization`.
 
-| Header               | Query Fallback | Required        | Description                                  |
-| :------------------- | :------------- | :-------------- | :------------------------------------------- |
-| `X-Airvoice-Room`    | `room`         | Yes             | Derived `roomId` (22-char base64url)         |
-| `X-Airvoice-Role`    | `role`         | Yes             | `host` or `client`                           |
-| `X-Airvoice-Auth`    | `auth`         | Yes             | Derived `hostAuth` or `clientAuth`           |
-| `Authorization`      | —              | If `--auth-key` | `Bearer <relayAuthKey>` for private relays   |
+| Header            | Required        | Description                                |
+| :---------------- | :-------------- | :----------------------------------------- |
+| `X-Airvoice-Room` | Yes             | Derived `roomId` (22-char base64url)       |
+| `X-Airvoice-Role` | Yes             | `host` or `client`                         |
+| `X-Airvoice-Auth` | Yes             | Derived `hostAuth` or `clientAuth`         |
+| `Authorization`   | If `--auth-key` | `Bearer <relayAuthKey>` for private relays |
 
 ### Room Ownership & Replacement Rules
 
@@ -239,13 +239,14 @@ airvoice/
 
 ```text
 airvoice [--port 7654]
-airvoice --relay [wss://...] [--relay-auth-key <key>]
+airvoice --relay [--relay-url wss://...] [--relay-auth-key <key>]
+airvoice --relay-url wss://... [--relay-auth-key <key>]
 airvoice token refresh
 airvoice settings
 ```
 
 - Bare `airvoice` always starts LAN mode (never unexpectedly connects to the internet even if Desktop is set to Relay).
-- `airvoice --relay` resolves URL as: explicit CLI value → `settings.json` `relayUrl` → `wss://relay.airvoice.yuler.cc/ws`. Same precedence for `--relay-auth-key`.
+- Standard Go `flag` semantics (no optional flag values): `--relay` is a boolean switch, and passing `--relay-url <url>` implicitly enables Relay mode. URL precedence: `--relay-url` → `settings.json` `relayUrl` → `wss://relay.airvoice.yuler.cc/ws`. Auth key precedence: `--relay-auth-key` → `settings.json` `relayAuthKey`.
 - Prints terminal QR (`v: 2`), `Relay: <url> (E2E)`, copyable `Link: airvoice://pair?...`, and live status logs (`relay connected`, `peer online`, `peer offline`, `quota/rate warnings`).
 - Automatic exponential-backoff reconnect to the relay (2s → 30s) when network blips occur; stops on `401`/`403` auth errors.
 
