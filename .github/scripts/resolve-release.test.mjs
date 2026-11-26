@@ -223,3 +223,21 @@ test("detectCiChanges enables ios scope when ios/ files change", () => {
     repo.cleanup();
   }
 });
+
+test("detectCiChanges enables cli scope when relay/ or cmd/ files change", () => {
+  const repo = createRepo();
+  try {
+    repo.commitFile("relay/server.go", "package relay\n", "init");
+    repo.run("tag", "v0.4.5");
+    repo.commitFile("cmd/airvoice-relay/main.go", "package main\n", "add relay cmd");
+
+    const scopes = detectCiChanges({ cwd: repo.dir, eventName: "push" });
+    assert.equal(scopes.cli, true);
+    assert.equal(scopes.desktop, false);
+    assert.equal(scopes.android, false);
+    assert.equal(scopes.ios, false);
+    assert.equal(scopes.www, false);
+  } finally {
+    repo.cleanup();
+  }
+});

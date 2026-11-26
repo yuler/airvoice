@@ -1,0 +1,52 @@
+services:
+  relay:
+    build:
+      context: ../..
+      dockerfile: deploy/relay/Dockerfile
+      args:
+        VERSION: ${AIRVOICE_VERSION:-dev}
+    image: airvoice-relay:latest
+    container_name: airvoice-relay
+    restart: unless-stopped
+    ports:
+      - "${AIRVOICE_RELAY_BIND:-127.0.0.1:8787}:8787"
+    environment:
+      AIRVOICE_RELAY_ADDR: ":8787"
+      AIRVOICE_RELAY_AUTH_KEY: "${AIRVOICE_RELAY_AUTH_KEY:-}"
+      AIRVOICE_RELAY_MAX_MESSAGE_BYTES: "${AIRVOICE_RELAY_MAX_MESSAGE_BYTES:-16384}"
+      AIRVOICE_RELAY_RATE_PER_MINUTE: "${AIRVOICE_RELAY_RATE_PER_MINUTE:-30}"
+      AIRVOICE_RELAY_RATE_BURST: "${AIRVOICE_RELAY_RATE_BURST:-10}"
+      AIRVOICE_RELAY_DAILY_MESSAGE_LIMIT: "${AIRVOICE_RELAY_DAILY_MESSAGE_LIMIT:-1000}"
+      AIRVOICE_RELAY_MAX_ROOMS_PER_IP: "${AIRVOICE_RELAY_MAX_ROOMS_PER_IP:-5}"
+      AIRVOICE_RELAY_MAX_GLOBAL_ROOMS: "${AIRVOICE_RELAY_MAX_GLOBAL_ROOMS:-500}"
+      AIRVOICE_RELAY_ORPHAN_IDLE_TIMEOUT: "${AIRVOICE_RELAY_ORPHAN_IDLE_TIMEOUT:-15m}"
+      AIRVOICE_RELAY_SESSION_IDLE_TIMEOUT: "${AIRVOICE_RELAY_SESSION_IDLE_TIMEOUT:-2h}"
+      AIRVOICE_RELAY_TRUST_PROXY: "${AIRVOICE_RELAY_TRUST_PROXY:-true}"
+    mem_limit: 256m
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+
+  # Optional built-in Caddy reverse proxy with automatic HTTPS.
+  # Enable with: docker compose --profile caddy up -d
+  caddy:
+    image: caddy:2-alpine
+    container_name: airvoice-relay-caddy
+    profiles: ["caddy"]
+    restart: unless-stopped
+    depends_on:
+      relay:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      RELAY_DOMAIN: "${RELAY_DOMAIN:-relay.airvoice.yuler.cc}"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:
