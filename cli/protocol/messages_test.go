@@ -38,6 +38,7 @@ func TestOutbound_RoundTrip(t *testing.T) {
 		ID:      "xyz",
 		OK:      true,
 		Message: "all good",
+		TS:      1700000000,
 	}
 
 	data, err := original.Bytes()

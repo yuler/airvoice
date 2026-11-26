@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { onMounted, computed } from 'vue'
+import { onMounted, onUnmounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useConnection } from './composables/useConnection'
+import { useToast } from './composables/useToast'
 import Header from './components/Header.vue'
 import QRCode from './components/QRCode.vue'
 import StatusBadge from './components/StatusBadge.vue'
@@ -11,8 +12,16 @@ import Toast from './components/Toast.vue'
 
 const { locale } = useI18n()
 const { status } = useConnection()
+const { show } = useToast()
 
 const isConnected = computed(() => status.value.state === 'connected')
+
+function handleRelayError(payload: { code?: string; message?: string }) {
+  const msg = payload?.message || payload?.code
+  if (msg) {
+    show(msg, 'error')
+  }
+}
 
 onMounted(async () => {
   try {
@@ -22,6 +31,18 @@ onMounted(async () => {
     }
   } catch (e) {
     console.error('Failed to load language setting:', e)
+  }
+
+  const runtime = (window as any).runtime
+  if (runtime && runtime.EventsOn) {
+    runtime.EventsOn('relay_error', handleRelayError)
+  }
+})
+
+onUnmounted(() => {
+  const runtime = (window as any).runtime
+  if (runtime && runtime.EventsOff) {
+    runtime.EventsOff('relay_error')
   }
 })
 </script>

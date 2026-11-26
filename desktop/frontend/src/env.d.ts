@@ -7,10 +7,12 @@ declare module '*.vue' {
 }
 
 interface ConnectionStatus {
-  state: 'disconnected' | 'connecting' | 'connected' | 'waiting'
+  state: 'disconnected' | 'connecting' | 'connected' | 'waiting' | 'error'
+  mode?: 'lan' | 'relay'
   deviceName: string
   host: string
   port: number
+  error?: string
 }
 
 interface HistoryEntry {
@@ -21,14 +23,20 @@ interface HistoryEntry {
 }
 
 interface Settings {
+  token?: string
+  relayKey?: string
   port: number
   autoStart: boolean
   language: string
+  connectionMode: 'lan' | 'relay'
+  relayUrl: string
+  relayAuthKey: string
 }
 
 interface WailsApp {
   GetQRCode(): Promise<string>
   GetPairingLink(): Promise<string>
+  RefreshPairing(): Promise<void>
   GetConnectionStatus(): Promise<ConnectionStatus>
   DisconnectClients(): Promise<void>
   GetHistory(limit: number): Promise<HistoryEntry[]>

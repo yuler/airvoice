@@ -1,14 +1,17 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 
-interface ConnectionStatus {
-  state: 'disconnected' | 'connecting' | 'connected' | 'waiting'
+export interface ConnectionStatus {
+  state: 'disconnected' | 'connecting' | 'connected' | 'waiting' | 'error'
+  mode?: 'lan' | 'relay'
   deviceName: string
   host: string
   port: number
+  error?: string
 }
 
 const status = ref<ConnectionStatus>({
   state: 'disconnected',
+  mode: 'lan',
   deviceName: '',
   host: '',
   port: 7655,
@@ -58,5 +61,5 @@ export function useConnection() {
     }
   }
 
-  return { status, disconnect }
+  return { status, disconnect, fetchStatus }
 }

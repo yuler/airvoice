@@ -2,17 +2,25 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"image/png"
 	"net"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/yuler/airvoice/cli/config"
+	"github.com/yuler/airvoice/cli/e2e"
+	"github.com/yuler/airvoice/cli/protocol"
+	"github.com/yuler/airvoice/relay"
 )
 
 func TestNewApp(t *testing.T) {
@@ -358,4 +366,196 @@ func newTestApp(t *testing.T) *App {
 		t.Fatal(err)
 	}
 	return app
+}
+
+func TestRelayPairingLinkQRAndRefresh(t *testing.T) {
+	app := newTestApp(t)
+
+	if err := app.SaveSettings(Settings{
+		Port:           7655,
+		Language:       "en-US",
+		ConnectionMode: config.ModeRelay,
+		RelayURL:       "wss://relay.airvoice.yuler.cc/ws",
+		RelayAuthKey:   "my-secret",
+	}); err != nil {
+		t.Fatalf("SaveSettings(relay): %v", err)
+	}
+
+	link1, err := app.GetPairingLink()
+	if err != nil {
+		t.Fatalf("GetPairingLink(relay): %v", err)
+	}
+	if !strings.HasPrefix(link1, "airvoice://pair?v=2&mode=relay&ws=wss%3A%2F%2Frelay.airvoice.yuler.cc%2Fws&key=") {
+		t.Fatalf("unexpected relay pairing link: %q", link1)
+	}
+	if !strings.Contains(link1, "&auth=my-secret") {
+		t.Fatalf("expected auth query param in relay pairing link: %q", link1)
+	}
+
+	qrData, err := app.GetQRCode()
+	if err != nil {
+		t.Fatalf("GetQRCode(relay): %v", err)
+	}
+	if !strings.HasPrefix(qrData, "data:image/png;base64,") {
+		t.Fatalf("unexpected QR data URL: %q", qrData[:min(30, len(qrData))])
+	}
+
+	oldRelayKey := app.relayKey
+	if err := app.RefreshPairing(); err != nil {
+		t.Fatalf("RefreshPairing: %v", err)
+	}
+	if app.relayKey == "" || app.relayKey == oldRelayKey {
+		t.Fatalf("relayKey did not rotate: %q vs %q", app.relayKey, oldRelayKey)
+	}
+
+	link2, err := app.GetPairingLink()
+	if err != nil {
+		t.Fatalf("GetPairingLink after refresh: %v", err)
+	}
+	if link2 == link1 {
+		t.Fatal("expected relay pairing link to change after RefreshPairing")
+	}
+}
+
+func TestSaveSettingsRejectsInsecureRelayURL(t *testing.T) {
+	app := newTestApp(t)
+	err := app.SaveSettings(Settings{
+		Port:           7655,
+		Language:       "en-US",
+		ConnectionMode: config.ModeRelay,
+		RelayURL:       "ws://relay.airvoice.yuler.cc/ws",
+	})
+	if err == nil {
+		t.Fatal("expected SaveSettings to reject public ws:// relay URL")
+	}
+}
+
+func TestDesktopRelayLifecycleAndModeSwitch(t *testing.T) {
+	rs, err := relay.NewServer(relay.Config{})
+	if err != nil {
+		t.Fatalf("relay.NewServer: %v", err)
+	}
+	ts := httptest.NewServer(rs.Handler())
+	defer func() {
+		ts.Close()
+		_ = rs.Close(context.Background())
+	}()
+	wsURL := "ws" + strings.TrimPrefix(ts.URL, "http") + "/ws"
+
+	app := newTestApp(t)
+	app.paster = stubPaster{}
+
+	// Start in LAN mode, then switch to Relay mode via SaveSettings.
+	lanPort := freePort(t)
+	if err := app.StartServer(lanPort); err != nil {
+		t.Fatalf("StartServer: %v", err)
+	}
+	defer func() { _ = app.StopServer() }()
+
+	if err := app.SaveSettings(Settings{
+		Port:           lanPort,
+		Language:       "en-US",
+		ConnectionMode: config.ModeRelay,
+		RelayURL:       wsURL,
+	}); err != nil {
+		t.Fatalf("SaveSettings(relay): %v", err)
+	}
+
+	// Wait until Desktop relay client connects and enters waiting state.
+	deadline := time.Now().Add(3 * time.Second)
+	for time.Now().Before(deadline) {
+		st := app.GetConnectionStatus()
+		if st.Mode == config.ModeRelay && st.State == "waiting" {
+			break
+		}
+		time.Sleep(15 * time.Millisecond)
+	}
+	if st := app.GetConnectionStatus(); st.Mode != config.ModeRelay || st.State != "waiting" {
+		t.Fatalf("status = %+v, want mode=relay state=waiting", st)
+	}
+
+	// Simulate an encrypted phone connecting through the relay.
+	keys, err := e2e.DeriveKeysFromBase64(app.relayKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	headers := http.Header{}
+	headers.Set("X-Airvoice-Room", keys.RoomID)
+	headers.Set("X-Airvoice-Role", "client")
+	headers.Set("X-Airvoice-Auth", keys.ClientAuth)
+	phoneConn, _, err := websocket.DefaultDialer.Dial(wsURL, headers)
+	if err != nil {
+		t.Fatalf("phone dial: %v", err)
+	}
+	defer phoneConn.Close()
+
+	sender, _ := e2e.NewSender(keys.KeyC2H, e2e.DirC2H, keys.RoomID)
+	guard, _ := e2e.NewSessionGuard(keys.KeyH2C, e2e.DirH2C, keys.RoomID)
+
+	sendPhone := func(in protocol.Inbound) {
+		raw, _ := json.Marshal(in)
+		env, err := sender.Seal(raw)
+		if err != nil {
+			t.Fatal(err)
+		}
+		wire, _ := json.Marshal(env)
+		if err := phoneConn.WriteMessage(websocket.TextMessage, wire); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	sendPhone(protocol.Inbound{Type: "hello", Device: "iPhone Test", TS: time.Now().Unix()})
+	sendPhone(protocol.Inbound{Type: "text", ID: "d1", Content: "desktop relay text", Device: "iPhone Test"})
+
+	// Read encrypted hello reply + ack.
+	_ = phoneConn.SetReadDeadline(time.Now().Add(3 * time.Second))
+	gotAck := false
+	for !gotAck {
+		_, data, err := phoneConn.ReadMessage()
+		if err != nil {
+			t.Fatalf("phone read: %v", err)
+		}
+		var env e2e.Envelope
+		if err := json.Unmarshal(data, &env); err != nil || env.Type != e2e.EnvelopeType {
+			continue
+		}
+		pt, err := guard.Open(env)
+		if err != nil {
+			t.Fatalf("phone guard.Open: %v", err)
+		}
+		var out protocol.Outbound
+		_ = json.Unmarshal(pt, &out)
+		if out.Type == "ack" && out.ID == "d1" && out.OK {
+			gotAck = true
+		}
+	}
+
+	st := app.GetConnectionStatus()
+	if st.State != "connected" || st.Mode != config.ModeRelay || st.DeviceName != "iPhone Test" {
+		t.Fatalf("status after relay hello = %+v", st)
+	}
+
+	entries, err := app.GetHistory(10)
+	if err != nil {
+		t.Fatalf("GetHistory: %v", err)
+	}
+	if len(entries) == 0 || entries[0].Content != "desktop relay text" {
+		t.Fatalf("history missing relay text: %+v", entries)
+	}
+
+	// Switch back to LAN mode -> stops relay client and restarts LAN server.
+	nextPort := freePort(t)
+	if err := app.SaveSettings(Settings{
+		Port:           nextPort,
+		Language:       "en-US",
+		ConnectionMode: config.ModeLAN,
+	}); err != nil {
+		t.Fatalf("SaveSettings(lan): %v", err)
+	}
+	if app.relayClient != nil {
+		t.Fatal("expected relayClient to be nil after switching back to LAN")
+	}
+	if app.server == nil {
+		t.Fatal("expected LAN server to be running after switching back to LAN")
+	}
 }

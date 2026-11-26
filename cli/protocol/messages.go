@@ -18,6 +18,7 @@ type Outbound struct {
 	ID      string `json:"id,omitempty"`
 	OK      bool   `json:"ok,omitempty"`
 	Message string `json:"message,omitempty"`
+	TS      int64  `json:"ts,omitempty"`
 }
 
 func ParseInbound(data []byte) (Inbound, error) {

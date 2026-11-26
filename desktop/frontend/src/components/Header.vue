@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useConnection } from '../composables/useConnection'
 import { useTheme } from '../composables/useTheme'
+import SettingsPanel from './SettingsPanel.vue'
 import SunIcon from './icons/SunIcon.vue'
 import MoonIcon from './icons/MoonIcon.vue'
 
@@ -20,13 +21,15 @@ const isConnected = computed(() => status.value.state === 'connected')
       />
       <span class="text-lg font-semibold text-primary-text">Airvoice</span>
     </div>
-    <button
-      @click="toggle"
-      class="w-8 h-8 flex items-center justify-center text-secondary-text hover:text-primary-text transition-colors"
-      style="--wails-draggable: no-drag"
-    >
-      <SunIcon v-if="theme === 'dark'" />
-      <MoonIcon v-else />
-    </button>
+    <div class="flex items-center gap-1" style="--wails-draggable: no-drag">
+      <SettingsPanel />
+      <button
+        @click="toggle"
+        class="w-8 h-8 flex items-center justify-center text-secondary-text hover:text-primary-text transition-colors"
+      >
+        <SunIcon v-if="theme === 'dark'" />
+        <MoonIcon v-else />
+      </button>
+    </div>
   </header>
 </template>
